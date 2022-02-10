@@ -123,6 +123,19 @@ open class SpecialAppMetaInfo : AppMetaInfo, Parcelable {
                     .add(
                         AppInfo(
                             context, SpecialAppMetaInfo(
+                                "special.contacts.json",
+                                specPrefix + context.getString(R.string.spec_contactsjson),
+                                Build.VERSION.RELEASE,
+                                Build.VERSION.SDK_INT, arrayOf(
+                                    "${context.cacheDir.absolutePath}/special.contacts.json.json"
+                                )
+                            )
+                        )
+                    )
+                specialPackages
+                    .add(
+                        AppInfo(
+                            context, SpecialAppMetaInfo(
                                 "special.accounts",
                                 specPrefix + context.getString(R.string.spec_accounts),
                                 Build.VERSION.RELEASE,

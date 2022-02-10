@@ -73,6 +73,9 @@ class BackupSpecialAction(context: Context, work: AppActionWork?, shell: ShellHa
                 if (app.packageName == "special.calllogs.json") {
                     BackupCallLogsJSONAction.backupData(context, filePath)
                 }
+                if (app.packageName == "special.contacts.json") {
+                    BackupContactsJSONAction.backupData(context, filePath)
+                }
                 val file = File(filePath)
                 val isDirSource = filePath.endsWith("/")
                 val parent = if (isDirSource) file.name else null
@@ -132,7 +135,8 @@ class BackupSpecialAction(context: Context, work: AppActionWork?, shell: ShellHa
         }
         if (
                 app.packageName == "special.smsmms.json" ||
-                app.packageName == "special.calllogs.json"
+                app.packageName == "special.calllogs.json" ||
+                app.packageName == "special.contacts.json"
             ) {
             for (filePath in appInfo.fileList) {
                 File(filePath).delete()

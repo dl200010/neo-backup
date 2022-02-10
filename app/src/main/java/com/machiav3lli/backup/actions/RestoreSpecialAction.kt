@@ -133,6 +133,11 @@ class RestoreSpecialAction(context: Context, work: AppActionWork?, shell: ShellH
                     RestoreCallLogsJSONAction.restoreData(context, filePath)
                 }
             }
+            if (app.packageName == "special.contacts.json") {
+                for (filePath in metaInfo.fileList) {
+                    RestoreContactsJSONAction.restoreData(context, filePath)
+                }
+            }
         } catch (e: RuntimeException) {
             throw RestoreFailedException("${e.message}", e)
         } catch (e: ShellCommandFailedException) {
@@ -150,7 +155,8 @@ class RestoreSpecialAction(context: Context, work: AppActionWork?, shell: ShellH
         }
         if (
                 app.packageName == "special.smsmms.json" ||
-                app.packageName == "special.calllogs.json"
+                app.packageName == "special.calllogs.json" ||
+                app.packageName == "special.contacts.json"
             ) {
             for (filePath in metaInfo.fileList) {
                 File(filePath).delete()
