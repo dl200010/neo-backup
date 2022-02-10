@@ -332,13 +332,19 @@ val Context.checkCallLogsPermission: Boolean
     }
 
 fun Activity.requireContactsPermission() {
+    val contactPermissionList = arrayOf(
+        Manifest.permission.READ_CONTACTS,
+        Manifest.permission.WRITE_CONTACTS
+    )
     if (
         checkSelfPermission(Manifest.permission.READ_CONTACTS) !=
-        PackageManager.PERMISSION_GRANTED
+            PackageManager.PERMISSION_GRANTED ||
+        checkSelfPermission(Manifest.permission.WRITE_CONTACTS) !=
+            PackageManager.PERMISSION_GRANTED
     )
         ActivityCompat.requestPermissions(
             this,
-            arrayOf(Manifest.permission.READ_CONTACTS),
+            contactPermissionList,
             CONTACTS_PERMISSION
         )
 }
@@ -365,6 +371,8 @@ val Context.checkContactsPermission: Boolean
         }
         return if (mode == AppOpsManager.MODE_DEFAULT) {
             checkCallingOrSelfPermission(Manifest.permission.READ_CONTACTS) ==
+                    PackageManager.PERMISSION_GRANTED &&
+            checkCallingOrSelfPermission(Manifest.permission.WRITE_CONTACTS) ==
                     PackageManager.PERMISSION_GRANTED
         } else {
             mode == AppOpsManager.MODE_ALLOWED
