@@ -351,9 +351,6 @@ fun Activity.requireContactsPermission() {
 
 val Context.checkContactsPermission: Boolean
     get() {
-        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            return true
-        }
         if (!specialBackupsEnabled) {
             return true
         }
