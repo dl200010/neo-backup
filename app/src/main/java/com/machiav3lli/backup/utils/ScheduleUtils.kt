@@ -22,8 +22,8 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.icu.util.Calendar
-import com.machiav3lli.backup.dbs.Schedule
-import com.machiav3lli.backup.dbs.ScheduleDatabase
+import com.machiav3lli.backup.dbs.ODatabase
+import com.machiav3lli.backup.dbs.entity.Schedule
 import com.machiav3lli.backup.services.AlarmReceiver
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
@@ -42,13 +42,13 @@ fun calculateTimeToRun(schedule: Schedule, now: Long): Long {
 fun scheduleAlarm(context: Context, scheduleId: Long, rescheduleBoolean: Boolean) {
     if (scheduleId >= 0) {
         Thread {
-            val scheduleDao = ScheduleDatabase.getInstance(context).scheduleDao
+            val scheduleDao = ODatabase.getInstance(context).scheduleDao
             val schedule = scheduleDao.getSchedule(scheduleId)
             if (schedule?.enabled == true) {
+                val now = System.currentTimeMillis()
                 val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
                 val alarmIntent = Intent(context, AlarmReceiver::class.java)
                 alarmIntent.putExtra("scheduleId", scheduleId)
-                alarmIntent.putExtra("batchName", schedule.getBatchName())
 
                 val pendingIntent = PendingIntent.getBroadcast(
                     context,
@@ -56,7 +56,6 @@ fun scheduleAlarm(context: Context, scheduleId: Long, rescheduleBoolean: Boolean
                     alarmIntent,
                     PendingIntent.FLAG_IMMUTABLE
                 )
-                val now = System.currentTimeMillis()
                 val timeLeft = calculateTimeToRun(schedule, now) - now
                 if (rescheduleBoolean) {
                     schedule.timePlaced = now

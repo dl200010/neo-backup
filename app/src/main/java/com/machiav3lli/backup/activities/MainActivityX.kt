@@ -39,13 +39,13 @@ import androidx.work.WorkManager
 import com.machiav3lli.backup.*
 import com.machiav3lli.backup.OABX.Companion.appsSuspendedChecked
 import com.machiav3lli.backup.databinding.ActivityMainXBinding
-import com.machiav3lli.backup.dbs.AppExtras
-import com.machiav3lli.backup.dbs.AppExtrasDatabase
-import com.machiav3lli.backup.dbs.BlocklistDatabase
+import com.machiav3lli.backup.dbs.entity.AppExtras
+import com.machiav3lli.backup.dbs.ODatabase
 import com.machiav3lli.backup.fragments.ProgressViewController
 import com.machiav3lli.backup.fragments.RefreshViewController
 import com.machiav3lli.backup.handler.LogsHandler
 import com.machiav3lli.backup.handler.ShellHandler.Companion.runAsRoot
+import com.machiav3lli.backup.handler.WorkHandler
 import com.machiav3lli.backup.items.SortFilterModel
 import com.machiav3lli.backup.items.StorageFile
 import com.machiav3lli.backup.services.CommandReceiver
@@ -95,6 +95,8 @@ class MainActivityX : BaseActivity() {
 
         class PersistentCounters(
             var startTime: Long = 0L,
+            var endTime: Long = 0L,
+            var isFinished: Boolean = false
         )
 
         val batchPersist = mutableMapOf<String, PersistentCounters>()
@@ -104,10 +106,12 @@ class MainActivityX : BaseActivity() {
             if (manager == null || work == null)
                 return
 
+            val now = System.currentTimeMillis()
+
             val batches = mutableMapOf<String, Counters>()
 
             if (statusNotificationId == 0)
-                statusNotificationId = System.currentTimeMillis().toInt()
+                statusNotificationId = now.toInt()
 
             val appContext = OABX.context
             val workInfos = manager.getWorkInfosByTag(
@@ -131,15 +135,15 @@ class MainActivityX : BaseActivity() {
                     //Timber.d("%%%%% $batchName $packageName $operation $backupBoolean ${info.state} fail=$failures max=$maxRetries")
 
                     if (batchName.isNullOrEmpty()) {
-                        info.tags.forEach {
-                            val parts = it.toString().split(':', limit = 2)
+                         info.tags.forEach tag@{ tag ->
+                            val parts = tag.toString().split(':', limit = 2)
                             if (parts.size > 1) {
                                 val (key, value) = parts
                                 when (key) {
                                     "name" -> {
                                         batchName = value
                                         //Timber.d("%%%%% name from tag -> $batchName")
-                                        return@forEach
+                                        return@tag
                                     }
                                     else -> {}
                                 }
@@ -147,18 +151,9 @@ class MainActivityX : BaseActivity() {
                         }
                     }
                     if (batchName.isNullOrEmpty()) {
-                        Timber.d("????????????????????????????????????????? empty batch name, canceling")
-                        batchName = when (info.state) {
-                            WorkInfo.State.CANCELLED ->
-                                "CANCELLED"
-                            WorkInfo.State.ENQUEUED ->
-                                "ENQUEUED"
-                            else -> {
-                                "UNDEF"
-                            }
-                        }
-                        Timber.d("?????????????????????????? name from state -> $batchName (to be canceled)")
-                        manager.cancelWorkById(info.id)
+                        batchName = WorkHandler.getBatchName("NoName@Work", 0)
+                        Timber.d("?????????????????????????? name not set, using $batchName")
+                        //manager.cancelWorkById(info.id)
                     }
 
                     //Timber.d("===== $batchName $packageName $operation $backupBoolean ${info.state} fail=$failures max=$maxRetries")
@@ -168,7 +163,8 @@ class MainActivityX : BaseActivity() {
                         val persist: PersistentCounters = batchPersist.getOrPut(batchName!!) { PersistentCounters() }
 
                         if (persist.startTime == 0L) {
-                            persist.startTime = System.currentTimeMillis()
+                            persist.startTime = now
+                            persist.endTime = 0L
                             Timber.w("---------------------------------------------> set startTime ${persist.startTime}")
                         }
 
@@ -226,9 +222,14 @@ class MainActivityX : BaseActivity() {
                 var allRemaining = 0
                 var allCount = 0
 
-                batches.forEach { (batchName, counters) ->
+                batches.forEach batch@{ (batchName, counters) ->
 
-                    val persist: PersistentCounters = batchPersist.getOrPut(batchName) { PersistentCounters() }
+                    val persist: PersistentCounters =
+                        batchPersist.getOrPut(batchName) { PersistentCounters() }
+
+                    // when the batch is finished, create the notification once and not onGoing anymore
+                    if (persist.isFinished)
+                        return@batch
 
                     counters.run {
                         val notificationId = batchName.hashCode()
@@ -241,23 +242,27 @@ class MainActivityX : BaseActivity() {
 
                         val title = batchName
                         shortText = "✔$succeeded${if (failed > 0) "❓$failed" else ""}/$workCount"
-                        if (remaining > 0)
+
+                        if (remaining > 0) {
                             shortText += " 🏃$running 👭${queued}"
-                        else {
+                        } else {
                             shortText += " ${OABX.context.getString(R.string.finished)}"
 
+                            persist.isFinished = true
+                            if (persist.endTime == 0L)
+                                persist.endTime = now
                             val duration =
-                                ((System.currentTimeMillis() - persist.startTime) / 1000 + 0.5).toInt()
-                            if (duration > 0) {
-                                val min = (duration / 60).toInt()
-                                val sec = duration - min * 60
-                                bigText = "$min min $sec sec"
-                                Timber.w("=============================================> stop ${persist.startTime} + $duration = $bigText")
-                            }
-                            persist.startTime = 0L
+                                ((persist.endTime - persist.startTime) / 1000 + 0.5).toInt()
+                            val min = (duration / 60).toInt()
+                            val sec = duration - min * 60
+                            bigText = "$min min $sec sec"
                         }
+
+                        if (retries > 0)
+                            shortText += " 🔄$retries"
                         if (canceled > 0)
                             shortText += " 🚫$canceled"
+
                         bigText = "$shortText\n$bigText"
 
                         Timber.d("%%%%% -----------------> $title $shortText")
@@ -318,6 +323,9 @@ class MainActivityX : BaseActivity() {
                                     PendingIntent.FLAG_IMMUTABLE
                                 )
                                 notificationBuilder
+                                    .setOngoing(true)
+                                    .setPriority(NotificationCompat.PRIORITY_MAX)
+                                    .setCategory(NotificationCompat.CATEGORY_SERVICE)
                                     .setProgress(workCount, processed, false)
                                     .addAction(
                                         R.drawable.ic_close,
@@ -352,6 +360,10 @@ class MainActivityX : BaseActivity() {
                     activity?.runOnUiThread { activity?.hideProgress() }
                     Timber.d("%%%%% PRUNE")
                     OABX.work.prune()
+                    batchPersist.keys.forEach {
+                        if (batchPersist[it]?.isFinished == true)
+                            batchPersist.remove(it)
+                    }
                 }
             }.start()
         }
@@ -402,7 +414,7 @@ class MainActivityX : BaseActivity() {
                         }
                     }.start()
                     Thread.sleep(5000)
-                } catch(e: Throwable) {
+                } catch (e: Throwable) {
                     // ignore
                 } finally {
                     exitProcess(2)
@@ -413,11 +425,10 @@ class MainActivityX : BaseActivity() {
         Shell.getShell()
         binding = ActivityMainXBinding.inflate(layoutInflater)
         binding.lifecycleOwner = this
-        val blocklistDao = BlocklistDatabase.getInstance(this).blocklistDao
-        val appExtrasDao = AppExtrasDatabase.getInstance(this).appExtrasDao
+        val database = ODatabase.getInstance(this)
         prefs = getPrivateSharedPrefs()
 
-        val viewModelFactory = MainViewModel.Factory(appExtrasDao, blocklistDao, application)
+        val viewModelFactory = MainViewModel.Factory(database, application)
         viewModel = ViewModelProvider(this, viewModelFactory)[MainViewModel::class.java]
         if (!isRememberFiltering) {
             this.sortFilterModel = SortFilterModel()

@@ -72,6 +72,7 @@ const val PREFS_RESTORETARCMD = "restoreTarCmd"
 const val PREFS_STRICTHARDLINKS = "strictHardLinks"
 const val PREFS_RESTOREAVOIDTEMPCOPY = "restoreAvoidTemporaryCopy"
 const val PREFS_SHADOWROOTFILE = "shadowRootFileForSAF"
+const val PREFS_ALLOWSHADOWINGDEFAULT = "allowShadowingDefault"
 const val PREFS_CATCHUNCAUGHT = "catchUncaughtException"
 const val PREFS_CACHEROOTFILEATTRIBUTES = "cacheRootFileAttributes"
 const val PREFS_MAXRETRIES = "maxRetriesPerPackage"
@@ -115,7 +116,7 @@ const val MAIN_SORT_PACKAGENAME = 1
 const val MAIN_SORT_DATASIZE = 2
 const val MAIN_SORT_BACKUPDATE = 3
 
-const val MAIN_FILTER_DEFAULT = 0b110
+const val MAIN_FILTER_DEFAULT = 0b111
 const val MAIN_FILTER_UNSET = 0b000
 const val MAIN_FILTER_SYSTEM = 0b100
 const val MAIN_FILTER_USER = 0b010
