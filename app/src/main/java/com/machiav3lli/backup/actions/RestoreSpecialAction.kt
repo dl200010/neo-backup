@@ -134,7 +134,7 @@ class RestoreSpecialAction(context: Context, work: AppActionWork?, shell: ShellH
                 }
             }
             if (app.packageName == "special.contacts.json") {
-                for (filePath in metaInfo.fileList) {
+                for (filePath in metaInfo.specialFiles) {
                     RestoreContactsJSONAction.restoreData(context, filePath)
                 }
             }
