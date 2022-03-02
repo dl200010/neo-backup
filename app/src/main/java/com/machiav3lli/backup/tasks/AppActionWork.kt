@@ -24,14 +24,28 @@ import android.app.job.JobService
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.core.app.NotificationCompat
-import androidx.work.*
+import androidx.work.CoroutineWorker
+import androidx.work.Data
+import androidx.work.ForegroundInfo
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.machiav3lli.backup.MODE_UNSET
 import com.machiav3lli.backup.OABX
 import com.machiav3lli.backup.PREFS_MAXRETRIES
 import com.machiav3lli.backup.R
 import com.machiav3lli.backup.activities.MainActivityX
-import com.machiav3lli.backup.handler.*
+import com.machiav3lli.backup.handler.BackupRestoreHelper
+import com.machiav3lli.backup.handler.LogsHandler
+import com.machiav3lli.backup.handler.WorkHandler.Companion.getVar
+import com.machiav3lli.backup.handler.WorkHandler.Companion.setVar
+import com.machiav3lli.backup.handler.getDirectoriesInBackupRoot
+import com.machiav3lli.backup.handler.getSpecial
+import com.machiav3lli.backup.handler.showNotification
 import com.machiav3lli.backup.items.ActionResult
 import com.machiav3lli.backup.items.AppInfo
 import timber.log.Timber
@@ -41,11 +55,10 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
 
     private var packageName = inputData.getString("packageName")!!
     private var packageLabel = ""
-    private var operation = ""
     private var backupBoolean = inputData.getBoolean("backupBoolean", true)
     private var batchName = inputData.getString("batchName") ?: ""
     private var notificationId: Int = inputData.getInt("notificationId", 123454321)
-    private var failures = 0
+    private var failures = getVar(batchName, packageName, "failures")?.toInt() ?: 0
 
     init {
         setOperation("...")
@@ -53,11 +66,19 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
 
     override suspend fun doWork(): Result {
 
+        setOperation("...")
+
         val selectedMode = inputData.getInt("selectedMode", MODE_UNSET)
 
-        setForeground(createForegroundInfo())
+        var message =
+            "------------------------------------------------------------ Work: $batchName $packageName"
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            message += " ui=${context.isUiContext}"
+        }
+        Timber.i(message)
 
-        setOperation("-->")
+        if (OABX.prefFlag("useForeground", false))
+            setForeground(createForegroundInfo())
 
         var result: ActionResult? = null
         var appInfo: AppInfo? = null
@@ -103,7 +124,7 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
                                         context, this, shellHandler, ai, selectedMode
                                     )
                                 }
-                                else -> {
+                                else          -> {
                                     // Latest backup for now
                                     ai.latestBackup?.let {
                                         BackupRestoreHelper.restore(
@@ -120,16 +141,6 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
                             "not processed: $packageLabel: $e\n${e.stackTrace}", false
                         )
                         Timber.w("package: ${ai.packageLabel} result: $e")
-                    } finally {
-                        result?.let {
-                            if (!it.succeeded) {
-                                val message = "${ai.packageName}\n${it.message}"
-                                showNotification(
-                                    context, MainActivityX::class.java,
-                                    result.hashCode(), ai.packageLabel, it.message, message, false
-                                )
-                            }
-                        }
                     }
                 }
             }
@@ -138,19 +149,30 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
         }
         val succeeded = result?.succeeded ?: false
         return if (succeeded) {
+            setOperation("OK.")
+            Timber.w("package: $packageName OK")
             Result.success(getWorkData("OK", result))
         } else {
             failures++
-            if (failures <= OABX.prefInt(PREFS_MAXRETRIES, 3))
+            setVar(batchName, packageName, "failures", failures.toString())
+            if (failures <= OABX.prefInt(PREFS_MAXRETRIES, 1)) {
+                setOperation("err")
+                Timber.w("package: $packageName failures: $failures -> retry")
                 Result.retry()
-            else {
+            } else {
+                val message = "$packageName\n${result?.message}"
+                showNotification(
+                    context, MainActivityX::class.java,
+                    result.hashCode(), packageLabel, result?.message, message, false
+                )
+                setOperation("ERR")
+                Timber.w("package: $packageName FAILED")
                 Result.failure(getWorkData("ERR", result))
             }
         }
     }
 
     fun setOperation(operation: String = "") {
-        this.operation = operation
         setProgressAsync(getWorkData(operation))
     }
 
@@ -178,11 +200,12 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
             )
     }
 
+
     private fun createForegroundInfo(): ForegroundInfo {
         val contentPendingIntent = PendingIntent.getActivity(
             context, 0,
             Intent(context, MainActivityX::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val cancelIntent = WorkManager.getInstance(applicationContext)
@@ -194,7 +217,7 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
             .setContentTitle(
                 when {
                     backupBoolean -> context.getString(com.machiav3lli.backup.R.string.batchbackup)
-                    else -> context.getString(com.machiav3lli.backup.R.string.batchrestore)
+                    else          -> context.getString(com.machiav3lli.backup.R.string.batchrestore)
                 }
             )
             .setSmallIcon(com.machiav3lli.backup.R.drawable.ic_app)

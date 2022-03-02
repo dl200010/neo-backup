@@ -9,6 +9,7 @@ import com.machiav3lli.backup.R
 import com.machiav3lli.backup.handler.ShellCommands
 import com.machiav3lli.backup.utils.FileUtils.BackupLocationInAccessibleException
 import com.machiav3lli.backup.utils.StorageLocationNotConfiguredException
+import timber.log.Timber
 
 /**
  * This class is used to describe special backup files that use a hardcoded list of file paths
@@ -70,6 +71,8 @@ open class SpecialAppMetaInfo : AppMetaInfo, Parcelable {
          * @throws BackupLocationInAccessibleException   when the backup location cannot be read for any reason
          * @throws StorageLocationNotConfiguredException when the backup location is not set in the configuration
          */
+        var threadCount = 0
+        var locked = false
         @Throws(
             BackupLocationInAccessibleException::class,
             StorageLocationNotConfiguredException::class
@@ -83,12 +86,23 @@ open class SpecialAppMetaInfo : AppMetaInfo, Parcelable {
             //      the same directory in the archive and the restore would do the same but in reverse.
             // Documentation note: This could be outdated, make sure the logic in BackupSpecialAction and
             // RestoreSpecialAction hasn't changed!
+            if (locked) {
+                synchronized(threadCount) {
+                    threadCount++
+                    Timber.d("################################################################### locked: $locked threads: $threadCount")
+                }
+            }
             synchronized(specialPackages) { // if n calls run in parallel we may have n duplicates
-                // because there is some time between asking for the size and the first add
+                                            // because there is some time between asking for the size and the first add
+                locked = true
                 if (specialPackages.size == 0) {
                     // caching this prevents recreating AppInfo-objects all the time and at wrong times
                     val userId = ShellCommands.currentUser
-                    val userDir = "/data/system/users/$userId"
+                    val miscDir = "/data/misc"
+                    val systemDir = "/data/system"
+                    val userDir = "$systemDir/users/$userId"
+                    val systemCeDir = "/data/system_ce/$userId"
+                    val vendorDeDir = "/data/vendor_de/$userId"
                     val specPrefix = "$ "
 
                     if (context.packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
@@ -140,7 +154,7 @@ open class SpecialAppMetaInfo : AppMetaInfo, Parcelable {
                                     specPrefix + context.getString(R.string.spec_accounts),
                                     Build.VERSION.RELEASE,
                                     Build.VERSION.SDK_INT, arrayOf(
-                                        "/data/system_ce/$userId/accounts_ce.db"
+                                        "$systemCeDir/accounts_ce.db"
                                     )
                                 )
                             )
@@ -166,7 +180,7 @@ open class SpecialAppMetaInfo : AppMetaInfo, Parcelable {
                                     specPrefix + context.getString(R.string.spec_bluetooth),
                                     Build.VERSION.RELEASE,
                                     Build.VERSION.SDK_INT, arrayOf(
-                                        "/data/misc/bluedroid/bt_config.conf"
+                                        "$miscDir/bluedroid/bt_config.conf"
                                     )
                                 )
                             )
@@ -179,8 +193,22 @@ open class SpecialAppMetaInfo : AppMetaInfo, Parcelable {
                                     specPrefix + context.getString(R.string.spec_data),
                                     Build.VERSION.RELEASE,
                                     Build.VERSION.SDK_INT, arrayOf(
-                                        "/data/system/netpolicy.xml",
-                                        "/data/system/netstats/"
+                                        "$systemDir/netpolicy.xml",
+                                        "$systemDir/netstats/"
+                                    )
+                                )
+                            )
+                        )
+                    specialPackages
+                        .add(
+                            AppInfo(
+                                context, SpecialAppMetaInfo(
+                                    "special.fingerprint",
+                                    specPrefix + context.getString(R.string.spec_fingerprint),
+                                    Build.VERSION.RELEASE,
+                                    Build.VERSION.SDK_INT, arrayOf(
+                                        "$userDir/settings_fingerprint.xml",
+                                        "$vendorDeDir/fpdata/"
                                     )
                                 )
                             )
@@ -193,7 +221,7 @@ open class SpecialAppMetaInfo : AppMetaInfo, Parcelable {
                                     specPrefix + context.getString(R.string.spec_wallpaper),
                                     Build.VERSION.RELEASE,
                                     Build.VERSION.SDK_INT, arrayOf(
-                                        //"$userDir/wallpaper",         // files are checked, non existent lead to erros
+                                        "$userDir/wallpaper",
                                         "$userDir/wallpaper_info.xml"
                                     )
                                 )
@@ -201,9 +229,9 @@ open class SpecialAppMetaInfo : AppMetaInfo, Parcelable {
                         )
                     // Location of the WifiConfigStore had been moved with Android R
                     val wifiConfigLocation = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-                        "/data/misc/wifi/WifiConfigStore.xml"
+                        "$miscDir/wifi/WifiConfigStore.xml"
                     } else {
-                        "/data/misc/apexdata/com.android.wifi/WifiConfigStore.xml"
+                        "$miscDir/apexdata/com.android.wifi/WifiConfigStore.xml"
                     }
                     specialPackages
                         .add(
@@ -219,6 +247,7 @@ open class SpecialAppMetaInfo : AppMetaInfo, Parcelable {
                             )
                         )
                 }
+                locked = false
             }
             return specialPackages
         }

@@ -57,6 +57,30 @@
         app:initialExpandedChildrenCount="0">
 
         <androidx.preference.CheckBoxPreference
+            android:defaultValue="false"
+            android:key="cancelOnStart"
+            android:summary="cancel all remaining jobs on OAndBackupX start [needs reboot]"
+            android:title="cancelOnStart" />
+
+        <androidx.preference.CheckBoxPreference
+            android:defaultValue="false"
+            android:key="useAlarmClock"
+            android:summary="use the alarm clock to schedule backups, this shows an alarm icon in the notification bar [needs reboot]"
+            android:title="useAlarmClock" />
+
+        <androidx.preference.CheckBoxPreference
+            android:defaultValue="false"
+            android:key="useExactAlarm"
+            android:summary="if not using useAlarmClock, then use exact alarms, otherwise use inexact alarms which may be better for battery [needs reboot]"
+            android:title="useExactAlarm" />
+
+        <androidx.preference.CheckBoxPreference
+            android:defaultValue="false"
+            android:key="useForeground"
+            android:summary="use forground notifications to ensure app keeps runninig (if wakelock isn't enough)"
+            android:title="useForeground" />
+
+        <androidx.preference.CheckBoxPreference
             android:defaultValue="true"
             android:key="pauseApps"
             android:summary="pause apps during backups and restores to avoid inconsistent backups caused by ongoing file changes or other conflicts"
@@ -107,7 +131,7 @@
         <androidx.preference.CheckBoxPreference
             android:defaultValue="false"
             android:key="catchUncaughtException"
-            android:summary="unexpected exceptions are caught and output to logcat and app is restarted (needs restart when toggling)"
+            android:summary="unexpected exceptions are caught and output to logcat and app is restarted [needs reboot]"
             android:title="catchUncaughtException" />
 
         <androidx.preference.SeekBarPreference
@@ -127,10 +151,10 @@
             android:title="cacheRootFileAttributes" />
 
         <androidx.preference.SeekBarPreference
-            android:defaultValue="3"
+            android:defaultValue="1"
             android:inputType="number"
             android:key="maxRetriesPerPackage"
-            android:max="20"
+            android:max="10"
             android:summary="maximum number of retires per Package per Batch"
             android:title="maxRetriesPerPackage"
             app:min="0"
