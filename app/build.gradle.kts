@@ -25,12 +25,12 @@ plugins {
 }
 
 android {
-    compileSdk = 31
+    compileSdk = 32
 
     defaultConfig {
         applicationId = "com.machiav3lli.backup"
         minSdk = 26
-        targetSdk = 31
+        targetSdk = 32
         versionCode = 8000
         versionName = "8.0.0"
 
@@ -82,8 +82,8 @@ android {
         dataBinding = true
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions {
@@ -138,6 +138,7 @@ dependencies {
     implementation("com.mikepenz:fastadapter-extensions-diff:$fastadapter")
     implementation("com.mikepenz:fastadapter-extensions-binding:$fastadapter")
     implementation("com.facebook.shimmer:shimmer:0.5.0")
+    implementation("io.coil-kt:coil:2.0.0-rc01")
 
     //// Testing
 
