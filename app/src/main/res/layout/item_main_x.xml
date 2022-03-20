@@ -37,11 +37,21 @@
             android:layout_marginEnd="@dimen/cards_spacing"
             android:contentDescription="@string/app_s_icon"
             android:elevation="8dp"
-            android:src="@drawable/ic_placeholder"
+            android:src="@drawable/ic_placeholder_special"
             app:layout_constraintBottom_toTopOf="@id/tagsGroup"
             app:layout_constraintEnd_toStartOf="@id/label"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/appType"
+            android:layout_width="@dimen/icon_small"
+            android:layout_height="@dimen/icon_small"
+            android:background="@android:color/transparent"
+            android:elevation="12dp"
+            app:layout_constraintBottom_toBottomOf="@id/icon"
+            app:layout_constraintEnd_toEndOf="@id/icon"
+            app:srcCompat="@drawable/ic_system" />
 
         <androidx.appcompat.widget.AppCompatTextView
             android:id="@+id/label"
@@ -113,13 +123,6 @@
                 android:layout_height="@dimen/icon_small"
                 android:background="@android:color/transparent"
                 app:srcCompat="@drawable/ic_apk" />
-
-            <androidx.appcompat.widget.AppCompatImageView
-                android:id="@+id/appType"
-                android:layout_width="@dimen/icon_small"
-                android:layout_height="@dimen/icon_small"
-                android:background="@android:color/transparent"
-                app:srcCompat="@drawable/ic_system" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.AppCompatTextView

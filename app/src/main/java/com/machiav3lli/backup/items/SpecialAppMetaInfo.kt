@@ -17,8 +17,9 @@ open class SpecialAppMetaInfo(
     label: String?,
     versionName: String?,
     versionCode: Int,
-    fileList: Array<String>
-) : AppMetaInfo(packageName, label, versionName, versionCode, 0, null, arrayOf(), true) {
+    fileList: Array<String>,
+    icon: Int = -1
+) : AppMetaInfo(packageName, label, versionName, versionCode, 0, null, arrayOf(), true, icon) {
     var specialFiles: Array<String> = fileList
 
     override val isSpecial: Boolean
@@ -80,7 +81,7 @@ open class SpecialAppMetaInfo(
                                         Build.VERSION.RELEASE,
                                         Build.VERSION.SDK_INT, arrayOf(
                                             "${context.cacheDir.absolutePath}/special.smsmms.json.json"
-                                        )
+                                        ), R.drawable.ic_sms
                                     )
                                 )
                             )
@@ -93,7 +94,7 @@ open class SpecialAppMetaInfo(
                                         Build.VERSION.RELEASE,
                                         Build.VERSION.SDK_INT, arrayOf(
                                             "${context.cacheDir.absolutePath}/special.calllogs.json.json"
-                                        )
+                                        ), R.drawable.ic_call_logs
                                     )
                                 )
                             )
@@ -120,20 +121,7 @@ open class SpecialAppMetaInfo(
                                     Build.VERSION.RELEASE,
                                     Build.VERSION.SDK_INT, arrayOf(
                                         "$systemCeDir/accounts_ce.db"
-                                    )
-                                )
-                            )
-                        )
-                    specialPackages
-                        .add(
-                            AppInfo(
-                                context, SpecialAppMetaInfo(
-                                    "special.appwidgets",
-                                    specPrefix + context.getString(R.string.spec_appwidgets),
-                                    Build.VERSION.RELEASE,
-                                    Build.VERSION.SDK_INT, arrayOf(
-                                        "$userDir/appwidgets.xml"
-                                    )
+                                    ), R.drawable.ic_accounts
                                 )
                             )
                         )
@@ -146,7 +134,7 @@ open class SpecialAppMetaInfo(
                                     Build.VERSION.RELEASE,
                                     Build.VERSION.SDK_INT, arrayOf(
                                         "$miscDir/bluedroid/bt_config.conf"
-                                    )
+                                    ), R.drawable.ic_bluetooth
                                 )
                             )
                         )
@@ -160,7 +148,7 @@ open class SpecialAppMetaInfo(
                                     Build.VERSION.SDK_INT, arrayOf(
                                         "$systemDir/netpolicy.xml",
                                         "$systemDir/netstats/"
-                                    )
+                                    ), R.drawable.ic_privacy
                                 )
                             )
                         )
@@ -174,7 +162,7 @@ open class SpecialAppMetaInfo(
                                     Build.VERSION.SDK_INT, arrayOf(
                                         "$userDir/settings_fingerprint.xml",
                                         "$vendorDeDir/fpdata/"
-                                    )
+                                    ), R.drawable.ic_fingerprint
                                 )
                             )
                         )
@@ -188,7 +176,7 @@ open class SpecialAppMetaInfo(
                                     Build.VERSION.SDK_INT, arrayOf(
                                         "$userDir/wallpaper",
                                         "$userDir/wallpaper_info.xml"
-                                    )
+                                    ), R.drawable.ic_wallpaper
                                 )
                             )
                         )
@@ -207,7 +195,7 @@ open class SpecialAppMetaInfo(
                                     Build.VERSION.RELEASE,
                                     Build.VERSION.SDK_INT, arrayOf(
                                         wifiConfigLocation
-                                    )
+                                    ), R.drawable.ic_wifi
                                 )
                             )
                         )

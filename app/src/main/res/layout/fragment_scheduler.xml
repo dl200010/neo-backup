@@ -16,8 +16,7 @@
  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
  -->
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <data>
 
@@ -31,96 +30,97 @@
         android:clipToPadding="false">
 
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/appBar"
+            android:id="@+id/topBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_gradient_alpha_bottom_top"
-            android:clipChildren="false"
-            android:clipToPadding="false"
-            android:elevation="8dp"
-            android:padding="@dimen/cards_spacing"
-            app:layout_constraintBottom_toTopOf="@id/progressBar"
+            android:background="?colorPrimaryDark"
+            app:layout_constraintBottom_toTopOf="@id/recyclerView"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
-            <androidx.appcompat.widget.AppCompatTextView
-                android:id="@+id/pageHeadline"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:ellipsize="marquee"
-                android:gravity="center_vertical"
-                android:singleLine="true"
-                android:text="@string/sched_title"
-                android:textAppearance="@style/TextAppearance.Headline"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/buttonBlocklist"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <androidx.appcompat.widget.AppCompatImageButton
-                android:id="@+id/buttonBlocklist"
-                style="@style/Button.Round"
-                android:layout_width="52dp"
-                android:layout_height="match_parent"
-                android:tooltipText="@string/sched_blocklist"
-                android:tint="?backgroundColor"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@drawable/ic_blocklist" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-        <com.google.android.material.progressindicator.LinearProgressIndicator
-            android:id="@+id/progressBar"
-            android:layout_width="0dp"
-            android:layout_height="@dimen/large_spacing"
-            android:layout_marginHorizontal="@dimen/cards_spacing"
-            android:visibility="gone"
-            app:layout_constraintBottom_toTopOf="@id/listLayout"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/appBar" />
-
-        <androidx.core.widget.NestedScrollView
-            android:id="@+id/listLayout"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:clipChildren="false"
-            android:orientation="vertical"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/progressBar">
-
-            <androidx.appcompat.widget.LinearLayoutCompat
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/appBar"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:clipChildren="false"
-                android:orientation="vertical">
+                android:clipToPadding="false"
+                android:elevation="8dp"
+                android:padding="@dimen/cards_spacing"
+                app:layout_constraintBottom_toTopOf="@id/progressBar"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recyclerView"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:clipToPadding="false"
-                    tools:itemCount="4"
-                    tools:listitem="@layout/item_scheduler_x" />
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/pageHeadline"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:ellipsize="marquee"
+                    android:gravity="center_vertical"
+                    android:singleLine="true"
+                    android:text="@string/sched_title"
+                    android:textAppearance="@style/TextAppearance.Headline"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/buttonBlocklist"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <androidx.appcompat.widget.AppCompatImageButton
-                    android:id="@+id/addSchedule"
-                    style="@style/ImageButton.Positive"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="@dimen/cards_spacing"
-                    android:layout_marginTop="@dimen/buttons_spacing"
-                    android:layout_marginBottom="@dimen/cards_spacing"
-                    android:paddingVertical="@dimen/large_spacing"
-                    android:src="@drawable/ic_add_sched"
-                    android:tooltipText="@string/sched_add" />
-            </androidx.appcompat.widget.LinearLayoutCompat>
-        </androidx.core.widget.NestedScrollView>
+                    android:id="@+id/buttonBlocklist"
+                    style="@style/Button.Round"
+                    android:layout_width="52dp"
+                    android:layout_height="match_parent"
+                    android:tooltipText="@string/sched_blocklist"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:srcCompat="@drawable/ic_blocklist" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/progressBar"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/large_spacing"
+                android:layout_marginHorizontal="@dimen/cards_spacing"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/appBar" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.compose.ui.platform.ComposeView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:clipToPadding="false"
+            app:layout_constraintBottom_toTopOf="@id/buttonBar"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/topBar" />
+
+        <FrameLayout
+            android:id="@+id/buttonBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?colorPrimaryDark"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/recyclerView">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/addSchedule"
+                style="@style/Widget.Material3.Button.ElevatedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/cards_spacing"
+                android:paddingVertical="@dimen/large_spacing"
+                android:text="@string/sched_add"
+                app:icon="@drawable/ic_add_sched" />
+        </FrameLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>
 
