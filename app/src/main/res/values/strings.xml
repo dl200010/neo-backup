@@ -92,6 +92,8 @@
     <string name="prefs_languages">Language</string>
     <string name="prefs_language_system">System default</string>
     <string name="prefs_pathbackupfolder">Backup folder</string>
+    <string name="prefs_loadingtoasts">Loading toasts</string>
+    <string name="prefs_loadingtoasts_summary">Show toasts while the list is being loaded</string>
     <string name="prefs_devicelock">Device lock</string>
     <string name="prefs_devicelock_summary">Secure the app with device credentials</string>
     <string name="prefs_biometriclock">Biometric lock</string>
@@ -117,6 +119,8 @@
     <string name="prefs_obbdata_summary">Backs up and restores the app\'s obb files that is placed on the external storage (e.g. /storage/emulated/0/Android/obb/)</string>
     <string name="prefs_mediadata">Back up media files</string>
     <string name="prefs_mediadata_summary">Backs up and restores the app\'s media files that is placed on the external storage (e.g. /storage/emulated/0/Android/media/)</string>
+    <string name="prefs_restorepermissions">Restore permissions</string>
+    <string name="prefs_restorepermissions_summary">Restore permissions that were granted to the app at the moment of the backup. Note that some permissions can\'t be granted programmatically and so cause the package restore to fail as a whole, which Neo Backup then covers restoring the package without permissions.</string>
     <string name="prefs_deviceprotecteddata">Back up device-protected data</string>
     <string name="prefs_deviceprotecteddata_summary">Backs up and restores data that is placed in data/user_de</string>
     <string name="prefs_numBackupRevisions">Number of backup revisions</string>
@@ -172,6 +176,7 @@
     <string name="restart_dialog">The app seems needing to be restarted</string>
     <string name="dialogOK">OK</string>
     <string name="dialogCancel">Cancel</string>
+    <string name="dialogCancelAll">Cancel all</string>
     <string name="dialogYes">Yes</string>
     <string name="dialogNo">No</string>
     <string name="dialogSave">Save</string>
@@ -229,7 +234,7 @@
     <string name="enable_encryption_message">It\'s not safe to keep your data on your device not encrypted. For the safety of your data enable encryption and set a password.</string>
     <string name="sort_and_filter"><![CDATA[Sort & Filter]]></string>
     <string name="storage_access">Storage Access</string>
-    <string name="welcome_to_oabx">Welcome to OABX!</string>
+    <string name="welcome_to_oabx">Welcome to Neo Backup!</string>
     <string name="intro_welcome_message"> OAndBackupX is a fork of the infamous OAndBackup with the aim to bring it to 2020 and further. For now most of the functionality and UI of the app are rewritten and some are added.
         \n The app is still in beta stages and a lot of rebasing is done often. So please read the changelog carefully with each new release.
         \n All types of contribution are welcome was it translation, ideas, reporting bugs or code work.
@@ -331,5 +336,11 @@
     <string name="schedule">Schedule</string>
     <string name="finished">finished</string>
     <string name="batch">Batch</string>
-    <string name="loading_list">Loading apps\' list…</string>
+    <string name="loading_list">Loading list…</string>
+    <string name="delete">Delete</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="enabled">Enabled</string>
+    <string name="sortAsc">Ascending</string>
+    <string name="sortDesc">Descending</string>
+    <string name="supended_apps_cleanup">cleanup any left over suspended apps</string>
 </resources>

@@ -17,18 +17,17 @@
  */
 package com.machiav3lli.backup.dbs.entity
 
-import android.content.Context
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.RenameColumn
 import androidx.room.migration.AutoMigrationSpec
-import com.machiav3lli.backup.*
+import com.machiav3lli.backup.MAIN_FILTER_DEFAULT
+import com.machiav3lli.backup.MAIN_FILTER_DEFAULT_WITHOUT_SPECIAL
+import com.machiav3lli.backup.MODE_APK
+import com.machiav3lli.backup.SPECIAL_FILTER_ALL
 import com.machiav3lli.backup.handler.LogsHandler
 import com.machiav3lli.backup.handler.WorkHandler
-import com.machiav3lli.backup.items.BackupItem
 import com.machiav3lli.backup.items.StorageFile
-import com.machiav3lli.backup.utils.mainFilterToId
-import com.machiav3lli.backup.utils.modeToId
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -60,17 +59,7 @@ data class Schedule(
 
     var blockList: Set<String> = setOf()
 
-    val filterIds: List<Int>
-        get() = possibleMainFilters
-            .filter { it and filter == it }
-            .map { mainFilterToId(it) }
-
-    val modeIds: List<Int>
-        get() = possibleSchedModes
-            .filter { it and mode == it }
-            .map { modeToId(it) }
-
-    constructor(context: Context, exportFile: StorageFile) : this() {
+    constructor(exportFile: StorageFile) : this() {
         try {
             exportFile.inputStream()!!.use { inputStream ->
                 val item = fromJson(inputStream.reader().readText())
@@ -86,18 +75,18 @@ data class Schedule(
                 this.blockList = item.blockList
             }
         } catch (e: FileNotFoundException) {
-            throw BackupItem.BrokenBackupException(
+            throw Backup.BrokenBackupException(
                 "Cannot open ${exportFile.name} at ${exportFile.path}",
                 e
             )
         } catch (e: IOException) {
-            throw BackupItem.BrokenBackupException(
+            throw Backup.BrokenBackupException(
                 "Cannot read ${exportFile.name} at ${exportFile.path}",
                 e
             )
         } catch (e: Throwable) {
             LogsHandler.unhandledException(e, exportFile.path)
-            throw BackupItem.BrokenBackupException("Unable to process ${exportFile.name} at ${exportFile.path}. [${e.javaClass.canonicalName}] $e")
+            throw Backup.BrokenBackupException("Unable to process ${exportFile.name} at ${exportFile.path}. [${e.javaClass.canonicalName}] $e")
         }
     }
 

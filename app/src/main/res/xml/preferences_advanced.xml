@@ -75,12 +75,6 @@
             android:title="useExactAlarm" />
 
         <androidx.preference.CheckBoxPreference
-            android:defaultValue="false"
-            android:key="useForeground"
-            android:summary="use forground notifications to ensure app keeps runninig (if wakelock isn't enough)"
-            android:title="useForeground" />
-
-        <androidx.preference.CheckBoxPreference
             android:defaultValue="true"
             android:key="pauseApps"
             android:summary="pause apps during backups and restores to avoid inconsistent backups caused by ongoing file changes or other conflicts"
@@ -145,6 +139,24 @@
             app:showSeekBarValue="true" />
 
         <androidx.preference.CheckBoxPreference
+            android:defaultValue="true"
+            android:key="invalidateSelective"
+            android:summary=""
+            android:title="invalidateSelective" />
+
+        <androidx.preference.CheckBoxPreference
+            android:defaultValue="true"
+            android:key="cacheUris"
+            android:summary=""
+            android:title="cacheUris" />
+
+        <androidx.preference.CheckBoxPreference
+            android:defaultValue="true"
+            android:key="cacheFileLists"
+            android:summary=""
+            android:title="cacheFileLists" />
+
+        <androidx.preference.CheckBoxPreference
             android:defaultValue="false"
             android:key="cacheRootFileAttributes"
             android:summary="cache some attributes like exists, isDirectory, isFile, saves many shell commands but may fail if external changes happen"
@@ -177,6 +189,28 @@
             android:max="120"
             android:summary="[seconds] maximum time to retry on refreshing AppInfo after pm install"
             android:title="refreshAppInfoTimeout"
+            app:min="0"
+            app:showSeekBarValue="true" />
+
+        <androidx.preference.CheckBoxPreference
+            android:defaultValue="false"
+            android:key="useForeground"
+            android:summary="use forground notifications to ensure app keeps running (if wakelock isn't enough)"
+            android:title="useForeground" />
+
+        <androidx.preference.CheckBoxPreference
+            android:defaultValue="true"
+            android:key="useExpedited"
+            android:summary="use work manager forground to overcome 10 minute job timeouts"
+            android:title="useExpedited" />
+
+        <androidx.preference.SeekBarPreference
+            android:defaultValue="0"
+            android:inputType="number"
+            android:key="fakeBackupMinutes"
+            android:max="60"
+            android:summary="[minutes] time for faked backups, 0 = do not fake"
+            android:title="fakeBackupMinutes"
             app:min="0"
             app:showSeekBarValue="true" />
 

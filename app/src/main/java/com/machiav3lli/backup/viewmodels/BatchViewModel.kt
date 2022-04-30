@@ -22,11 +22,13 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.machiav3lli.backup.items.Package
 
 class BatchViewModel(appContext: Application) : AndroidViewModel(appContext) {
-    val apkCheckedList = mutableListOf<String>()
-    val dataCheckedList = mutableListOf<String>()
-    val refreshNow = MutableLiveData<Boolean>()
+    val filteredList: MutableLiveData<List<Package>?> = MutableLiveData()
+    val apkCheckedList = mutableSetOf<String>()
+    val dataCheckedList = mutableSetOf<String>()
+    val searchQuery = MutableLiveData<String>()
 
     class Factory(
         private val application: Application

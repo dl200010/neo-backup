@@ -17,6 +17,9 @@
  */
 package com.machiav3lli.backup
 
+import com.machiav3lli.backup.ui.item.ChipItem
+import com.machiav3lli.backup.ui.item.Legend
+import com.machiav3lli.backup.ui.item.Link
 import java.time.format.DateTimeFormatter
 
 const val PREFS_SHARED_PRIVATE = "com.machiav3lli.backup"
@@ -28,13 +31,18 @@ const val BACKUP_INSTANCE_PROPERTIES = "%s-user_%s.properties"
 const val BACKUP_INSTANCE_DIR = "%s-user_%s"
 const val EXPORTS_INSTANCE = "%s.scheds"
 
-const val SCHEDULES_DB_NAME = "schedules.db"
-const val BLOCKLIST_DB_NAME = "blocklist.db"
-const val APPEXTRAS_DB_NAME = "appextras.db"
+const val MAIN_DB_NAME = "main.db"
 const val PACKAGES_LIST_GLOBAL_ID = -1L
 
+const val ACTION_CANCEL = "cancel"
+const val ACTION_SCHEDULE = "schedule"
+const val ACTION_RESCHEDULE = "reschedule"
+const val ACTION_CRASH = "crash"
+
+const val NAV_MAIN = 0
+const val NAV_PREFS = 1
+
 const val PREFS_SORT_FILTER = "sortFilter"
-const val PREFS_SORT_ORDER = "sortOrder"
 const val PREFS_FIRST_LAUNCH = "firstLaunch"
 const val PREFS_IGNORE_BATTERY_OPTIMIZATION = "ignoreBatteryOptimization"
 const val PREFS_SKIPPEDENCRYPTION = "skippedEncryptionCounter"
@@ -45,6 +53,7 @@ const val PREFS_ACCENT_COLOR = "themeAccentColor"
 const val PREFS_SECONDARY_COLOR = "themeSecondaryColor"
 const val PREFS_LANGUAGES_DEFAULT = "system"
 const val PREFS_PATH_BACKUP_DIRECTORY = "pathBackupFolder"
+const val PREFS_LOADINGTOASTS = "loadingToasts"
 const val PREFS_DEVICELOCK = "deviceLock"
 const val PREFS_BIOMETRICLOCK = "biometricLock"
 const val PREFS_OLDBACKUPS = "oldBackups"
@@ -59,12 +68,17 @@ const val PREFS_EXCLUDECACHE = "excludeCache"
 const val PREFS_EXTERNALDATA = "backupExternalData"
 const val PREFS_OBBDATA = "backupObbData"
 const val PREFS_MEDIADATA = "backupMediaData"
+const val PREFS_RESTOREPERMISSIONS = "restorePermissions"
 const val PREFS_DEVICEPROTECTEDDATA = "backupDeviceProtectedData"
 const val PREFS_NUM_BACKUP_REVISIONS = "numBackupRevisions"
 const val PREFS_HOUSEKEEPING_MOMENT = "housekeepingMoment"
 const val PREFS_DISABLEVERIFICATION = "disableVerification"
 const val PREFS_RESTOREWITHALLPERMISSIONS = "giveAllPermissions"
 const val PREFS_ALLOWDOWNGRADE = "allowDowngrade"
+const val PREFS_CANCELONSTART = "cancelOnStart"
+const val PREFS_USEALARMCLOCK = "useAlarmClock"
+const val PREFS_USEEXACTRALARM = "useExactAlarm"
+const val PREFS_USEFOREGROUND = "useForeground"
 const val PREFS_PAUSEAPPS = "pauseApps"
 const val PREFS_PMSUSPEND = "pmSuspend"
 const val PREFS_BACKUPTARCMD = "backupTarCmd"
@@ -74,10 +88,12 @@ const val PREFS_RESTOREAVOIDTEMPCOPY = "restoreAvoidTemporaryCopy"
 const val PREFS_SHADOWROOTFILE = "shadowRootFileForSAF"
 const val PREFS_ALLOWSHADOWINGDEFAULT = "allowShadowingDefault"
 const val PREFS_CATCHUNCAUGHT = "catchUncaughtException"
+const val PREFS_MAXCRASHLINES = "maxCrashLines"
 const val PREFS_CACHEROOTFILEATTRIBUTES = "cacheRootFileAttributes"
 const val PREFS_MAXRETRIES = "maxRetriesPerPackage"
 const val PREFS_REFRESHDELAY = "delayBeforeRefreshAppInfo"
 const val PREFS_REFRESHTIMEOUT = "refreshAppInfoTimeout"
+const val PREFS_REFRESHTIMEOUT_DEFAULT = 30
 const val PREFS_BATCH_DELETE = "batchDelete"
 const val PREFS_COPYSELF = "copySelfApk"
 const val PREFS_SCHEDULESEXPORTIMPORT = "schedulesExportImport"
@@ -100,21 +116,30 @@ const val MODE_DATA_MEDIA = 0b1000000
 const val BACKUP_FILTER_DEFAULT = 0b1111111
 val possibleSchedModes =
     listOf(MODE_APK, MODE_DATA, MODE_DATA_DE, MODE_DATA_EXT, MODE_DATA_OBB, MODE_DATA_MEDIA)
-val possibleBackupFilters =
-    listOf(
-        MODE_NONE,
-        MODE_APK,
-        MODE_DATA,
-        MODE_DATA_DE,
-        MODE_DATA_EXT,
-        MODE_DATA_OBB,
-        MODE_DATA_MEDIA
-    )
+
+val scheduleBackupModeChipItems = listOf(
+    ChipItem.Apk,
+    ChipItem.Data,
+    ChipItem.DeData,
+    ChipItem.ExtData,
+    ChipItem.ObbData,
+    ChipItem.MediaData
+)
+
+val mainBackupModeChipItems: List<ChipItem> =
+    listOf(ChipItem.None).plus(scheduleBackupModeChipItems)
 
 const val MAIN_SORT_LABEL = 0
 const val MAIN_SORT_PACKAGENAME = 1
 const val MAIN_SORT_DATASIZE = 2
 const val MAIN_SORT_BACKUPDATE = 3
+
+val sortChipItems = listOf(
+    ChipItem.Label,
+    ChipItem.PackageName,
+    ChipItem.DataSize,
+    ChipItem.BackupDate
+)
 
 const val MAIN_FILTER_DEFAULT = 0b111
 const val MAIN_FILTER_DEFAULT_WITHOUT_SPECIAL = 0b110
@@ -124,6 +149,8 @@ const val MAIN_FILTER_USER = 0b010
 const val MAIN_FILTER_SPECIAL = 0b001
 val possibleMainFilters = listOf(MAIN_FILTER_SYSTEM, MAIN_FILTER_USER, MAIN_FILTER_SPECIAL)
 
+val mainFilterChipItems = listOf(ChipItem.System, ChipItem.User, ChipItem.Special)
+
 const val SPECIAL_FILTER_ALL = 0
 const val SPECIAL_FILTER_LAUNCHABLE = 1
 const val SPECIAL_FILTER_NEW_UPDATED = 2
@@ -131,21 +158,51 @@ const val SPECIAL_FILTER_OLD = 3
 const val SPECIAL_FILTER_NOT_INSTALLED = 4
 const val SPECIAL_FILTER_DISABLED = 5
 
-const val DEFAULT_RETRIEVE_APP_META_MAXWAIT = 30;
+val schedSpecialFilterChipItems = listOf(
+    ChipItem.All,
+    ChipItem.Launchable,
+    ChipItem.NewUpdated,
+    ChipItem.Old,
+    ChipItem.Disabled
+)
+
+val mainSpecialFilterChipItems = schedSpecialFilterChipItems.plus(ChipItem.NotInstalled)
+
 
 const val BUNDLE_USERS = "users"
-const val NEED_REFRESH = "needRefresh"
 
-const val HELP_CHANGELOG = "https://github.com/machiav3lli/oandbackupx/blob/master/CHANGELOG.md"
-const val HELP_TELEGRAM = "https://t.me/OAndBackupX"
+const val HELP_CHANGELOG = "https://github.com/NeoApplications/Neo-Backup/blob/master/CHANGELOG.md"
+const val HELP_TELEGRAM = "https://t.me/neo_backup"
 const val HELP_ELEMENT =
     "https://matrix.to/#/!PiXJUneYCnkWAjekqX:matrix.org?via=matrix.org&via=chat.astafu.de&via=zerc.net"
-const val HELP_LICENSE = "https://github.com/machiav3lli/oandbackupx/blob/master/LICENSE.md"
-const val HELP_ISSUES = "https://github.com/machiav3lli/oandbackupx/blob/master/ISSUES.md"
-const val HELP_FAQ = "https://github.com/machiav3lli/oandbackupx/blob/master/FAQ.md"
+const val HELP_LICENSE = "https://github.com/NeoApplications/Neo-Backup/blob/master/LICENSE.md"
+const val HELP_ISSUES = "https://github.com/NeoApplications/Neo-Backup/blob/master/ISSUES.md"
+const val HELP_FAQ = "https://github.com/NeoApplications/Neo-Backup/blob/master/FAQ.md"
 
-val BACKUP_DATE_TIME_FORMATTER: DateTimeFormatter =
+val linksList =
+    listOf(Link.Changelog, Link.Telegram, Link.Matrix, Link.License, Link.Issues, Link.FAQ)
+
+val legendList = listOf(
+    Legend.Exodus,
+    Legend.Launch,
+    Legend.Disable,
+    Legend.Enable,
+    Legend.System,
+    Legend.User,
+    Legend.Special,
+    Legend.APK,
+    Legend.Data,
+    Legend.DE_Data,
+    Legend.External,
+    Legend.OBB,
+    Legend.Media,
+    Legend.Updated
+)
+
+val BACKUP_DATE_TIME_FORMATTER_OLD: DateTimeFormatter =
     DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss")
+val BACKUP_DATE_TIME_FORMATTER: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss-SSS")
 
 fun classAddress(address: String): String = PREFS_SHARED_PRIVATE + address
 

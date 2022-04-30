@@ -21,34 +21,65 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.widget.SearchView
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material.Scaffold
-import androidx.lifecycle.Observer
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
-import androidx.work.OneTimeWorkRequest
-import androidx.work.WorkInfo
-import androidx.work.WorkManager
-import com.machiav3lli.backup.*
-import com.machiav3lli.backup.databinding.FragmentHomeBinding
+import com.machiav3lli.backup.ALT_MODE_APK
+import com.machiav3lli.backup.ALT_MODE_BOTH
+import com.machiav3lli.backup.ALT_MODE_DATA
+import com.machiav3lli.backup.ALT_MODE_UNSET
+import com.machiav3lli.backup.MAIN_FILTER_DEFAULT
+import com.machiav3lli.backup.R
 import com.machiav3lli.backup.dbs.entity.AppExtras
 import com.machiav3lli.backup.dialogs.BatchDialogFragment
 import com.machiav3lli.backup.dialogs.PackagesListDialogFragment
 import com.machiav3lli.backup.handler.LogsHandler
-import com.machiav3lli.backup.handler.WorkHandler
-import com.machiav3lli.backup.items.AppInfo
-import com.machiav3lli.backup.tasks.AppActionWork
-import com.machiav3lli.backup.tasks.FinishWork
+import com.machiav3lli.backup.items.Package
+import com.machiav3lli.backup.ui.compose.item.ActionButton
+import com.machiav3lli.backup.ui.compose.item.ActionChip
+import com.machiav3lli.backup.ui.compose.item.ElevatedActionButton
+import com.machiav3lli.backup.ui.compose.item.ExpandableSearchAction
+import com.machiav3lli.backup.ui.compose.item.TopBar
 import com.machiav3lli.backup.ui.compose.recycler.HomePackageRecycler
 import com.machiav3lli.backup.ui.compose.recycler.UpdatedPackageRecycler
 import com.machiav3lli.backup.ui.compose.theme.AppTheme
-import com.machiav3lli.backup.utils.*
+import com.machiav3lli.backup.utils.FileUtils
+import com.machiav3lli.backup.utils.StorageLocationNotConfiguredException
+import com.machiav3lli.backup.utils.applyFilter
+import com.machiav3lli.backup.utils.getStats
+import com.machiav3lli.backup.utils.sortFilterModel
 import com.machiav3lli.backup.viewmodels.HomeViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 class HomeFragment : NavigationFragment(),
     BatchDialogFragment.ConfirmListener, RefreshViewController {
-    private lateinit var binding: FragmentHomeBinding
     lateinit var viewModel: HomeViewModel
     private var appSheet: AppSheet? = null
 
@@ -58,169 +89,43 @@ class HomeFragment : NavigationFragment(),
         savedInstanceState: Bundle?
     ): View {
         super.onCreate(savedInstanceState)
-        binding = FragmentHomeBinding.inflate(inflater, container, false)
-        binding.lifecycleOwner = this
         val viewModelFactory = HomeViewModel.Factory(requireActivity().application)
-        viewModel = ViewModelProvider(this, viewModelFactory).get(HomeViewModel::class.java)
-        return binding.root
+        viewModel = ViewModelProvider(this, viewModelFactory)[HomeViewModel::class.java]
+        return ComposeView(requireContext()).apply {
+            setContent { HomePage() }
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setupViews()
-        if (requireMainActivity().viewModel.refreshNow.value == true) refreshView()
-
-        viewModel.refreshNow.observe(requireActivity()) {
-            //binding.refreshLayout.isRefreshing = it
-            if (it) {
-                binding.searchBar.setQuery("", false)
-                requireMainActivity().viewModel.refreshList()
-            }
-        }
-
-        viewModel.updatedApps.observe(viewLifecycleOwner) {
-            viewModel.nUpdatedApps.value = it.size
-            binding.updatedRecycler.setContent {
-                AppTheme(
-                    darkTheme = isSystemInDarkTheme()
-                ) {
-                    UpdatedPackageRecycler(productsList = it,
-                        onClick = { item ->
-                            if (appSheet != null) appSheet?.dismissAllowingStateLoss()
-                            appSheet = AppSheet(item, AppExtras(), it.indexOf(item))
-                            appSheet?.showNow(
-                                parentFragmentManager,
-                                "Package ${item.packageName}"
-                            )
-                        }
-                    )
-                }
-            }
-        }
-        viewModel.nUpdatedApps.observe(requireActivity()) {
-            binding.buttonUpdated.text =
-                binding.root.context.resources.getQuantityString(R.plurals.updated_apps, it, it)
-            if (it > 0) {
-                binding.updatedBar.visibility = View.VISIBLE
-                binding.buttonUpdated.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                    0,
-                    0,
-                    R.drawable.ic_arrow_up,
-                    0
-                )
-                binding.buttonUpdateAll.visibility = View.VISIBLE
-                binding.buttonUpdated.setOnClickListener {
-                    binding.updatedRecycler.visibility = when (binding.updatedRecycler.visibility) {
-                        View.VISIBLE -> {
-                            binding.buttonUpdated.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                                0,
-                                0,
-                                R.drawable.ic_arrow_up,
-                                0
-                            )
-                            View.GONE
-                        }
-                        else -> {
-                            binding.buttonUpdated.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                                0,
-                                0,
-                                R.drawable.ic_arrow_down,
-                                0
-                            )
-                            View.VISIBLE
-                        }
+        viewModel.filteredList.observe(viewLifecycleOwner) { list ->
+            try {
+                // TODO live update of AppSheet
+                list?.find { it.packageName == appSheet?.appInfo?.packageName }
+                    ?.let { sheetApp ->
+                        if (appSheet != null && sheetApp != appSheet?.appInfo)
+                            refreshAppSheet(sheetApp)
                     }
-                }
-            } else {
-                binding.updatedBar.visibility = View.GONE
-                binding.updatedRecycler.visibility = View.GONE
-                binding.buttonUpdateAll.visibility = View.GONE
-                binding.buttonUpdated.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0)
-                binding.buttonUpdated.setOnClickListener(null)
+            } catch (e: Throwable) {
+                LogsHandler.unhandledException(e)
             }
         }
-    }
 
-    override fun onStart() {
-        super.onStart()
-        binding.pageHeadline.text = resources.getText(R.string.main)
+        packageList.observe(requireActivity()) { refreshView(it) }
     }
 
     override fun onResume() {
         super.onResume()
-        setupOnClicks()
-        setupSearch()
         requireMainActivity().setRefreshViewController(this)
     }
 
-    override fun setupViews() {
-        /*binding.refreshLayout.setColorSchemeColors(requireContext().colorAccent)
-        binding.refreshLayout.setProgressBackgroundColorSchemeColor(
-            resources.getColor(R.color.app_primary_base, requireActivity().theme)
-        )
-        binding.refreshLayout.setProgressViewOffset(false, 72, 144)
-        binding.refreshLayout.setOnRefreshListener { requireMainActivity().viewModel.refreshList() }*/
-    }
-
-    override fun setupOnClicks() {
-        binding.buttonBlocklist.setOnClickListener {
-            Thread {
-                val blocklistedPackages = requireMainActivity().viewModel.blocklist.value
-                    ?.mapNotNull { it.packageName }
-                    ?: listOf()
-
-                PackagesListDialogFragment(
-                    blocklistedPackages,
-                    MAIN_FILTER_DEFAULT,
-                    true
-                ) { newList: Set<String> ->
-                    requireMainActivity().viewModel.updateBlocklist(newList)
-                }.show(requireActivity().supportFragmentManager, "BLOCKLIST_DIALOG")
-            }.start()
-        }
-        binding.buttonSortFilter.setOnClickListener {
-            if (sheetSortFilter != null && sheetSortFilter!!.isVisible) sheetSortFilter?.dismissAllowingStateLoss()
-            sheetSortFilter = SortFilterSheet(
-                requireActivity().sortFilterModel,
-                getStats(appInfoList)
-            )
-            sheetSortFilter?.showNow(requireActivity().supportFragmentManager, "SORTFILTER_SHEET")
-        }
-        binding.buttonUpdateAll.setOnClickListener { onClickUpdateAllAction() }
-    }
-
-    private fun setupSearch() {
-        /*val filterPredicate = { item: HomeItemX, cs: CharSequence? ->
-            item.appExtras.customTags
-                .plus(item.app.packageName)
-                .plus(item.app.packageLabel)
-                .find { it.contains(cs.toString(), true) } != null
-        }*/
-        binding.searchBar.maxWidth = Int.MAX_VALUE
-        binding.searchBar.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextChange(newText: String): Boolean {
-                // TODO apply query
-                //homeItemAdapter.filter(newText)
-                //homeItemAdapter.itemFilter.filterPredicate = filterPredicate
-                return true
-            }
-
-            override fun onQueryTextSubmit(query: String): Boolean {
-                // TODO apply query
-                //homeItemAdapter.filter(query)
-                //homeItemAdapter.itemFilter.filterPredicate = filterPredicate
-                return true
-            }
-        })
-    }
-
-    private fun onClickUpdateAllAction() {
-        val selectedList = viewModel.updatedApps.value
-            ?.map { it.appMetaInfo }
-            ?.toCollection(ArrayList()) ?: arrayListOf()
-        val selectedListModes = viewModel.updatedApps.value
-            ?.mapNotNull {
-                it.latestBackup?.backupProperties?.let { bp ->
+    private fun onClickUpdateAllAction(updatedApps: List<Package>) {
+        val selectedList = updatedApps
+            .map { it.packageInfo }
+            .toCollection(ArrayList())
+        val selectedListModes = updatedApps
+            .mapNotNull {
+                it.latestBackup?.let { bp ->
                     when {
                         bp.hasApk && bp.hasAppData -> ALT_MODE_BOTH
                         bp.hasApk -> ALT_MODE_APK
@@ -229,180 +134,203 @@ class HomeFragment : NavigationFragment(),
                     }
                 }
             }
-            ?.toCollection(ArrayList()) ?: arrayListOf()
+            .toCollection(ArrayList())
         if (selectedList.isNotEmpty()) {
             BatchDialogFragment(true, selectedList, selectedListModes, this)
                 .show(requireActivity().supportFragmentManager, "DialogFragment")
         }
     }
 
-    // TODO abstract this to fit for Main- & BatchFragment
     override fun onConfirmed(
         selectedPackages: List<String?>,
         selectedModes: List<Int>
     ) {
-        val now = System.currentTimeMillis()
-        val notificationId = now.toInt()
-        val batchType = getString(R.string.backup)
-        val batchName = WorkHandler.getBatchName(batchType, now)
-
-        val selectedItems = selectedPackages
-            .mapIndexed { i, packageName ->
-                if (packageName.isNullOrEmpty()) null
-                else Pair(packageName, selectedModes[i])
-            }
-            .filterNotNull()
-
-        var errors = ""
-        var resultsSuccess = true
-        var counter = 0
-        val worksList: MutableList<OneTimeWorkRequest> = mutableListOf()
-        val workManager = WorkManager.getInstance(requireContext())
-        OABX.work.beginBatch(batchName)
-        selectedItems.forEach { (packageName, mode) ->
-
-            val oneTimeWorkRequest =
-                AppActionWork.Request(packageName, mode, true, notificationId, batchName)
-            worksList.add(oneTimeWorkRequest)
-
-            val oneTimeWorkLiveData = WorkManager.getInstance(requireContext())
-                .getWorkInfoByIdLiveData(oneTimeWorkRequest.id)
-            oneTimeWorkLiveData.observeForever(object : Observer<WorkInfo> {
-                override fun onChanged(t: WorkInfo?) {
-                    if (t?.state == WorkInfo.State.SUCCEEDED) {
-                        counter += 1
-
-                        val (succeeded, packageLabel, error) = AppActionWork.getOutput(t)
-                        if (error.isNotEmpty()) errors = "$errors$packageLabel: ${
-                            LogsHandler.handleErrorMessages(
-                                requireContext(),
-                                error
-                            )
-                        }\n"
-
-                        resultsSuccess = resultsSuccess and succeeded
-                        oneTimeWorkLiveData.removeObserver(this)
-                    }
-                }
-            })
-        }
-
-        val finishWorkRequest = FinishWork.Request(resultsSuccess, true, batchName)
-
-        /*
-        val finishWorkLiveData = WorkManager.getInstance(requireContext())
-            .getWorkInfoByIdLiveData(finishWorkRequest.id)
-        finishWorkLiveData.observeForever(object : Observer<WorkInfo> {
-            override fun onChanged(t: WorkInfo?) {
-                if (t?.state == WorkInfo.State.SUCCEEDED) {
-                    val (message, title) = FinishWork.getOutput(t)
-                    showNotification(
-                        requireContext(), MainActivityX::class.java,
-                        notificationId, title, message, true
-                    )
-                    val overAllResult = ActionResult(null, null, errors, resultsSuccess)
-                    requireActivity().showActionResult(overAllResult) { _: DialogInterface?, _: Int ->
-                        LogsHandler.logErrors(requireContext(), errors.dropLast(2))
-                    }
-
-                    finishWorkLiveData.removeObserver(this)
-                    viewModel.refreshNow.value = true
-                }
-            }
-        })
-        */
-
-        if (worksList.isNotEmpty()) {
-            workManager
-                .beginWith(worksList)
-                .then(finishWorkRequest)
-                .enqueue()
+        startBatchAction(true, selectedPackages, selectedModes) {
+            //viewModel.refreshNow.value = true
+            // TODO refresh only the influenced packages
+            it.removeObserver(this)
         }
     }
 
-    override fun refreshView() {
+    override fun refreshView(list: MutableList<Package>?) {
         Timber.d("refreshing")
         sheetSortFilter = SortFilterSheet(
-            requireActivity().sortFilterModel, getStats(
-                appInfoList
-            )
+            requireActivity().sortFilterModel, getStats(list ?: mutableListOf())
         )
-        Thread {
-            try {
-                val filteredList =
-                    appInfoList.applyFilter(requireActivity().sortFilterModel, requireContext())
-                refreshMain(filteredList, appSheet != null)
-            } catch (e: FileUtils.BackupLocationInAccessibleException) {
-                Timber.e("Could not update application list: $e")
-            } catch (e: StorageLocationNotConfiguredException) {
-                Timber.e("Could not update application list: $e")
-            } catch (e: Throwable) {
-                LogsHandler.unhandledException(e)
-            }
-        }.start()
-    }
-
-    private fun refreshMain(filteredList: List<AppInfo>, appSheetBoolean: Boolean) {
-        //val mainList = createMainAppsList(filteredList)
-        //val updatedList = createUpdatedAppsList(filteredList)
-        requireActivity().runOnUiThread {
-            try {
-                viewModel.updatedApps.value = filteredList.filter { it.isUpdated }
-                binding.recyclerView.setContent {
-                    AppTheme(
-                        darkTheme = isSystemInDarkTheme()
-                    ) {
-                        Scaffold {
-                            HomePackageRecycler(productsList = filteredList,
-                                onClick = { item ->
-                                    if (appSheet != null) appSheet?.dismissAllowingStateLoss()
-                                    appSheet =
-                                        AppSheet(item, AppExtras(), filteredList.indexOf(item))
-                                    appSheet?.showNow(
-                                        parentFragmentManager,
-                                        "Package ${item.packageName}"
-                                    )
-                                }
-                            )
-                        }
-                    }
-                }
-                setupSearch()
-                if (appSheetBoolean) refreshAppSheet()
-                viewModel.refreshNow.value = false
-            } catch (e: Throwable) {
-                LogsHandler.unhandledException(e)
-            }
+        try {
+            viewModel.filteredList.value =
+                list?.applyFilter(requireActivity().sortFilterModel, requireContext())
+        } catch (e: FileUtils.BackupLocationInAccessibleException) {
+            Timber.e("Could not update application list: $e")
+        } catch (e: StorageLocationNotConfiguredException) {
+            Timber.e("Could not update application list: $e")
+        } catch (e: Throwable) {
+            LogsHandler.unhandledException(e)
         }
     }
 
-    private fun refreshAppSheet() {
+    private fun refreshAppSheet(app: Package) {
         try {
-            val position = appSheet?.position ?: -1
             // TODO implement auto refresh of AppSheet
-            /*if (homeItemAdapter.itemList.size() > position && position != -1) {
-                val sheetAppInfo = homeFastAdapter?.getItem(position)?.app
-                sheetAppInfo?.let {
-                    if (appSheet?.packageName == sheetAppInfo.packageName) {
-                        homeFastAdapter?.getItem(position)?.let { appSheet?.updateApp(it) }
-                    } else
-                        appSheet?.dismissAllowingStateLoss()
-                }
-            } else
-                appSheet?.dismissAllowingStateLoss()*/
+            appSheet?.updateApp(app)
         } catch (e: Throwable) {
             appSheet?.dismissAllowingStateLoss()
-            //LogsHandler.unhandledException(e)
+            LogsHandler.unhandledException(e)
         }
     }
 
     override fun updateProgress(progress: Int, max: Int) {
-        binding.progressBar.visibility = View.VISIBLE
-        binding.progressBar.max = max
-        binding.progressBar.progress = progress
+        //binding.progressBar.visibility = View.VISIBLE
+        //binding.progressBar.max = max
+        //binding.progressBar.progress = progress
     }
 
     override fun hideProgress() {
-        binding.progressBar.visibility = View.GONE
+        //binding.progressBar.visibility = View.GONE
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun HomePage() {
+        // TODO include tags in search
+        val list by viewModel.filteredList.observeAsState(null)
+        val query by viewModel.searchQuery.observeAsState("")
+        val updatedApps = list?.filter { it.isUpdated }
+        var updatedVisible by remember(viewModel.filteredList.value) { mutableStateOf(false) }
+
+        val filterPredicate = { item: Package ->
+            query.isNullOrEmpty() || listOf(item.packageName, item.packageLabel)
+                .find { it.contains(query, true) } != null
+        }
+        val queriedList = list?.filter(filterPredicate)
+
+        AppTheme(
+            darkTheme = isSystemInDarkTheme()
+        ) {
+            Scaffold(
+                topBar = {
+                    TopBar(title = stringResource(id = R.string.main)) {
+                        ExpandableSearchAction(
+                            query = viewModel.searchQuery.value.orEmpty(),
+                            onQueryChanged = { new ->
+                                viewModel.searchQuery.value = new
+                            },
+                            onClose = {
+                                viewModel.searchQuery.value = ""
+                            }
+                        )
+                    }
+                }
+            ) { paddingValues ->
+                Column(
+                    modifier = Modifier
+                        .padding(paddingValues)
+                        .background(color = MaterialTheme.colorScheme.surface)
+                        .fillMaxSize()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        ActionChip(
+                            icon = painterResource(id = R.drawable.ic_blocklist),
+                            text = stringResource(id = R.string.sched_blocklist),
+                            positive = true
+                        ) {
+                            GlobalScope.launch(Dispatchers.IO) {
+                                val blocklistedPackages =
+                                    requireMainActivity().viewModel.blocklist.value
+                                        ?.mapNotNull { it.packageName }.orEmpty()
+
+                                PackagesListDialogFragment(
+                                    blocklistedPackages,
+                                    MAIN_FILTER_DEFAULT,
+                                    true
+                                ) { newList: Set<String> ->
+                                    requireMainActivity().viewModel.updateBlocklist(newList)
+                                }.show(
+                                    requireActivity().supportFragmentManager,
+                                    "BLOCKLIST_DIALOG"
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        ActionChip(
+                            icon = painterResource(id = R.drawable.ic_filter),
+                            text = stringResource(id = R.string.sort_and_filter),
+                            positive = true
+                        ) {
+                            if (sheetSortFilter == null) sheetSortFilter = SortFilterSheet(
+                                requireActivity().sortFilterModel,
+                                getStats(packageList.value ?: mutableListOf())
+                            )
+                            sheetSortFilter?.showNow(
+                                requireActivity().supportFragmentManager,
+                                "SORTFILTER_SHEET"
+                            )
+                        }
+                    }
+                    HomePackageRecycler(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        productsList = queriedList,
+                        onClick = { item ->
+                            if (appSheet != null) appSheet?.dismissAllowingStateLoss()
+                            appSheet = AppSheet(item, AppExtras(item.packageName))
+                            appSheet?.showNow(
+                                parentFragmentManager,
+                                "Package ${item.packageName}"
+                            )
+                        }
+                    )
+                    AnimatedVisibility(visible = !updatedApps.isNullOrEmpty()) {
+                        Column(
+                            modifier = Modifier.wrapContentHeight()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .padding(horizontal = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                ActionButton(
+                                    modifier = Modifier.weight(1f),
+                                    text = LocalContext.current.resources
+                                        .getQuantityString(
+                                            R.plurals.updated_apps,
+                                            updatedApps.orEmpty().size,
+                                            updatedApps.orEmpty().size
+                                        ),
+                                    icon = painterResource(id = if (updatedVisible) R.drawable.ic_arrow_down else R.drawable.ic_arrow_up)
+                                ) {
+                                    updatedVisible = !updatedVisible
+                                }
+                                ElevatedActionButton(
+                                    modifier = Modifier,
+                                    text = stringResource(id = R.string.backup_all_updated),
+                                    icon = painterResource(id = R.drawable.ic_update)
+                                ) {
+                                    onClickUpdateAllAction(updatedApps.orEmpty())
+                                }
+                            }
+                            AnimatedVisibility(visible = updatedVisible) {
+                                UpdatedPackageRecycler(productsList = updatedApps,
+                                    onClick = { item ->
+                                        if (appSheet != null) appSheet?.dismissAllowingStateLoss()
+                                        appSheet = AppSheet(item, AppExtras(item.packageName))
+                                        appSheet?.showNow(
+                                            parentFragmentManager,
+                                            "Package ${item.packageName}"
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

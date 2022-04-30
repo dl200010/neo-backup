@@ -19,109 +19,120 @@ package com.machiav3lli.backup.items
 
 import android.app.usage.StorageStats
 import android.content.Context
-import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.machiav3lli.backup.BACKUP_DATE_TIME_FORMATTER
 import com.machiav3lli.backup.BACKUP_INSTANCE_PROPERTIES
-import com.machiav3lli.backup.dbs.entity.AppInfoX
+import com.machiav3lli.backup.OABX
+import com.machiav3lli.backup.dbs.entity.AppInfo
 import com.machiav3lli.backup.dbs.entity.Backup
-import com.machiav3lli.backup.dbs.entity.PackageInfoX
-import com.machiav3lli.backup.dbs.entity.SpecialInfoX
+import com.machiav3lli.backup.dbs.entity.SpecialInfo
 import com.machiav3lli.backup.handler.LogsHandler
+import com.machiav3lli.backup.handler.LogsHandler.Companion.logException
 import com.machiav3lli.backup.handler.getPackageStorageStats
 import com.machiav3lli.backup.utils.FileUtils
 import com.machiav3lli.backup.utils.StorageLocationNotConfiguredException
 import com.machiav3lli.backup.utils.getBackupDir
 import timber.log.Timber
 import java.io.File
-import java.io.FileNotFoundException
 
+// TODO need to handle some emergent props with empty backupList constructors
 class Package {
     var packageName: String
-    var packageInfo: PackageInfoX
-    var packageBackupDir: StorageFile?
+    var packageInfo: com.machiav3lli.backup.dbs.entity.PackageInfo
+    private var packageBackupDir: StorageFile? = null
     var storageStats: StorageStats? = null
 
-    private var backupHistoryCache: Pair<MutableList<Backup>?, Context>? = null
-    private var historyCollectorThread: Thread? = null
+    private var backupListDirty = true
+    private var backupListState = mutableStateOf(listOf<Backup>())
+    private var backupList by backupListState
 
-    val backupHistory: MutableList<Backup>
-        get() {
-            if (backupHistoryCache?.first == null) {
-                if (historyCollectorThread != null) {
-                    historyCollectorThread?.join()
-                    Timber.i("thread $historyCollectorThread / ${Thread.activeCount()} joined")
-                }
-                if (backupHistoryCache?.first == null) {
-                    Timber.i("refreshBackupHistory")
-                    backupHistoryCache?.second?.let { refreshBackupHistory(it) }
-                    historyCollectorThread?.join()
-                    Timber.i("thread $historyCollectorThread / ${Thread.activeCount()} joined")
-                }
-            }
-            return backupHistoryCache?.first ?: mutableListOf()
-        }
-
-    val latestBackup: Backup?
-        get() = if (backupHistory.isNotEmpty()) {
-            backupHistory.sortBy { it.backupDate }
-            backupHistory.last()
-        } else null
-
-    internal constructor(context: Context, appInfo: AppInfoX) {
-        packageName = appInfo.packageName.toString()
+    internal constructor(
+        context: Context,
+        appInfo: AppInfo,
+        backups: List<Backup> = emptyList()
+    ) {
+        packageName = appInfo.packageName
         this.packageInfo = appInfo
-        packageBackupDir = context.getBackupDir().findFile(packageName)
-        refreshBackupHistory(context)
+        getAppBackupRoot()
+        if (appInfo.installed) refreshStorageStats(context)
+        updateBackupList(backups)
+        OABX.app.packageCache.put(packageName, this)
     }
 
-    constructor(context: Context, specialMetaInfoX: SpecialInfoX) {
-        packageName = specialMetaInfoX.packageName.toString()
-        this.packageInfo = specialMetaInfoX
-        packageBackupDir = context.getBackupDir().findFile(packageName)
-        refreshBackupHistory(context)
+    constructor(
+        context: Context,
+        specialInfo: SpecialInfo,
+        backups: List<Backup> = emptyList()
+    ) {
+        packageName = specialInfo.packageName
+        this.packageInfo = specialInfo
+        getAppBackupRoot()
+        updateBackupList(backups)
+        OABX.app.packageCache.put(packageName, this)
     }
 
-    constructor(context: Context, packageInfo: PackageInfo) {
+    constructor(
+        context: Context,
+        packageInfo: android.content.pm.PackageInfo,
+        backups: List<Backup> = emptyList()
+    ) {
         packageName = packageInfo.packageName
-        this.packageInfo = AppInfoX(context, packageInfo)
-        packageBackupDir = context.getBackupDir().findFile(packageName)
-        refreshBackupHistory(context)
+        this.packageInfo = AppInfo(context, packageInfo)
+        getAppBackupRoot()
         refreshStorageStats(context)
+        updateBackupList(backups)
+        OABX.app.packageCache.put(packageName, this)
     }
 
-    constructor(context: Context, packageName: String?, backupDir: StorageFile?) {
+    constructor(
+        context: Context,
+        packageName: String?,
+        backupDir: StorageFile?,
+    ) {
         this.packageBackupDir = backupDir
         this.packageName = packageName ?: backupDir?.name!!
-        refreshBackupHistory(context)
+        refreshBackupList()
         try {
-            val pi = context.packageManager.getPackageInfo(this.packageName, 0)
-            this.packageInfo = AppInfoX(context, pi)
+            val pi = context.packageManager.getPackageInfo(
+                this.packageName,
+                PackageManager.GET_PERMISSIONS
+            )
+            this.packageInfo = AppInfo(context, pi)
             refreshStorageStats(context)
         } catch (e: PackageManager.NameNotFoundException) {
             try {
-                this.packageInfo = SpecialInfoX.getSpecialPackages(context)
+                this.packageInfo = SpecialInfo.getSpecialPackages(context)
                     .find { it.packageName == this.packageName }!!
                     .packageInfo
             } catch (e: Throwable) {
                 Timber.i("$packageName is not installed")
-                if (this.backupHistory.isNullOrEmpty()) {
+                if (this.backupList.isEmpty()) {
                     throw AssertionError(
                         "Backup History is empty and package is not installed. The package is completely unknown?",
                         e
                     )
                 }
-                this.packageInfo = latestBackup!!.toAppInfoX()
+                this.packageInfo = latestBackup!!.toAppInfo()
             }
         }
+        OABX.app.packageCache.put(packageName, this)
     }
 
-    constructor(context: Context, packageInfo: PackageInfo, backupRoot: StorageFile?) {
+    constructor(
+        context: Context,
+        packageInfo: android.content.pm.PackageInfo,
+        backupRoot: StorageFile?,
+        backups: List<Backup> = emptyList()
+    ) {
         this.packageName = packageInfo.packageName
-        this.packageInfo = AppInfoX(context, packageInfo)
+        this.packageInfo = AppInfo(context, packageInfo)
         this.packageBackupDir = backupRoot?.findFile(packageName)
         refreshStorageStats(context)
-        refreshBackupHistory(context)
+        updateBackupList(backups)
+        OABX.app.packageCache.put(packageName, this)
     }
 
     private fun refreshStorageStats(context: Context): Boolean {
@@ -129,7 +140,7 @@ class Package {
             storageStats = context.getPackageStorageStats(packageName)
             true
         } catch (e: PackageManager.NameNotFoundException) {
-            Timber.e("Could not refresh StorageStats. Package was not found: ${e.message}")
+            logException(e, "Could not refresh StorageStats. Package was not found")
             false
         }
     }
@@ -137,105 +148,132 @@ class Package {
     fun refreshFromPackageManager(context: Context): Boolean {
         Timber.d("Trying to refresh package information for $packageName from PackageManager")
         try {
-            val pi = context.packageManager.getPackageInfo(packageName, 0)
-            packageInfo = AppInfoX(context, pi)
+            val pi =
+                context.packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
+            packageInfo = AppInfo(context, pi)
             refreshStorageStats(context)
         } catch (e: PackageManager.NameNotFoundException) {
-            Timber.i("$packageName is not installed. Refresh failed")
+            logException(e, "$packageName is not installed. Refresh failed")
             return false
         }
         return true
     }
 
-    private val StorageFile.isPropertyFile: Boolean
-        get() = name?.endsWith(".properties") ?: false
+    fun updateBackupList(new: List<Backup>) {
+        backupList = new
+    }
 
-    fun refreshBackupHistory(context: Context) {
-        packageBackupDir.let { packageBackupDir ->
-            historyCollectorThread?.interrupt()
-            historyCollectorThread = Thread {
-                val backupDir = packageBackupDir
-                val backups: MutableList<Backup> = mutableListOf()
+    fun refreshBackupList() {
+        invalidateBackupCacheForPackage(packageName)
+        backupList = listOf()
+        getAppBackupRoot()?.listFiles()
+            ?.filter(StorageFile::isPropertyFile)
+            ?.forEach { propFile ->
                 try {
-                    backupDir?.listFiles()
-                        ?.filter { it.isPropertyFile }
-                        ?.forEach {
-                            try {
-                                Backup.createFrom(it)?.let(backups::add)
-                            } catch (e: BackupItem.BrokenBackupException) {
-                                val message =
-                                    "Incomplete backup or wrong structure found in $it"
-                                Timber.w(message)
-                            } catch (e: NullPointerException) {
-                                val message =
-                                    "(Null) Incomplete backup or wrong structure found in $it"
-                                Timber.w(message)
-                            } catch (e: Throwable) {
-                                val message =
-                                    "(catchall) Incomplete backup or wrong structure found in $it"
-                                LogsHandler.unhandledException(e, message)
-                            }
-                        }
-                } catch (e: FileNotFoundException) {
-                    Timber.w("Failed getting backup history: $e")
-                } catch (e: InterruptedException) {
-                    return@Thread
+                    Backup.createFrom(propFile)?.let { addBackup(it) }
+                } catch (e: Backup.BrokenBackupException) {
+                    val message =
+                        "Incomplete backup or wrong structure found in $propFile"
+                    Timber.w(message)
+                } catch (e: NullPointerException) {
+                    val message =
+                        "(Null) Incomplete backup or wrong structure found in $propFile"
+                    Timber.w(message)
                 } catch (e: Throwable) {
-                    LogsHandler.unhandledException(e, packageBackupDir)
+                    val message =
+                        "(catchall) Incomplete backup or wrong structure found in $propFile"
+                    LogsHandler.unhandledException(e, message)
                 }
-                backupHistoryCache = Pair(backups, context)
-                historyCollectorThread = null
             }
-            historyCollectorThread?.start()
-        }
+        backupListDirty = false
+    }
+
+    fun ensureBackupList() {
+        if (backupListDirty)
+            refreshBackupList()
     }
 
     @Throws(
         FileUtils.BackupLocationInAccessibleException::class,
         StorageLocationNotConfiguredException::class
     )
-    fun getAppBackupRoot(context: Context, create: Boolean): StorageFile {
-        if (create && packageBackupDir == null) {
-            packageBackupDir = context.getBackupDir().ensureDirectory(packageName)
+    fun getAppBackupRoot(
+        create: Boolean = false,
+        packageName: String = this.packageName
+    ): StorageFile? = when {
+        packageBackupDir != null && packageBackupDir?.exists() == true -> {
+            packageBackupDir
         }
-        return packageBackupDir!!
+        create -> {
+            packageBackupDir = OABX.context.getBackupDir().ensureDirectory(packageName)
+            packageBackupDir
+        }
+        else -> {
+            packageBackupDir = OABX.context.getBackupDir().findFile(packageName)
+            packageBackupDir
+        }
+    }
+
+    fun addBackup(backup: Backup) {
+        backupList = backupList.toList() + backup
+    }
+
+    fun deleteBackup(backup: Backup) {
+        if (backup.packageName != packageName) {
+            throw RuntimeException("Asked to delete a backup of ${backup.packageName} but this object is for $packageName")
+        }
+        Timber.d("[$packageName] Deleting backup revision $backup")
+        val propertiesFileName = String.format(
+            BACKUP_INSTANCE_PROPERTIES,
+            BACKUP_DATE_TIME_FORMATTER.format(backup.backupDate),
+            backup.profileId
+        )
+        try {
+            backup.getBackupInstanceFolder(packageBackupDir)?.deleteRecursive()
+            packageBackupDir?.findFile(propertiesFileName)?.delete()
+        } catch (e: Throwable) {
+            LogsHandler.unhandledException(e, backup.packageName)
+        }
+        backupList = backupList.toList() - backup
+        if (backupList.size == 0) {
+            packageBackupDir?.deleteRecursive()
+            packageBackupDir = null
+        }
     }
 
     fun deleteAllBackups() {
-        Timber.i("Deleting ${backupHistory.size} backups of ${this.packageName}")
-        packageBackupDir?.delete()
-        backupHistory.clear()
-        packageBackupDir = null
+        while (backupList.isNotEmpty())
+            deleteBackup(backupList.first())
     }
 
-    fun delete(backupItem: Backup, removeFromHistory: Boolean = true) {
-        if (backupItem.packageName != packageName) {
-            throw RuntimeException("Asked to delete a backup of ${backupItem.packageName} but this object is for $packageName")
+    fun deleteOldestBackups(keep: Int) {
+        while (keep < backupList.size) {
+            oldestBackup?.let { backup ->
+                Timber.i("[${backup.packageName}] Deleting backup revision ${backup.backupDate}")
+                deleteBackup(backup)
+            }
         }
-        Timber.d("[$packageName] Deleting backup revision $backupItem")
-        val propertiesFileName = String.format(
-            BACKUP_INSTANCE_PROPERTIES,
-            BACKUP_DATE_TIME_FORMATTER.format(backupItem.backupDate),
-            backupItem.profileId
-        )
-        try {
-            backupItem.getBackupInstanceFolder(packageBackupDir)?.deleteRecursive()
-            packageBackupDir?.findFile(propertiesFileName)?.delete()
-        } catch (e: Throwable) {
-            LogsHandler.unhandledException(e, backupItem.packageName)
-        }
-        if (removeFromHistory)
-            backupHistory.remove(backupItem)
     }
+
+    val backupsNewestFirst: List<Backup>
+        get() = backupList.sortedByDescending { item -> item.backupDate }
+
+    val latestBackup: Backup?
+        get() = backupList.maxByOrNull { it.backupDate }
+
+    val oldestBackup: Backup?
+        get() = backupList.minByOrNull { it.backupDate }
+
+    val numberOfBackups: Int get() = backupList.size
 
     private val isApp: Boolean
-        get() = packageInfo is AppInfoX && !packageInfo.isSpecial
+        get() = packageInfo is AppInfo && !packageInfo.isSpecial
 
     val isInstalled: Boolean
-        get() = (isApp && (packageInfo as AppInfoX).installed) || packageInfo.isSpecial
+        get() = (isApp && (packageInfo as AppInfo).installed) || packageInfo.isSpecial
 
     val isDisabled: Boolean
-        get() = isInstalled && !isSpecial && (packageInfo is AppInfoX && (packageInfo as AppInfoX).enabled)
+        get() = isInstalled && !isSpecial && !(packageInfo is AppInfo && (packageInfo as AppInfo).enabled)
 
     val isSystem: Boolean
         get() = packageInfo.isSystem || packageInfo.isSpecial
@@ -244,7 +282,7 @@ class Package {
         get() = packageInfo.isSpecial
 
     val specialFiles: Array<String>
-        get() = (packageInfo as SpecialInfoX).specialFiles
+        get() = (packageInfo as SpecialInfo).specialFiles
 
     val packageLabel: String
         get() = if (packageInfo.packageLabel != null) packageInfo.packageLabel!! else packageName
@@ -256,16 +294,16 @@ class Package {
         get() = packageInfo.versionName
 
     val hasBackups: Boolean
-        get() = backupHistory.isNotEmpty()
+        get() = backupList.isNotEmpty()
 
     val apkPath: String
-        get() = if (isApp) (packageInfo as AppInfoX).apkDir ?: "" else ""
+        get() = if (isApp) (packageInfo as AppInfo).apkDir ?: "" else ""
 
     val dataPath: String
-        get() = if (isApp) (packageInfo as AppInfoX).dataDir ?: "" else ""
+        get() = if (isApp) (packageInfo as AppInfo).dataDir ?: "" else ""
 
     val devicesProtectedDataPath: String
-        get() = if (isApp) (packageInfo as AppInfoX).deDataDir ?: "" else ""
+        get() = if (isApp) (packageInfo as AppInfo).deDataDir ?: "" else ""
 
     // - [] 1.Try?
     // Uses the context to get own external data directory
@@ -322,26 +360,32 @@ class Package {
         get() = packageInfo.splitSourceDirs
 
     val isUpdated: Boolean
-        get() = latestBackup?.let { backupHistory.isNotEmpty() && it.versionCode < versionCode }
+        get() = latestBackup?.let { backupList.isNotEmpty() && it.versionCode < versionCode }
             ?: false
 
     val hasApk: Boolean
-        get() = backupHistory.any { it.hasApk }
+        get() = backupList.any { it.hasApk }
+
+    val hasData: Boolean
+        get() = backupList.any {
+            it.hasAppData || it.hasExternalData || it.hasDevicesProtectedData ||
+                    it.hasObbData || it.hasMediaData
+        }
 
     val hasAppData: Boolean
-        get() = backupHistory.any { it.hasAppData }
+        get() = backupList.any { it.hasAppData }
 
     val hasExternalData: Boolean
-        get() = backupHistory.any { it.hasExternalData }
+        get() = backupList.any { it.hasExternalData }
 
     val hasDevicesProtectedData: Boolean
-        get() = backupHistory.any { it.hasDevicesProtectedData }
+        get() = backupList.any { it.hasDevicesProtectedData }
 
     val hasObbData: Boolean
-        get() = backupHistory.any { it.hasObbData }
+        get() = backupList.any { it.hasObbData }
 
     val hasMediaData: Boolean
-        get() = backupHistory.any { it.hasMediaData }
+        get() = backupList.any { it.hasMediaData }
 
     val dataBytes: Long
         get() = if (packageInfo.isSpecial) 0 else storageStats?.dataBytes ?: 0
@@ -349,12 +393,12 @@ class Package {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || javaClass != other.javaClass) return false
-        val appInfo = other as Package
-        return packageName == appInfo.packageName
-                && this.packageInfo == appInfo.packageInfo
-                && packageBackupDir == appInfo.packageBackupDir
-                && storageStats == appInfo.storageStats
-                && backupHistory == appInfo.backupHistory
+        val pkg = other as Package
+        return packageName == pkg.packageName
+                && this.packageInfo == pkg.packageInfo
+                && packageBackupDir == pkg.packageBackupDir
+                && storageStats == pkg.storageStats
+                && backupList == pkg.backupList
     }
 
     override fun hashCode(): Int {
@@ -363,7 +407,7 @@ class Package {
         hash = 31 * hash + packageInfo.hashCode()
         hash = 31 * hash + packageBackupDir.hashCode()
         hash = 31 * hash + storageStats.hashCode()
-        hash = 31 * hash + backupHistory.hashCode()
+        hash = 31 * hash + backupList.hashCode()
         return hash
     }
 
@@ -373,7 +417,25 @@ class Package {
                 ", appInfo=" + packageInfo +
                 ", appUri=" + packageBackupDir +
                 ", storageStats=" + storageStats +
-                ", backupHistory=" + backupHistory +
+                ", backupList=" + backupList +
                 '}'
+    }
+
+    companion object {
+        fun get(packageName: String, creator: () -> Package): Package {
+            return OABX.app.packageCache.get(packageName) ?: creator()
+        }
+
+        fun invalidateCacheForPackage(packageName: String) {
+            StorageFile.invalidateCache { it.contains(packageName) }
+        }
+
+        fun invalidateBackupCacheForPackage(packageName: String) {
+            StorageFile.invalidateCache { it.contains(packageName) }
+        }
+
+        fun invalidateSystemCacheForPackage(packageName: String) {
+            StorageFile.invalidateCache { it.contains(packageName) }
+        }
     }
 }

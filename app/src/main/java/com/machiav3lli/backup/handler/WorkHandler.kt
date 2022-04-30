@@ -81,7 +81,7 @@ class WorkHandler {
     }
 
     fun endBatches() {
-        val delay = 3000L
+        val delay = 10000L
         Thread {
             Timber.d("%%%%% ALL thread start")
 
@@ -94,7 +94,7 @@ class WorkHandler {
             val longAgo = 24 * 60 * 60 * 1000
             batchesKnown.keys.toList().forEach { // copy the keys, because collection changes now
                 batchesKnown[it]?.let { batch ->
-                    if (batch.isFinished == true) {
+                    if (batch.isFinished) {
                         val now = System.currentTimeMillis()
                         if (now - batch.startTime > longAgo) {
                             Timber.d("%%%%% $it removing...\\")
@@ -263,11 +263,11 @@ class WorkHandler {
 
         fun onProgress(handler: WorkHandler, workInfos: MutableList<WorkInfo>? = null) {
             synchronized(batchesStarted) {
-                onProgress_(handler, workInfos)
+                onProgressNoSync(handler, workInfos)
             }
         }
 
-        fun onProgress_(handler: WorkHandler, workInfos: MutableList<WorkInfo>? = null) {
+        fun onProgressNoSync(handler: WorkHandler, workInfos: MutableList<WorkInfo>? = null) {
 
             val manager = handler.manager
             val work = workInfos
@@ -298,7 +298,7 @@ class WorkHandler {
                     batchName = getTagVar(info.tags, "name")
                 }
                 if (batchName.isNullOrEmpty()) {
-                    batchName = WorkHandler.getBatchName("NoName@Work", 0)
+                    batchName = getBatchName("NoName@Work", 0)
                     Timber.d("?????????????????????????? name not set, using $batchName")
                 }
 
@@ -356,11 +356,11 @@ class WorkHandler {
                                     running++
                                     val shortPackageName =
                                         packageName
-                                            ?.replace(Regex("""\bcom\b"""), "c")
-                                            ?.replace(Regex("""\borg\b"""), "o")
-                                            ?.replace(Regex("""\bandroid\b"""), "a")
-                                            ?.replace(Regex("""\bgoogle\b"""), "g")
-                                            ?.replace(Regex("""\bproviders\b"""), "p")
+                                            ?.replace(Regex("""\bcom\b"""), "C")
+                                            ?.replace(Regex("""\borg\b"""), "O")
+                                            ?.replace(Regex("""\bandroid\b"""), "A")
+                                            ?.replace(Regex("""\bgoogle\b"""), "G")
+                                            ?.replace(Regex("""\bproviders\b"""), "P")
                                     if (!packageName.isNullOrEmpty() and !operation.isNullOrEmpty())
                                         bigText +=
                                             "<p>" +
@@ -497,7 +497,7 @@ class WorkHandler {
                             )
                             .addAction(
                                 R.drawable.ic_close,
-                                "Cancel all",
+                                appContext.getString(R.string.dialogCancelAll),
                                 cancelAllPendingIntent
                             )
                     } else {

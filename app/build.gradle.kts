@@ -19,9 +19,9 @@ import com.android.build.gradle.internal.tasks.factory.dependsOn
 
 plugins {
     id("com.android.application")
-    id("kotlin-android")
-    id("kotlin-kapt")
-    kotlin("plugin.serialization") version "1.6.10"
+    kotlin("android")
+    kotlin("kapt")
+    kotlin("plugin.serialization").version("1.6.10")
 }
 
 android {
@@ -31,8 +31,10 @@ android {
         applicationId = "com.machiav3lli.backup"
         minSdk = 26
         targetSdk = 32
-        versionCode = 8000
-        versionName = "8.0.0"
+        versionCode = 8016
+        versionName = "8.0.2"
+        buildConfigField("int", "MAJOR", "8")
+        buildConfigField("int", "MINOR", "0")
 
         testApplicationId = "${applicationId}.tests"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -68,7 +70,7 @@ android {
         }
         create("neo") {
             applicationIdSuffix = ".neo"
-            versionNameSuffix = "-neo"
+            versionNameSuffix = "-alpha14"
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -87,7 +89,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.1.1"
+        kotlinCompilerExtensionVersion = "1.2.0-alpha07"
     }
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions {
@@ -112,10 +114,10 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.10")
 
     // Libs
-    implementation("androidx.room:room-runtime:2.4.2")
-    implementation("androidx.room:room-ktx:2.4.2")
-    kapt("androidx.room:room-compiler:2.4.2")
-    implementation("androidx.work:work-runtime-ktx:2.7.1")
+    implementation("androidx.room:room-runtime:2.5.0-alpha01")
+    implementation("androidx.room:room-ktx:2.5.0-alpha01")
+    kapt("androidx.room:room-compiler:2.5.0-alpha01")
+    implementation("androidx.work:work-runtime-ktx:2.8.0-alpha02")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.4.1")
     implementation("androidx.security:security-crypto-ktx:1.1.0-alpha03")
@@ -130,30 +132,25 @@ dependencies {
     //implementation("com.github.tony19:named-regexp:0.2.6") // regex named groups
 
     // UI
-    implementation("androidx.appcompat:appcompat:1.6.0-alpha01")
-    implementation("androidx.fragment:fragment-ktx:1.5.0-alpha03")
-    implementation("com.google.android.material:material:1.6.0-alpha03")
+    implementation("androidx.fragment:fragment-ktx:1.5.0-beta01")
+    implementation("com.google.android.material:material:1.7.0-alpha01")
     implementation("androidx.preference:preference-ktx:1.2.0")
-    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.2.0-alpha01")
-    implementation("androidx.navigation:navigation-fragment-ktx:2.5.0-alpha03")
-    implementation("androidx.navigation:navigation-ui-ktx:2.5.0-alpha03")
-    val fastadapter = "5.6.0"
-    implementation("com.mikepenz:fastadapter:$fastadapter")
-    implementation("com.mikepenz:fastadapter-extensions-diff:$fastadapter")
-    implementation("com.mikepenz:fastadapter-extensions-binding:$fastadapter")
-    implementation("com.facebook.shimmer:shimmer:0.5.0")
-    implementation("io.coil-kt:coil:2.0.0-rc01")
-    implementation("io.coil-kt:coil-compose:2.0.0-rc01")
+    implementation("androidx.navigation:navigation-fragment-ktx:2.5.0-beta01")
+    implementation("androidx.navigation:navigation-ui-ktx:2.5.0-beta01")
+    implementation("io.coil-kt:coil-compose:2.0.0-rc03")
 
     // Compose
-    implementation("androidx.compose.runtime:runtime:1.1.1")
-    implementation("androidx.compose.ui:ui:1.1.1")
-    implementation("androidx.compose.ui:ui-tooling:1.1.1")
-    implementation("androidx.compose.foundation:foundation:1.1.1")
-    implementation("androidx.compose.runtime:runtime-livedata:1.1.1")
-    implementation("androidx.compose.material:material:1.1.1")
-    implementation("com.google.android.material:compose-theme-adapter:1.1.5")
-    implementation("androidx.compose.material3:material3:1.0.0-alpha07")
+    val compose = "1.2.0-alpha07"
+    implementation("androidx.compose.runtime:runtime:$compose")
+    implementation("androidx.compose.ui:ui:$compose")
+    implementation("androidx.compose.ui:ui-tooling:$compose")
+    implementation("androidx.compose.foundation:foundation:$compose")
+    implementation("androidx.compose.runtime:runtime-livedata:$compose")
+    implementation("androidx.compose.material:material:$compose")
+    implementation("androidx.navigation:navigation-compose:2.5.0-alpha04")
+    implementation("com.google.android.material:compose-theme-adapter:1.1.6")
+    implementation("androidx.compose.material3:material3:1.0.0-alpha09")
+    implementation("com.google.accompanist:accompanist-flowlayout:0.24.6-alpha")
 
     // Testing
     implementation("androidx.test.ext:junit-ktx:1.1.3")

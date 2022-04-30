@@ -26,14 +26,20 @@ import com.machiav3lli.backup.OABX
 import com.machiav3lli.backup.R
 import com.machiav3lli.backup.databinding.ActivityPrefsBinding
 import com.machiav3lli.backup.fragments.HelpSheet
-import com.machiav3lli.backup.handler.getApplicationList
-import com.machiav3lli.backup.items.AppInfo
-import com.machiav3lli.backup.utils.*
+import com.machiav3lli.backup.items.Package
+import com.machiav3lli.backup.utils.FileUtils
+import com.machiav3lli.backup.utils.StorageLocationNotConfiguredException
+import com.machiav3lli.backup.utils.itemIdToOrder
+import com.machiav3lli.backup.utils.navigateLeft
+import com.machiav3lli.backup.utils.navigateRight
+import com.machiav3lli.backup.utils.setCustomTheme
 
 class PrefsActivity : BaseActivity() {
     lateinit var binding: ActivityPrefsBinding
     private var sheetHelp: HelpSheet? = null
-    var appInfoList: List<AppInfo> = mutableListOf()
+    //var packageList: List<Package> = mutableListOf()
+    val packageList: MutableList<Package>
+            get() = OABX.activity?.viewModel?.packageList?.value ?: mutableListOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setCustomTheme()
@@ -41,8 +47,8 @@ class PrefsActivity : BaseActivity() {
         binding = ActivityPrefsBinding.inflate(layoutInflater)
         binding.lifecycleOwner = this
         setContentView(binding.root)
-        appInfoList = OABX.app.cache.get("appInfoList") ?: mutableListOf()
-        if (appInfoList.isNullOrEmpty()) refreshAppsList()
+        //packageList = OABX.app.cache.get("appInfoList") ?: mutableListOf()
+        //if (packageList.isNullOrEmpty()) refreshPackageList()
     }
 
     override fun onStart() {
@@ -95,11 +101,12 @@ class PrefsActivity : BaseActivity() {
         }
     }
 
-    fun refreshAppsList() {
-        appInfoList = listOf()
+    // TODO use database-based structure
+    fun refreshPackageList() {
+        //packageList = listOf()
         Thread {
             try {
-                appInfoList = getApplicationList(listOf())
+                //packageList = getPackageList()
             } catch (e: FileUtils.BackupLocationInAccessibleException) {
                 e.printStackTrace()
             } catch (e: StorageLocationNotConfiguredException) {

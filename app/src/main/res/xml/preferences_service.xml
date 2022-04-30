@@ -76,6 +76,13 @@
         android:summary="@string/prefs_mediadata_summary"
         android:title="@string/prefs_mediadata" />
 
+    <androidx.preference.CheckBoxPreference
+        android:defaultValue="true"
+        android:icon="@drawable/ic_sizes"
+        android:key="restorePermissions"
+        android:summary="@string/prefs_restorepermissions_summary"
+        android:title="@string/prefs_restorepermissions" />
+
     <androidx.preference.SeekBarPreference
         android:defaultValue="2"
         android:icon="@drawable/ic_revisions"
@@ -102,6 +109,6 @@
         android:max="9"
         android:summary="@string/prefs_compression_level_summary"
         android:title="@string/prefs_compression_level"
-        app:min="1"
+        app:min="0"
         app:showSeekBarValue="true" />
 </androidx.preference.PreferenceScreen>

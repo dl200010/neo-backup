@@ -19,14 +19,34 @@ package com.machiav3lli.backup.utils
 
 import android.content.Context
 import android.content.Intent
-import com.machiav3lli.backup.*
-import com.machiav3lli.backup.items.AppInfo
+import com.machiav3lli.backup.MAIN_FILTER_SPECIAL
+import com.machiav3lli.backup.MAIN_FILTER_SYSTEM
+import com.machiav3lli.backup.MAIN_FILTER_USER
+import com.machiav3lli.backup.MAIN_SORT_BACKUPDATE
+import com.machiav3lli.backup.MAIN_SORT_DATASIZE
+import com.machiav3lli.backup.MAIN_SORT_PACKAGENAME
+import com.machiav3lli.backup.MODE_APK
+import com.machiav3lli.backup.MODE_DATA
+import com.machiav3lli.backup.MODE_DATA_DE
+import com.machiav3lli.backup.MODE_DATA_EXT
+import com.machiav3lli.backup.MODE_DATA_MEDIA
+import com.machiav3lli.backup.MODE_DATA_OBB
+import com.machiav3lli.backup.MODE_NONE
+import com.machiav3lli.backup.PREFS_OLDBACKUPS
+import com.machiav3lli.backup.R
+import com.machiav3lli.backup.SPECIAL_FILTER_DISABLED
+import com.machiav3lli.backup.SPECIAL_FILTER_LAUNCHABLE
+import com.machiav3lli.backup.SPECIAL_FILTER_NEW_UPDATED
+import com.machiav3lli.backup.SPECIAL_FILTER_NOT_INSTALLED
+import com.machiav3lli.backup.SPECIAL_FILTER_OLD
+import com.machiav3lli.backup.items.Package
 import com.machiav3lli.backup.items.SortFilterModel
+import com.machiav3lli.backup.possibleMainFilters
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
-fun List<AppInfo>.applyFilter(filter: SortFilterModel, context: Context): List<AppInfo> {
-    val predicate: (AppInfo) -> Boolean = {
+fun List<Package>.applyFilter(filter: SortFilterModel, context: Context): List<Package> {
+    val predicate: (Package) -> Boolean = {
         (if (filter.mainFilter and MAIN_FILTER_SYSTEM == MAIN_FILTER_SYSTEM) it.isSystem && !it.isSpecial else false)
                 || (if (filter.mainFilter and MAIN_FILTER_USER == MAIN_FILTER_USER) !it.isSystem else false)
                 || (if (filter.mainFilter and MAIN_FILTER_SPECIAL == MAIN_FILTER_SPECIAL) it.isSpecial else false)
@@ -34,18 +54,13 @@ fun List<AppInfo>.applyFilter(filter: SortFilterModel, context: Context): List<A
     return filter(predicate)
         .applyBackupFilter(filter.backupFilter)
         .applySpecialFilter(filter.specialFilter, context)
-        .applySort(filter.sort, context)
+        .applySort(filter.sort, filter.sortAsc)
 }
 
-private fun List<AppInfo>.applyBackupFilter(backupFilter: Int): List<AppInfo> {
-    val predicate: (AppInfo) -> Boolean = {
-        (if (backupFilter and MODE_NONE == MODE_NONE)
-            !it.hasBackups or
-                    !(it.hasApk or it.hasAppData or it.hasDevicesProtectedData or
-                            it.hasExternalData or it.hasObbData or it.hasMediaData)
-        else
-            false
-                )
+private fun List<Package>.applyBackupFilter(backupFilter: Int): List<Package> {
+    val predicate: (Package) -> Boolean = {
+        (if (backupFilter and MODE_NONE == MODE_NONE) !it.hasBackups or !(it.hasApk or it.hasData)
+        else false)
                 || (if (backupFilter and MODE_APK == MODE_APK) it.hasApk else false)
                 || (if (backupFilter and MODE_DATA == MODE_DATA) it.hasAppData else false)
                 || (if (backupFilter and MODE_DATA_DE == MODE_DATA_DE) it.hasDevicesProtectedData else false)
@@ -56,11 +71,11 @@ private fun List<AppInfo>.applyBackupFilter(backupFilter: Int): List<AppInfo> {
     return filter(predicate)
 }
 
-private fun List<AppInfo>.applySpecialFilter(
+private fun List<Package>.applySpecialFilter(
     specialFilter: Int,
     context: Context
-): List<AppInfo> {
-    val predicate: (AppInfo) -> Boolean
+): List<Package> {
+    val predicate: (Package) -> Boolean
     var launchableAppsList = listOf<String>()
     if (specialFilter == SPECIAL_FILTER_LAUNCHABLE) {
         val mainIntent = Intent(Intent.ACTION_MAIN, null).addCategory(Intent.CATEGORY_LAUNCHER)
@@ -69,17 +84,17 @@ private fun List<AppInfo>.applySpecialFilter(
     }
     val days = context.getDefaultSharedPreferences().getInt(PREFS_OLDBACKUPS, 7)
     predicate = when (specialFilter) {
-        SPECIAL_FILTER_NEW_UPDATED -> { appInfo: AppInfo ->
+        SPECIAL_FILTER_NEW_UPDATED -> { appInfo: Package ->
             !appInfo.hasBackups || appInfo.isUpdated
         }
-        SPECIAL_FILTER_NOT_INSTALLED -> { appInfo: AppInfo ->
+        SPECIAL_FILTER_NOT_INSTALLED -> { appInfo: Package ->
             !appInfo.isInstalled
         }
         SPECIAL_FILTER_OLD -> {
-            { appInfo: AppInfo ->
+            { appInfo: Package ->
                 when {
                     appInfo.hasBackups -> {
-                        val lastBackup = appInfo.latestBackup?.backupProperties?.backupDate
+                        val lastBackup = appInfo.latestBackup?.backupDate
                         val diff = ChronoUnit.DAYS.between(lastBackup, LocalDateTime.now())
                         diff >= days
                     }
@@ -87,61 +102,31 @@ private fun List<AppInfo>.applySpecialFilter(
                 }
             }
         }
-        SPECIAL_FILTER_LAUNCHABLE -> { appInfo: AppInfo ->
+        SPECIAL_FILTER_LAUNCHABLE -> { appInfo: Package ->
             launchableAppsList.contains(appInfo.packageName)
         }
-        SPECIAL_FILTER_DISABLED -> AppInfo::isDisabled
-        else -> { _: AppInfo -> true }
+        SPECIAL_FILTER_DISABLED -> Package::isDisabled
+        else -> { _: Package -> true }
     }
     return filter(predicate)
 }
 
-private fun List<AppInfo>.applySort(sort: Int, context: Context): List<AppInfo> =
-    if (context.sortOrder) {
+private fun List<Package>.applySort(sort: Int, sortAsc: Boolean): List<Package> =
+    if (!sortAsc) {
         when (sort) {
             MAIN_SORT_PACKAGENAME -> sortedByDescending { it.packageName.lowercase() }
             MAIN_SORT_DATASIZE -> sortedByDescending { it.dataBytes }
-            MAIN_SORT_BACKUPDATE -> sortedWith(compareBy<AppInfo> { it.latestBackup?.backupProperties?.backupDate }.thenBy { it.packageLabel })
+            MAIN_SORT_BACKUPDATE -> sortedWith(compareBy<Package> { it.latestBackup?.backupDate }.thenBy { it.packageLabel })
             else -> sortedByDescending { it.packageLabel.lowercase() }
         }
     } else {
         when (sort) {
             MAIN_SORT_PACKAGENAME -> sortedBy { it.packageName.lowercase() }
             MAIN_SORT_DATASIZE -> sortedBy { it.dataBytes }
-            MAIN_SORT_BACKUPDATE -> sortedWith(compareByDescending<AppInfo> { it.latestBackup?.backupProperties?.backupDate }.thenBy { it.packageLabel })
+            MAIN_SORT_BACKUPDATE -> sortedWith(compareByDescending<Package> { it.latestBackup?.backupDate }.thenBy { it.packageLabel })
             else -> sortedBy { it.packageLabel.lowercase() }
         }
     }
-
-fun mainFilterToId(filter: Int) = when (filter) {
-    MAIN_FILTER_USER -> R.id.filterUser
-    MAIN_FILTER_SPECIAL -> R.id.filterSpecial
-    else -> R.id.filterSystem
-}
-
-fun specialFilterToId(specialFilter: Int): Int = when (specialFilter) {
-    SPECIAL_FILTER_LAUNCHABLE -> R.id.specialLaunchable
-    SPECIAL_FILTER_NEW_UPDATED -> R.id.specialNewUpdated
-    SPECIAL_FILTER_OLD -> R.id.specialOld
-    SPECIAL_FILTER_NOT_INSTALLED -> R.id.specialNotInstalled
-    SPECIAL_FILTER_DISABLED -> R.id.specialDisabled
-    else -> R.id.specialAll
-}
-
-fun idToFilter(id: Int): Int = when (id) {
-    R.id.filterUser -> MAIN_FILTER_USER
-    R.id.filterSpecial -> MAIN_FILTER_SPECIAL
-    else -> MAIN_FILTER_SYSTEM
-}
-
-fun idToSpecialFilter(id: Int): Int = when (id) {
-    R.id.specialLaunchable -> SPECIAL_FILTER_LAUNCHABLE
-    R.id.specialNewUpdated -> SPECIAL_FILTER_NEW_UPDATED
-    R.id.specialOld -> SPECIAL_FILTER_OLD
-    R.id.specialNotInstalled -> SPECIAL_FILTER_NOT_INSTALLED
-    R.id.specialDisabled -> SPECIAL_FILTER_DISABLED
-    else -> SPECIAL_FILTER_ALL
-}
 
 fun filterToString(context: Context, filter: Int): String {
     val activeFilters = possibleMainFilters.filter { it and filter == it }

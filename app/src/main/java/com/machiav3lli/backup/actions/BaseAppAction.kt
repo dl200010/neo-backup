@@ -19,6 +19,7 @@ package com.machiav3lli.backup.actions
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import com.machiav3lli.backup.BuildConfig
 import com.machiav3lli.backup.OABX
 import com.machiav3lli.backup.PREFS_PMSUSPEND
@@ -144,20 +145,21 @@ abstract class BaseAppAction protected constructor(
             "cache",
             "trash",
             ".thumbnails",
+            if (OABX.minSDK(Build.VERSION_CODES.R)) "..*" else null
         )
 
         val ignoredPackages = ("""(?x)
             # complete matches
               android
-            | com\.android\.shell
-            | com\.android\.systemui
-            | com\.android\.externalstorage
-            | com\.android\.mtp
-            | com\.android\.providers\.downloads\.ui
-            | com\.google\.android\.gms
-            | com\.google\.android\.gsf
             # pattern matches
-            | com\.android\.providers\.media\b.*
+            | .*\.android\.shell
+            | .*\.android\.systemui
+            | .*\.android\.externalstorage
+            | .*\.android\.mtp
+            | .*\.android\.providers\.downloads\.ui
+            | .*\.android\.gms
+            | .*\.android\.gsf
+            | .*\.android\.providers\.media\b.*
             # program values
             | """ + Regex.escape(BuildConfig.APPLICATION_ID) + """
             """).toRegex()
@@ -165,15 +167,16 @@ abstract class BaseAppAction protected constructor(
         val doNotStop = ("""(?x)
             # complete matches
               android
-            | com\.android\.shell
-            | com\.android\.systemui
-            | com\.android\.externalstorage
-            | com\.android\.mtp
-            | com\.android\.providers\.downloads\.ui
-            | com\.google\.android\.gms
-            | com\.google\.android\.gsf
             # pattern matches
-            | com\.android\.providers\.media\b.*
+            | .*\.android\.shell
+            | .*\.android\.systemui
+            | .*\.android\.externalstorage
+            | .*\.android\.mtp
+            | .*\.android\.providers\.downloads\.ui
+            | .*\.android\.gms
+            | .*\.android\.gsf
+            | .*\.android\.providers\.media\b.*
+            | .*\.android\.providers\..*
             # program values
             | """ + Regex.escape(BuildConfig.APPLICATION_ID) + """
             """).toRegex()

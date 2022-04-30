@@ -19,11 +19,20 @@ package com.machiav3lli.backup.tasks
 
 import android.content.Context
 import android.content.Intent
-import com.machiav3lli.backup.*
+import com.machiav3lli.backup.MAIN_FILTER_SPECIAL
+import com.machiav3lli.backup.MAIN_FILTER_SYSTEM
+import com.machiav3lli.backup.MAIN_FILTER_USER
+import com.machiav3lli.backup.MODE_UNSET
+import com.machiav3lli.backup.PACKAGES_LIST_GLOBAL_ID
+import com.machiav3lli.backup.PREFS_OLDBACKUPS
+import com.machiav3lli.backup.SPECIAL_FILTER_DISABLED
+import com.machiav3lli.backup.SPECIAL_FILTER_LAUNCHABLE
+import com.machiav3lli.backup.SPECIAL_FILTER_NEW_UPDATED
+import com.machiav3lli.backup.SPECIAL_FILTER_OLD
 import com.machiav3lli.backup.dbs.ODatabase
 import com.machiav3lli.backup.handler.LogsHandler
-import com.machiav3lli.backup.handler.getApplicationList
-import com.machiav3lli.backup.items.AppInfo
+import com.machiav3lli.backup.handler.getInstalledPackageList
+import com.machiav3lli.backup.items.Package
 import com.machiav3lli.backup.utils.FileUtils
 import com.machiav3lli.backup.utils.StorageLocationNotConfiguredException
 import com.machiav3lli.backup.utils.getDefaultSharedPreferences
@@ -43,7 +52,7 @@ open class ScheduledActionTask(val context: Context, private val scheduleId: Lon
         val schedule = scheduleDao.getSchedule(scheduleId)
             ?: return Triple("DbFailed", listOf(), MODE_UNSET)
 
-        val name = schedule.name.toString()
+        val name = schedule.name
         val filter = schedule.filter
         val specialFilter = schedule.specialFilter
         val customList = schedule.customList
@@ -51,8 +60,8 @@ open class ScheduledActionTask(val context: Context, private val scheduleId: Lon
         val globalBlocklist = blacklistDao.getBlocklistedPackages(PACKAGES_LIST_GLOBAL_ID)
         val blockList = globalBlocklist.plus(customBlocklist)
 
-        val unfilteredList: List<AppInfo> = try {
-            context.getApplicationList(blockList, false)
+        val unfilteredList: List<Package> = try {
+            context.getInstalledPackageList(blockList)
         } catch (e: FileUtils.BackupLocationInAccessibleException) {
             Timber.e("Scheduled backup failed due to ${e.javaClass.simpleName}: $e")
             LogsHandler.logErrors(
@@ -79,44 +88,43 @@ open class ScheduledActionTask(val context: Context, private val scheduleId: Lon
         val inListed = { packageName: String ->
             customList.isEmpty() or customList.contains(packageName)
         }
-        val predicate: (AppInfo) -> Boolean = {
+        val predicate: (Package) -> Boolean = {
             (if (filter and MAIN_FILTER_SYSTEM == MAIN_FILTER_SYSTEM) it.isSystem and !it.isSpecial else false)
                     || (if (filter and MAIN_FILTER_USER == MAIN_FILTER_USER) !it.isSystem else false)
                     || (if (filter and MAIN_FILTER_SPECIAL == MAIN_FILTER_SPECIAL) it.isSpecial else false)
         }
         val days = context.getDefaultSharedPreferences().getInt(PREFS_OLDBACKUPS, 7)
-        val specialPredicate: (AppInfo) -> Boolean = when (specialFilter) {
-            SPECIAL_FILTER_LAUNCHABLE -> { appInfo: AppInfo ->
-                launchableAppsList.contains(appInfo.packageName) and
-                        inListed(appInfo.packageName)
+        val specialPredicate: (Package) -> Boolean = when (specialFilter) {
+            SPECIAL_FILTER_LAUNCHABLE -> { packageItem: Package ->
+                launchableAppsList.contains(packageItem.packageName) &&
+                        inListed(packageItem.packageName)
             }
-            SPECIAL_FILTER_NEW_UPDATED -> { appInfo: AppInfo ->
-                appInfo.isInstalled and
-                        (!appInfo.hasBackups or appInfo.isUpdated) and
-                        inListed(appInfo.packageName)
+            SPECIAL_FILTER_NEW_UPDATED -> { packageItem: Package ->
+                (!packageItem.hasBackups || packageItem.isUpdated) &&
+                        inListed(packageItem.packageName)
             }
             SPECIAL_FILTER_OLD -> {
-                { appInfo: AppInfo ->
+                { appInfo: Package ->
                     if (appInfo.hasBackups) {
-                        val lastBackup = appInfo.latestBackup?.backupProperties?.backupDate
+                        val lastBackup = appInfo.latestBackup?.backupDate
                         val diff = ChronoUnit.DAYS.between(lastBackup, LocalDateTime.now())
-                        (diff >= days) and inListed(appInfo.packageName)
+                        (diff >= days) && inListed(appInfo.packageName)
                     } else
                         false
                 }
             }
-            SPECIAL_FILTER_DISABLED -> { appInfo: AppInfo ->
-                appInfo.isDisabled and inListed(appInfo.packageName)
+            SPECIAL_FILTER_DISABLED -> { appInfo: Package ->
+                appInfo.isDisabled && inListed(appInfo.packageName)
             }
-            else -> { appInfo: AppInfo -> inListed(appInfo.packageName) }
+            else -> { appInfo: Package -> inListed(appInfo.packageName) }
         }
         val selectedItems = unfilteredList
             .filter(predicate)
             .filter(specialPredicate)
-            .sortedWith { m1: AppInfo, m2: AppInfo ->
+            .sortedWith { m1: Package, m2: Package ->
                 m1.packageLabel.compareTo(m2.packageLabel, ignoreCase = true)
             }
-            .map(AppInfo::packageName)
+            .map(Package::packageName)
         return Triple(
             name,
             selectedItems,

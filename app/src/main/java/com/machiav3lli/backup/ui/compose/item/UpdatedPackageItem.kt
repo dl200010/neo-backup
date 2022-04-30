@@ -2,7 +2,11 @@ package com.machiav3lli.backup.ui.compose.item
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -18,19 +22,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.annotation.ExperimentalCoilApi
-import com.machiav3lli.backup.items.AppInfo
+import com.machiav3lli.backup.items.Package
 import com.machiav3lli.backup.ui.compose.theme.LocalShapes
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalCoilApi::class)
 @Composable
 fun UpdatedPackageItem(
-    item: AppInfo,
-    onClick: (AppInfo) -> Unit = {}
+    item: Package,
+    onClick: (Package) -> Unit = {}
 ) {
     val imageData by remember(item) {
         mutableStateOf(
-            if (item.isSpecial) item.appMetaInfo.icon
-            else "android.resource://${item.packageName}/${item.appMetaInfo.icon}"
+            if (item.isSpecial) item.packageInfo.icon
+            else "android.resource://${item.packageName}/${item.packageInfo.icon}"
         )
     }
 

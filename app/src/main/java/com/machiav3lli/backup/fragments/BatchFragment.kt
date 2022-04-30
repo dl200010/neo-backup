@@ -17,41 +17,65 @@
  */
 package com.machiav3lli.backup.fragments
 
-import android.content.Context
 import android.os.Bundle
-import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.widget.AppCompatCheckBox
-import androidx.appcompat.widget.SearchView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material.Scaffold
-import androidx.lifecycle.Observer
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
-import androidx.work.OneTimeWorkRequest
-import androidx.work.WorkInfo
-import androidx.work.WorkManager
+import com.machiav3lli.backup.ALT_MODE_APK
+import com.machiav3lli.backup.ALT_MODE_BOTH
+import com.machiav3lli.backup.ALT_MODE_DATA
 import com.machiav3lli.backup.MAIN_FILTER_DEFAULT
-import com.machiav3lli.backup.OABX
 import com.machiav3lli.backup.R
-import com.machiav3lli.backup.databinding.FragmentBatchBinding
 import com.machiav3lli.backup.dialogs.BatchDialogFragment
 import com.machiav3lli.backup.dialogs.PackagesListDialogFragment
 import com.machiav3lli.backup.handler.LogsHandler
-import com.machiav3lli.backup.handler.WorkHandler
-import com.machiav3lli.backup.items.AppInfo
-import com.machiav3lli.backup.tasks.AppActionWork
-import com.machiav3lli.backup.tasks.FinishWork
+import com.machiav3lli.backup.items.Package
+import com.machiav3lli.backup.ui.compose.item.ActionButton
+import com.machiav3lli.backup.ui.compose.item.ActionChip
+import com.machiav3lli.backup.ui.compose.item.ExpandableSearchAction
+import com.machiav3lli.backup.ui.compose.item.StateChip
+import com.machiav3lli.backup.ui.compose.item.TopBar
 import com.machiav3lli.backup.ui.compose.recycler.BatchPackageRecycler
+import com.machiav3lli.backup.ui.compose.theme.APK
 import com.machiav3lli.backup.ui.compose.theme.AppTheme
-import com.machiav3lli.backup.utils.*
+import com.machiav3lli.backup.ui.compose.theme.Data
+import com.machiav3lli.backup.utils.FileUtils
+import com.machiav3lli.backup.utils.StorageLocationNotConfiguredException
+import com.machiav3lli.backup.utils.applyFilter
+import com.machiav3lli.backup.utils.getStats
+import com.machiav3lli.backup.utils.sortFilterModel
 import com.machiav3lli.backup.viewmodels.BatchViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 open class BatchFragment(private val backupBoolean: Boolean) : NavigationFragment(),
     BatchDialogFragment.ConfirmListener, RefreshViewController {
-    private lateinit var binding: FragmentBatchBinding
     lateinit var viewModel: BatchViewModel
 
     override fun onCreateView(
@@ -60,346 +84,258 @@ open class BatchFragment(private val backupBoolean: Boolean) : NavigationFragmen
         savedInstanceState: Bundle?
     ): View? {
         super.onCreate(savedInstanceState)
-        binding = FragmentBatchBinding.inflate(inflater, container, false)
-        binding.lifecycleOwner = this
         val viewModelFactory = BatchViewModel.Factory(requireActivity().application)
         viewModel = ViewModelProvider(this, viewModelFactory)[BatchViewModel::class.java]
-        return binding.root
+        return ComposeView(requireContext()).apply {
+            setContent { BatchPage() }
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setupViews()
-        if (requireMainActivity().viewModel.refreshNow.value == true) refreshView()
-
-        viewModel.refreshNow.observe(requireActivity()) {
-            //binding.refreshLayout.isRefreshing = it
-            if (it) {
-                binding.searchBar.setQuery("", false)
-                requireMainActivity().viewModel.refreshList()
-            }
-        }
-    }
-
-    override fun onStart() {
-        super.onStart()
-        binding.pageHeadline.text = when {
-            backupBoolean -> resources.getText(R.string.backup)
-            else -> resources.getText(R.string.restore)
-        }
+        packageList.observe(requireActivity()) { refreshView(it) }
     }
 
     override fun onResume() {
         super.onResume()
-        setupSearch()
-        setupOnClicks()
         requireMainActivity().setRefreshViewController(this)
     }
 
-    override fun onInflate(context: Context, attrs: AttributeSet, savedInstanceState: Bundle?) {
-        super.onInflate(context, attrs, savedInstanceState)
-        refreshView()
-    }
-
-    override fun setupViews() {
-        binding.buttonAction.setText(if (backupBoolean) R.string.backup else R.string.restore)
-        /*binding.refreshLayout.setColorSchemeColors(requireContext().colorAccent)
-        binding.refreshLayout.setProgressBackgroundColorSchemeColor(
-            resources.getColor(
-                R.color.app_primary_base,
-                requireActivity().theme
-            )
-        )
-        binding.refreshLayout.setProgressViewOffset(false, 72, 144)
-        binding.refreshLayout.setOnRefreshListener { requireMainActivity().viewModel.refreshList() }*/
-        binding.buttonAction.setOnClickListener { onClickBatchAction(backupBoolean) }
-    }
-
-    override fun setupOnClicks() {
-        binding.buttonBlocklist.setOnClickListener {
-            Thread {
-                val blocklistedPackages = requireMainActivity().viewModel.blocklist.value
-                    ?.mapNotNull { it.packageName }
-                    ?: listOf()
-
-                PackagesListDialogFragment(
-                    blocklistedPackages,
-                    MAIN_FILTER_DEFAULT,
-                    true
-                ) { newList: Set<String> ->
-                    requireMainActivity().viewModel.updateBlocklist(newList)
-                }.show(requireActivity().supportFragmentManager, "BLOCKLIST_DIALOG")
-            }.start()
-        }
-        binding.buttonSortFilter.setOnClickListener {
-            if (sheetSortFilter == null) sheetSortFilter = SortFilterSheet(
-                requireActivity().sortFilterModel,
-                getStats(appInfoList)
-            )
-            sheetSortFilter?.showNow(requireActivity().supportFragmentManager, "SORTFILTER_SHEET")
-        }
-        binding.apkBatch.setOnClickListener {
-            binding.apkBatch.isChecked = (it as AppCompatCheckBox).isChecked
-            // TODO (un)check all apk
-            onCheckedApkClicked()
-        }
-        binding.dataBatch.setOnClickListener {
-            binding.dataBatch.isChecked = (it as AppCompatCheckBox).isChecked
-            // TODO (un)check all data
-            onCheckedDataClicked()
-        }
-    }
-
-    private fun setupSearch() {
-        /*val filterPredicate = { item: BatchItemX, cs: CharSequence? ->
-            item.appExtras.customTags
-                .plus(item.app.packageName)
-                .plus(item.app.packageLabel)
-                .find { it.contains(cs.toString(), true) } != null
-        }*/
-        binding.searchBar.maxWidth = Int.MAX_VALUE
-        binding.searchBar.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextChange(newText: String): Boolean {
-                // TODO apply query
-                //batchItemAdapter.filter(newText)
-                //batchItemAdapter.itemFilter.filterPredicate = filterPredicate
-                return true
-            }
-
-            override fun onQueryTextSubmit(query: String): Boolean {
-                // TODO apply query
-                //batchItemAdapter.filter(query)
-                //batchItemAdapter.itemFilter.filterPredicate = filterPredicate
-                return true
-            }
-        })
-    }
-
     private fun onClickBatchAction(backupBoolean: Boolean) {
-        // TODO maintain packages list
-        /*val selectedList = batchItemAdapter.adapterItems
-            .filter(BatchItemX::isChecked)
-            .map { item: BatchItemX -> item.app.appMetaInfo }
-            .toCollection(ArrayList())
-        val selectedListModes = batchItemAdapter.adapterItems
-            .filter(BatchItemX::isChecked)
-            .map(BatchItemX::actionMode)
+        val checkedPackages = viewModel.filteredList.value
+            ?.filter { it.packageName in viewModel.apkCheckedList.union(viewModel.dataCheckedList) }
+            ?: listOf()
+        val selectedList = checkedPackages.map(Package::packageInfo).toCollection(ArrayList())
+        val selectedListModes = checkedPackages
+            .map {
+                when (it.packageName) {
+                    in viewModel.apkCheckedList.intersect(viewModel.dataCheckedList) -> ALT_MODE_BOTH
+                    in viewModel.apkCheckedList -> ALT_MODE_APK
+                    else -> ALT_MODE_DATA
+                }
+            }
             .toCollection(ArrayList())
         if (selectedList.isNotEmpty()) {
             BatchDialogFragment(backupBoolean, selectedList, selectedListModes, this)
                 .show(requireActivity().supportFragmentManager, "DialogFragment")
-        }*/
-    }
-
-    private fun onCheckedApkClicked() {
-        /*val possibleApkCheckedList =
-            batchItemAdapter.adapterItems.filter { it.app.hasApk || backupBoolean }
-        val checkBoolean = binding.apkBatch.isChecked
-        possibleApkCheckedList.forEach {
-            val packageName = it.app.packageName
-            it.isApkChecked = checkBoolean
-            when {
-                checkBoolean -> {
-                    if (!viewModel.apkCheckedList.contains(packageName))
-                        viewModel.apkCheckedList.add(packageName)
-                }
-                else -> {
-                    viewModel.apkCheckedList.remove(packageName)
-                }
-            }
-        }
-        batchFastAdapter?.notifyAdapterDataSetChanged()
-        updateApkChecks()*/
-    }
-
-    private fun onCheckedDataClicked() {
-        /*val possibleDataCheckedList =
-            batchItemAdapter.itemList.items.filter { it.app.hasAppData || backupBoolean }
-        val checkBoolean = binding.dataBatch.isChecked
-        possibleDataCheckedList.forEach {
-            val packageName = it.app.packageName
-            it.isDataChecked = checkBoolean
-            when {
-                checkBoolean -> {
-                    if (!viewModel.dataCheckedList.contains(packageName))
-                        viewModel.dataCheckedList.add(packageName)
-                }
-                else -> {
-                    viewModel.dataCheckedList.remove(packageName)
-                }
-            }
-        }
-        batchFastAdapter?.notifyAdapterDataSetChanged()
-        updateDataChecks()*/
-    }
-
-    // TODO abstract this to fit for Main- & BatchFragment
-    override fun onConfirmed(selectedPackages: List<String?>, selectedModes: List<Int>) {
-
-        val notificationId = System.currentTimeMillis().toInt()
-        val now = System.currentTimeMillis()
-        val batchType = getString(if (backupBoolean) R.string.backup else R.string.restore)
-        val batchName = WorkHandler.getBatchName(batchType, now)
-
-        val selectedItems = selectedPackages
-            .mapIndexed { i, packageName ->
-                if (packageName.isNullOrEmpty()) null
-                else Pair(packageName, selectedModes[i])
-            }
-            .filterNotNull()
-
-        var errors = ""
-        var resultsSuccess = true
-        var counter = 0
-        val worksList: MutableList<OneTimeWorkRequest> = mutableListOf()
-        OABX.work.beginBatch(batchName)
-        selectedItems.forEach { (packageName, mode) ->
-
-            val oneTimeWorkRequest =
-                AppActionWork.Request(packageName, mode, backupBoolean, notificationId, batchName)
-            worksList.add(oneTimeWorkRequest)
-
-            val oneTimeWorkLiveData = WorkManager.getInstance(requireContext())
-                .getWorkInfoByIdLiveData(oneTimeWorkRequest.id)
-            oneTimeWorkLiveData.observeForever(object : Observer<WorkInfo> {
-                override fun onChanged(t: WorkInfo?) {
-                    if (t?.state == WorkInfo.State.SUCCEEDED) {
-                        binding.progressBar.progress = counter
-                        counter += 1
-
-                        val (succeeded, packageLabel, error) = AppActionWork.getOutput(t)
-                        if (error.isNotEmpty()) errors = "$errors$packageLabel: ${
-                            LogsHandler.handleErrorMessages(
-                                requireContext(),
-                                error
-                            )
-                        }\n"
-
-                        resultsSuccess = resultsSuccess and succeeded
-                        oneTimeWorkLiveData.removeObserver(this)
-                    }
-                }
-            })
-        }
-
-        val finishWorkRequest = FinishWork.Request(resultsSuccess, backupBoolean, batchName)
-
-        val finishWorkLiveData = WorkManager.getInstance(requireContext())
-            .getWorkInfoByIdLiveData(finishWorkRequest.id)
-        finishWorkLiveData.observeForever(object : Observer<WorkInfo> {
-            override fun onChanged(t: WorkInfo?) {
-                if (t?.state == WorkInfo.State.SUCCEEDED) {
-                    viewModel.refreshNow.value = true
-                    finishWorkLiveData.removeObserver(this)
-                }
-            }
-        })
-
-        if (worksList.isNotEmpty()) {
-            WorkManager.getInstance(requireContext())
-                .beginWith(worksList)
-                .then(finishWorkRequest)
-                .enqueue()
         }
     }
 
-    override fun refreshView() {
+    override fun onConfirmed(
+        selectedPackages: List<String?>,
+        selectedModes: List<Int>
+    ) {
+        startBatchAction(backupBoolean, selectedPackages, selectedModes) {
+            //viewModel.refreshNow.value = true
+            // TODO refresh only the influenced packages
+            it.removeObserver(this)
+        }
+    }
+
+    override fun refreshView(list: MutableList<Package>?) {
         Timber.d("refreshing")
-        sheetSortFilter = SortFilterSheet(requireActivity().sortFilterModel, getStats(appInfoList))
-        Thread {
-            try {
-                val filteredList =
-                    appInfoList.applyFilter(requireActivity().sortFilterModel, requireContext())
-                refreshBatch(filteredList)
-            } catch (e: FileUtils.BackupLocationInAccessibleException) {
-                Timber.e("Could not update application list: $e")
-            } catch (e: StorageLocationNotConfiguredException) {
-                Timber.e("Could not update application list: $e")
-            } catch (e: Throwable) {
-                LogsHandler.unhandledException(e)
-            }
-        }.start()
-    }
-
-    private fun refreshBatch(filteredList: List<AppInfo>) {
-        //val batchList = createBatchAppsList(filteredList)
-        requireActivity().runOnUiThread {
-            try {
-                binding.recyclerView.setContent {
-                    AppTheme(
-                        darkTheme = isSystemInDarkTheme()
-                    ) {
-                        Scaffold {
-                            BatchPackageRecycler(
-                                productsList = filteredList.filter {
-                                    if (backupBoolean) it.isInstalled
-                                    else it.hasBackups
-                                },
-                                !backupBoolean,
-                                viewModel.apkCheckedList,
-                                viewModel.dataCheckedList,
-                                onClick = { item ->
-                                    val showApk = when {
-                                        item.isSpecial || (!backupBoolean && !item.hasApk) -> false
-                                        else -> true
-                                    }
-                                    val isApkChecked =
-                                        viewModel.apkCheckedList.any { it == item.packageName }
-                                    val showData = when {
-                                        !backupBoolean && !item.hasAppData -> false
-                                        else -> true
-                                    }
-                                    val isDataChecked =
-                                        viewModel.dataCheckedList.any { it == item.packageName }
-                                    val bothChecked =
-                                        (isApkChecked || !showApk) && (isDataChecked || !showData)
-                                    if (bothChecked) {
-                                        viewModel.apkCheckedList.remove(item.packageName)
-                                        viewModel.dataCheckedList.remove(item.packageName)
-                                    }
-                                    if (!isApkChecked) viewModel.apkCheckedList.add(item.packageName)
-                                    if (!isDataChecked) viewModel.dataCheckedList.add(item.packageName)
-                                },
-                                onApkClick = { item: AppInfo, b: Boolean ->
-                                    if (b) viewModel.apkCheckedList.add(item.packageName)
-                                    else viewModel.apkCheckedList.remove(item.packageName)
-                                },
-                                onDataClick = { item: AppInfo, b: Boolean ->
-                                    if (b) viewModel.dataCheckedList.add(item.packageName)
-                                    else viewModel.dataCheckedList.remove(item.packageName)
-                                },
-                            )
-                        }
-                    }
-                }
-                setupSearch()
-                viewModel.refreshNow.value = false
-            } catch (e: Throwable) {
-                LogsHandler.unhandledException(e)
-            }
+        sheetSortFilter =
+            SortFilterSheet(requireActivity().sortFilterModel, getStats(list ?: mutableListOf()))
+        try {
+            viewModel.filteredList.value =
+                list?.applyFilter(requireActivity().sortFilterModel, requireContext())
+        } catch (e: FileUtils.BackupLocationInAccessibleException) {
+            Timber.e("Could not update application list: $e")
+        } catch (e: StorageLocationNotConfiguredException) {
+            Timber.e("Could not update application list: $e")
+        } catch (e: Throwable) {
+            LogsHandler.unhandledException(e)
         }
     }
-
-    /*private fun createBatchAppsList(filteredList: List<AppInfo>): MutableList<BatchItemX> =
-        filteredList
-            .filter {
-                if (backupBoolean) it.isInstalled
-                else it.hasBackups
-            }.map {
-                val item = BatchItemX(it, appExtrasList.get(it.packageName), backupBoolean)
-                item.isApkChecked = viewModel.apkCheckedList.contains(it.packageName)
-                item.isDataChecked = viewModel.dataCheckedList.contains(it.packageName)
-                item
-            }.toMutableList()*/
 
     override fun updateProgress(progress: Int, max: Int) {
-        binding.progressBar.visibility = View.VISIBLE
-        binding.progressBar.max = max
-        binding.progressBar.progress = progress
+        //binding.progressBar.visibility = View.VISIBLE
+        //binding.progressBar.max = max
+        //binding.progressBar.progress = progress
     }
 
     override fun hideProgress() {
-        binding.progressBar.visibility = View.GONE
+        //binding.progressBar.visibility = View.GONE
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun BatchPage() {
+
+        // TODO include tags in search
+        val list by viewModel.filteredList.observeAsState(null)
+        val query by viewModel.searchQuery.observeAsState("")
+
+        val filterPredicate = { item: Package ->
+            val includedBoolean = if (backupBoolean) item.isInstalled else item.hasBackups
+            val queryBoolean =
+                query.isNullOrEmpty() || listOf(item.packageName, item.packageLabel)
+                    .find { it.contains(query, true) } != null
+            includedBoolean && queryBoolean
+        }
+        var allApkChecked by remember {
+            mutableStateOf(viewModel.apkCheckedList.size == list?.size)
+        }
+        var allDataChecked by remember {
+            mutableStateOf(viewModel.dataCheckedList.size == list?.size)
+        }
+
+        AppTheme(
+            darkTheme = isSystemInDarkTheme()
+        ) {
+            Scaffold(
+                topBar = {
+                    TopBar(
+                        title = stringResource(id = if (backupBoolean) R.string.backup else R.string.restore)
+                    ) {
+                        ExpandableSearchAction(
+                            query = viewModel.searchQuery.value.orEmpty(),
+                            onQueryChanged = { new ->
+                                viewModel.searchQuery.value = new
+                            },
+                            onClose = {
+                                viewModel.searchQuery.value = ""
+                            }
+                        )
+                    }
+                }
+            ) { paddingValues ->
+                Column(
+                    modifier = Modifier
+                        .padding(paddingValues)
+                        .fillMaxSize()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        ActionChip(
+                            icon = painterResource(id = R.drawable.ic_blocklist),
+                            text = stringResource(id = R.string.sched_blocklist),
+                            positive = true
+                        ) {
+                            GlobalScope.launch(Dispatchers.IO) {
+                                val blocklistedPackages =
+                                    requireMainActivity().viewModel.blocklist.value
+                                        ?.mapNotNull { it.packageName }.orEmpty()
+
+                                PackagesListDialogFragment(
+                                    blocklistedPackages,
+                                    MAIN_FILTER_DEFAULT,
+                                    true
+                                ) { newList: Set<String> ->
+                                    requireMainActivity().viewModel.updateBlocklist(newList)
+                                }.show(
+                                    requireActivity().supportFragmentManager,
+                                    "BLOCKLIST_DIALOG"
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        ActionChip(
+                            icon = painterResource(id = R.drawable.ic_filter),
+                            text = stringResource(id = R.string.sort_and_filter),
+                            positive = true
+                        ) {
+                            if (sheetSortFilter == null) sheetSortFilter = SortFilterSheet(
+                                requireActivity().sortFilterModel,
+                                getStats(packageList.value ?: mutableListOf())
+                            )
+                            sheetSortFilter?.showNow(
+                                requireActivity().supportFragmentManager,
+                                "SORTFILTER_SHEET"
+                            )
+                        }
+                    }
+                    BatchPackageRecycler(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        productsList = list?.filter(filterPredicate),
+                        !backupBoolean,
+                        viewModel.apkCheckedList,
+                        viewModel.dataCheckedList,
+                        onApkClick = { item: Package, b: Boolean ->
+                            if (b) viewModel.apkCheckedList.add(item.packageName)
+                            else viewModel.apkCheckedList.remove(item.packageName)
+                            allApkChecked =
+                                viewModel.apkCheckedList.size == list?.filter { ai -> !ai.isSpecial && (backupBoolean || ai.hasApk) }?.size
+                        }, onDataClick = { item: Package, b: Boolean ->
+                            if (b) viewModel.dataCheckedList.add(item.packageName)
+                            else viewModel.dataCheckedList.remove(item.packageName)
+                            allDataChecked =
+                                viewModel.dataCheckedList.size == list
+                                    ?.filter { ai -> backupBoolean || ai.hasData }?.size
+                        }) { item, checkApk, checkData ->
+                        when (checkApk) {
+                            true -> viewModel.apkCheckedList.add(item.packageName)
+                            else -> viewModel.apkCheckedList.remove(item.packageName)
+                        }
+                        when (checkData) {
+                            true -> viewModel.dataCheckedList.add(item.packageName)
+                            else -> viewModel.dataCheckedList.remove(item.packageName)
+                        }
+                        allApkChecked =
+                            viewModel.apkCheckedList.size == list
+                                ?.filter { ai -> !ai.isSpecial && (backupBoolean || ai.hasApk) }?.size
+                        allDataChecked =
+                            viewModel.dataCheckedList.size == list
+                                ?.filter { ai -> backupBoolean || ai.hasData }?.size
+                    }
+                    Row(
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        StateChip(
+                            modifier = Modifier.padding(start = 8.dp, end = 4.dp),
+                            icon = painterResource(id = R.drawable.ic_apk),
+                            text = stringResource(id = R.string.all_apk),
+                            checked = allApkChecked,
+                            color = APK
+                        ) {
+                            val checkBoolean = !allApkChecked
+                            allApkChecked = checkBoolean
+                            if (checkBoolean)
+                                viewModel.apkCheckedList.addAll(
+                                    list
+                                        ?.filter { ai -> !ai.isSpecial && (backupBoolean || ai.hasApk) }
+                                        ?.mapNotNull(Package::packageName).orEmpty()
+                                )
+                            else
+                                viewModel.apkCheckedList.clear()
+                        }
+                        StateChip(
+                            icon = painterResource(id = R.drawable.ic_data),
+                            text = stringResource(id = R.string.all_data),
+                            checked = allDataChecked,
+                            color = Data
+                        ) {
+                            val checkBoolean = !allDataChecked
+                            allDataChecked = checkBoolean
+                            if (checkBoolean)
+                                viewModel.dataCheckedList.addAll(
+                                    list
+                                        ?.filter { ai -> backupBoolean || ai.hasData }
+                                        ?.mapNotNull(Package::packageName).orEmpty()
+                                )
+                            else
+                                viewModel.dataCheckedList.clear()
+                        }
+                        ActionButton(
+                            modifier = Modifier.weight(1f),
+                            text = stringResource(id = if (backupBoolean) R.string.backup else R.string.restore),
+                            positive = true
+                        ) {
+                            onClickBatchAction(backupBoolean)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     class BackupFragment : BatchFragment(true)
