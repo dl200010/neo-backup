@@ -36,21 +36,21 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.machiav3lli.backup.MODE_UNSET
 import com.machiav3lli.backup.OABX
-import com.machiav3lli.backup.PREFS_MAXRETRIES
-import com.machiav3lli.backup.PREFS_USEFOREGROUND
+import com.machiav3lli.backup.preferences.pref_maxRetriesPerPackage
 import com.machiav3lli.backup.R
 import com.machiav3lli.backup.activities.MainActivityX
 import com.machiav3lli.backup.handler.BackupRestoreHelper
 import com.machiav3lli.backup.handler.LogsHandler
 import com.machiav3lli.backup.handler.WorkHandler.Companion.getVar
 import com.machiav3lli.backup.handler.WorkHandler.Companion.setVar
-import com.machiav3lli.backup.handler.getDirectoriesInBackupRoot
+import com.machiav3lli.backup.handler.getBackupPackageDirectories
 import com.machiav3lli.backup.handler.getSpecial
 import com.machiav3lli.backup.handler.showNotification
 import com.machiav3lli.backup.items.ActionResult
 import com.machiav3lli.backup.items.Package
+import com.machiav3lli.backup.preferences.pref_useExpedited
+import com.machiav3lli.backup.preferences.pref_useForeground
 import com.machiav3lli.backup.services.CommandReceiver
-import kotlinx.coroutines.delay
 import timber.log.Timber
 
 class AppActionWork(val context: Context, workerParams: WorkerParameters) :
@@ -69,58 +69,25 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
 
     override suspend fun doWork(): Result {
 
-        var result: ActionResult? = null
+        OABX.wakelock(true)
+
+        if (pref_useForeground.value)
+        //if (inputData.getBoolean("immediate", false))
+            setForeground(getForegroundInfo())
+            //setForegroundAsync(getForegroundInfo())  //TODO hg42 what's the difference?
+
+        var actionResult: ActionResult? = null
 
         setOperation("...")
 
-        var message =
+        var logMessage =
             "------------------------------------------------------------ Work: $batchName $packageName"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            message += " ui=${context.isUiContext}"
+            logMessage += " ui=${context.isUiContext}"
         }
-        Timber.i(message)
-
-        if (OABX.prefInt("fakeBackupMinutes", 0) > 0) {
-
-            val step = 1000L * 1
-            val startTime = System.currentTimeMillis()
-            do {
-                val now = System.currentTimeMillis()
-                val minutes = (now - startTime) / 60.0 / 1000.0
-                setOperation((minutes * 10).toInt().toString().padStart(3, '0'))
-                delay(step)
-            } while (minutes < OABX.prefInt("fakeBackupMinutes", 0))
-
-            val succeeded = true // random() < 0.75
-
-            return if (succeeded) {
-                setOperation("OK.")
-                Timber.w("package: $packageName OK")
-                Result.success(getWorkData("OK", result))
-            } else {
-                failures++
-                setVar(batchName, packageName, "failures", failures.toString())
-                if (failures <= OABX.prefInt(PREFS_MAXRETRIES, 1)) {
-                    setOperation("err")
-                    Timber.w("package: $packageName failures: $failures -> retry")
-                    Result.retry()
-                } else {
-                    val message = "$packageName\n${result?.message}"
-                    showNotification(
-                        context, MainActivityX::class.java,
-                        result.hashCode(), packageLabel, result?.message, message, false
-                    )
-                    setOperation("ERR")
-                    Timber.w("package: $packageName FAILED")
-                    Result.failure(getWorkData("ERR", result))
-                }
-            }
-        }
+        Timber.i(logMessage)
 
         val selectedMode = inputData.getInt("selectedMode", MODE_UNSET)
-
-        if (OABX.prefFlag(PREFS_USEFOREGROUND, true))
-            setForeground(getForegroundInfo())
 
         var packageItem: Package? = null
 
@@ -138,14 +105,14 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
         } catch (e: PackageManager.NameNotFoundException) {
             if (packageLabel.isEmpty())
                 packageLabel = packageItem?.packageLabel ?: "NONAME"
-            val backupDir = context.getDirectoriesInBackupRoot()
+            val backupDir = context.getBackupPackageDirectories()
                 .find { it.name == packageName }
             backupDir?.let {
                 try {
-                    packageItem = Package(context, it.name, it)
+                    packageItem = Package(context, it.name!!, it)
                 } catch (e: AssertionError) {
                     Timber.e("Could not process backup folder for uninstalled application in ${it.name}: $e")
-                    result = ActionResult(
+                    actionResult = ActionResult(
                         null,
                         null,
                         "Could not process backup folder for uninstalled application in ${it.name}: $e",
@@ -162,7 +129,7 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
                     try {
                         pi.refreshBackupList()  // optional, be up to date when the job is finally executed
                         OABX.shellHandlerInstance?.let { shellHandler ->
-                            result = when {
+                            actionResult = when {
                                 backupBoolean -> {
                                     BackupRestoreHelper.backup(
                                         context, this, shellHandler, pi, selectedMode
@@ -183,7 +150,7 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
                         }
                         pi.refreshBackupList()  // who knows what happened in external space?
                     } catch (e: Throwable) {
-                        result = ActionResult(
+                        actionResult = ActionResult(
                             pi, null,
                             "not processed: $packageLabel: $e\n${e.stackTrace}", false
                         )
@@ -194,29 +161,33 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
         } catch (e: Throwable) {
             LogsHandler.unhandledException(e, packageLabel)
         }
-        val succeeded = result?.succeeded ?: false
-        return if (succeeded) {
+
+        val succeeded = actionResult?.succeeded ?: false
+        val result = if (succeeded) {
             setOperation("OK.")
             Timber.w("package: $packageName OK")
-            Result.success(getWorkData("OK", result))
+            Result.success(getWorkData("OK", actionResult))
         } else {
             failures++
             setVar(batchName, packageName, "failures", failures.toString())
-            if (failures <= OABX.prefInt(PREFS_MAXRETRIES, 1)) {
+            if (failures <= pref_maxRetriesPerPackage.value) {
                 setOperation("err")
                 Timber.w("package: $packageName failures: $failures -> retry")
                 Result.retry()
             } else {
-                val message = "$packageName\n${result?.message}"
+                val message = "$packageName\n${actionResult?.message}"
                 showNotification(
                     context, MainActivityX::class.java,
-                    result.hashCode(), packageLabel, result?.message, message, false
+                    actionResult.hashCode(), packageLabel, actionResult?.message, message, false
                 )
                 setOperation("ERR")
                 Timber.w("package: $packageName FAILED")
-                Result.failure(getWorkData("ERR", result))
+                Result.failure(getWorkData("ERR", actionResult))
             }
         }
+
+        OABX.wakelock(false)
+        return result
     }
 
     fun setOperation(operation: String = "") {
@@ -255,8 +226,6 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        //val cancelPendingIntent = WorkManager.getInstance(applicationContext)
-        //    .createCancelPendingIntent(id) // TODO [hg42: is the comment still valid?] causing crash on targetSDK 31 on A12, go back to targetSDK 30 for now and wait update on WorkManager's side
         val cancelAllIntent =
             Intent(OABX.context, CommandReceiver::class.java).apply {
                 action = "cancel"
@@ -278,7 +247,7 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
                     else -> context.getString(com.machiav3lli.backup.R.string.batchrestore)
                 }
             )
-            .setSmallIcon(com.machiav3lli.backup.R.drawable.ic_app)
+            .setSmallIcon(R.drawable.ic_app)
             .setOngoing(true)
             .setSilent(true)
             .setContentIntent(contentPendingIntent)
@@ -311,7 +280,8 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
             mode: Int,
             backupBoolean: Boolean,
             notificationId: Int,
-            batchName: String
+            batchName: String,
+            immediate: Boolean
         ): OneTimeWorkRequest {
             val builder = OneTimeWorkRequest.Builder(AppActionWork::class.java)
 
@@ -325,11 +295,12 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
                         "backupBoolean" to backupBoolean,
                         "notificationId" to notificationId,
                         "batchName" to batchName,
-                        "operation" to "..."
+                        "operation" to "...",
+                        "immediate" to immediate
                     )
                 )
 
-            if (OABX.prefFlag("useExpedited", true))
+            if (immediate or pref_useExpedited.value)
                 builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
 
             return builder.build()

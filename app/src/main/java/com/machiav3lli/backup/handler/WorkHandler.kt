@@ -13,7 +13,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.machiav3lli.backup.BuildConfig
 import com.machiav3lli.backup.OABX
-import com.machiav3lli.backup.PREFS_MAXRETRIES
+import com.machiav3lli.backup.preferences.pref_maxRetriesPerPackage
 import com.machiav3lli.backup.R
 import com.machiav3lli.backup.activities.MainActivityX
 import com.machiav3lli.backup.classAddress
@@ -24,17 +24,15 @@ import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.*
 
-class WorkHandler {
+class WorkHandler(appContext: Context) {
 
     var manager: WorkManager
     var actionReceiver: CommandReceiver
-    var context: Context
+    var context: Context = appContext
     val notificationManager: NotificationManagerCompat
     val notificationChannel: NotificationChannel
 
-    constructor(appContext: Context) {
-
-        context = appContext
+    init {
         manager = WorkManager.getInstance(context)
         actionReceiver = CommandReceiver()
 
@@ -108,8 +106,8 @@ class WorkHandler {
 
             Thread.sleep(delay)
 
-            OABX.activity?.runOnUiThread {
-                OABX.activity?.hideProgress()
+            OABX.main?.runOnUiThread {
+                OABX.main?.hideProgress()
             }
 
             Timber.d("%%%%% ALL DONE")
@@ -219,14 +217,15 @@ class WorkHandler {
             tags.add("$name:$value")
         }
 
-        var batchPackageVars: MutableMap<String, MutableMap<String, MutableMap<String, String>>> = mutableMapOf()
+        var batchPackageVars: MutableMap<String, MutableMap<String, MutableMap<String, String>>> =
+            mutableMapOf()
 
         fun getVar(batchName: String, packageName: String, name: String): String? {
             return batchPackageVars.get(batchName)?.get(packageName)?.get(name)
         }
 
         fun setVar(batchName: String, packageName: String, name: String, value: String) {
-            batchPackageVars.getOrPut(batchName)   { mutableMapOf() }
+            batchPackageVars.getOrPut(batchName) { mutableMapOf() }
                 .getOrPut(packageName) { mutableMapOf() }
                 .put(name, value)
         }
@@ -261,8 +260,10 @@ class WorkHandler {
         val batchesKnown = mutableMapOf<String, BatchState>()
         var batchesStarted = -1
 
+        var lockProgress = object {}
+
         fun onProgress(handler: WorkHandler, workInfos: MutableList<WorkInfo>? = null) {
-            synchronized(batchesStarted) {
+            synchronized(lockProgress) {
                 onProgressNoSync(handler, workInfos)
             }
         }
@@ -290,7 +291,7 @@ class WorkHandler {
                 val operation = data.getString("operation")
                 val failures = data.getInt("failures", -1)
 
-                val maxRetries = OABX.prefInt(PREFS_MAXRETRIES, 3)
+                val maxRetries = pref_maxRetriesPerPackage.value
 
                 //Timber.d("%%%%% $batchName $packageName $operation $backupBoolean ${info.state} fail=$failures max=$maxRetries")
 
@@ -332,7 +333,7 @@ class WorkHandler {
                             succeeded++
                             workFinished++
                         }
-                        WorkInfo.State.FAILED    -> {
+                        WorkInfo.State.FAILED -> {
                             failed++
                             workFinished++
                         }
@@ -340,19 +341,19 @@ class WorkHandler {
                             canceled++
                             workFinished++
                         }
-                        WorkInfo.State.ENQUEUED  -> {
+                        WorkInfo.State.ENQUEUED -> {
                             queued++
                             workEnqueued++
                         }
-                        WorkInfo.State.BLOCKED   -> {
+                        WorkInfo.State.BLOCKED -> {
                             queued++
                             workBlocked++
                         }
-                        WorkInfo.State.RUNNING   -> {
+                        WorkInfo.State.RUNNING -> {
                             workRunning++
                             when (operation) {
                                 "..." -> queued++
-                                else  -> {
+                                else -> {
                                     running++
                                     val shortPackageName =
                                         packageName
@@ -527,15 +528,15 @@ class WorkHandler {
 
             if (allRemaining > 0) {
                 Timber.d("%%%%% ALL finished=$allProcessed <-- remain=$allRemaining <-- total=$allCount")
-                OABX.activity?.runOnUiThread {
-                    OABX.activity?.updateProgress(
+                OABX.main?.runOnUiThread {
+                    OABX.main?.updateProgress(
                         allProcessed,
                         allCount
                     )
                 }
             } else {
-                OABX.activity?.runOnUiThread {
-                    OABX.activity?.hideProgress()
+                OABX.main?.runOnUiThread {
+                    OABX.main?.hideProgress()
                 }
                 if (OABX.work.justFinishedAll()) {
                     Timber.d("%%%%% ALL $batchesStarted batches, thread ${Thread.currentThread().id}")
@@ -547,6 +548,9 @@ class WorkHandler {
 
     fun onFinish(handler: WorkHandler, work: MutableList<WorkInfo>? = null) {
         // may be the state changed in between
-        onProgress(handler, null) // don't forward "work", because it's FinishWork not AppActionWork!
+        onProgress(
+            handler,
+            null
+        ) // don't forward "work", because it's FinishWork not AppActionWork!
     }
 }

@@ -25,12 +25,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.annotation.ExperimentalCoilApi
+import com.machiav3lli.backup.OABX
 import com.machiav3lli.backup.items.Package
 import com.machiav3lli.backup.ui.compose.theme.LocalShapes
 import com.machiav3lli.backup.utils.getFormattedDate
+import timber.log.Timber
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalCoilApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BatchPackageItem(
     item: Package,
@@ -60,13 +61,15 @@ fun BatchPackageItem(
             }
         )
     }
-    packageItem.ensureBackupList()
+    Timber.i("recompose BatchPackageItem ${packageItem.packageName}")
 
     OutlinedCard(
         modifier = Modifier,
         shape = RoundedCornerShape(LocalShapes.current.medium),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.surface),
-        containerColor = MaterialTheme.colorScheme.background,
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.background
+        ),
         elevation = CardDefaults.cardElevation(4.dp),
         onClick = {
             val checked = (apkChecked || !showApk) && (dataChecked || !showData)

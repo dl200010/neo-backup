@@ -24,8 +24,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.machiav3lli.backup.BACKUP_DATE_TIME_FORMATTER
+import com.machiav3lli.backup.BACKUP_DATE_TIME_FORMATTER_OLD
 import com.machiav3lli.backup.BACKUP_INSTANCE_PROPERTIES
 import com.machiav3lli.backup.OABX
+import com.machiav3lli.backup.preferences.pref_cachePackages
 import com.machiav3lli.backup.dbs.entity.AppInfo
 import com.machiav3lli.backup.dbs.entity.Backup
 import com.machiav3lli.backup.dbs.entity.SpecialInfo
@@ -52,48 +54,48 @@ class Package {
     internal constructor(
         context: Context,
         appInfo: AppInfo,
-        backups: List<Backup> = emptyList()
+        backups: List<Backup>? = emptyList()
     ) {
         packageName = appInfo.packageName
         this.packageInfo = appInfo
         getAppBackupRoot()
         if (appInfo.installed) refreshStorageStats(context)
-        updateBackupList(backups)
+        updateBackupList(backups ?: emptyList())
         OABX.app.packageCache.put(packageName, this)
     }
 
     constructor(
         context: Context,
         specialInfo: SpecialInfo,
-        backups: List<Backup> = emptyList()
+        backups: List<Backup>? = emptyList()
     ) {
         packageName = specialInfo.packageName
         this.packageInfo = specialInfo
         getAppBackupRoot()
-        updateBackupList(backups)
+        updateBackupList(backups ?: emptyList())
         OABX.app.packageCache.put(packageName, this)
     }
 
     constructor(
         context: Context,
         packageInfo: android.content.pm.PackageInfo,
-        backups: List<Backup> = emptyList()
+        backups: List<Backup>? = emptyList()
     ) {
         packageName = packageInfo.packageName
         this.packageInfo = AppInfo(context, packageInfo)
         getAppBackupRoot()
         refreshStorageStats(context)
-        updateBackupList(backups)
+        updateBackupList(backups ?: emptyList())
         OABX.app.packageCache.put(packageName, this)
     }
 
     constructor(
         context: Context,
-        packageName: String?,
+        packageName: String,
         backupDir: StorageFile?,
     ) {
         this.packageBackupDir = backupDir
-        this.packageName = packageName ?: backupDir?.name!!
+        this.packageName = packageName
         refreshBackupList()
         try {
             val pi = context.packageManager.getPackageInfo(
@@ -125,17 +127,17 @@ class Package {
         context: Context,
         packageInfo: android.content.pm.PackageInfo,
         backupRoot: StorageFile?,
-        backups: List<Backup> = emptyList()
+        backups: List<Backup>? = emptyList()
     ) {
         this.packageName = packageInfo.packageName
         this.packageInfo = AppInfo(context, packageInfo)
         this.packageBackupDir = backupRoot?.findFile(packageName)
         refreshStorageStats(context)
-        updateBackupList(backups)
+        updateBackupList(backups ?: emptyList())
         OABX.app.packageCache.put(packageName, this)
     }
 
-    private fun refreshStorageStats(context: Context): Boolean {
+    fun refreshStorageStats(context: Context): Boolean {
         return try {
             storageStats = context.getPackageStorageStats(packageName)
             true
@@ -161,16 +163,21 @@ class Package {
 
     fun updateBackupList(new: List<Backup>) {
         backupList = new
+        backupListDirty = false
     }
 
     fun refreshBackupList() {
+        Timber.w("refreshbackupList: $packageName")
         invalidateBackupCacheForPackage(packageName)
-        backupList = listOf()
-        getAppBackupRoot()?.listFiles()
+        val backups = mutableListOf<Backup>()
+        getAppBackupRoot()?.listFiles()  //TODO hg42 create a coroutine version of  listFiles?
             ?.filter(StorageFile::isPropertyFile)
             ?.forEach { propFile ->
                 try {
-                    Backup.createFrom(propFile)?.let { addBackup(it) }
+                    Backup.createFrom(propFile)?.let {
+                        //addBackup(it)       // refresh view immediately? but does not work...
+                        backups.add(it)
+                    }
                 } catch (e: Backup.BrokenBackupException) {
                     val message =
                         "Incomplete backup or wrong structure found in $propFile"
@@ -185,12 +192,21 @@ class Package {
                     LogsHandler.unhandledException(e, message)
                 }
             }
-        backupListDirty = false
+        updateBackupList(backups)
+    }
+
+    private fun ensureBackupsLoaded(): List<Backup> {
+        if (backupListDirty)
+            refreshBackupList()
+        return backupList
     }
 
     fun ensureBackupList() {
-        if (backupListDirty)
-            refreshBackupList()
+        ensureBackupsLoaded()
+    }
+
+    private fun needBackupList(): List<Backup> {
+        return backupList
     }
 
     @Throws(
@@ -228,16 +244,31 @@ class Package {
             BACKUP_DATE_TIME_FORMATTER.format(backup.backupDate),
             backup.profileId
         )
+        val propertiesFileNameOld = String.format(
+            BACKUP_INSTANCE_PROPERTIES,
+            BACKUP_DATE_TIME_FORMATTER_OLD.format(backup.backupDate),
+            backup.profileId
+        )
         try {
             backup.getBackupInstanceFolder(packageBackupDir)?.deleteRecursive()
-            packageBackupDir?.findFile(propertiesFileName)?.delete()
         } catch (e: Throwable) {
             LogsHandler.unhandledException(e, backup.packageName)
         }
-        backupList = backupList.toList() - backup
-        if (backupList.size == 0) {
-            packageBackupDir?.deleteRecursive()
-            packageBackupDir = null
+        try {
+            packageBackupDir?.findFile(propertiesFileName)?.delete() ?: packageBackupDir?.findFile(
+                propertiesFileNameOld
+            )?.delete()
+        } catch (e: Throwable) {
+            LogsHandler.unhandledException(e, backup.packageName)
+        }
+        try {
+            backupList = backupList.toList() - backup
+            if (backupList.size == 0) {
+                packageBackupDir?.deleteRecursive()
+                packageBackupDir = null
+            }
+        } catch (e: Throwable) {
+            LogsHandler.unhandledException(e, backup.packageName)
         }
     }
 
@@ -256,15 +287,15 @@ class Package {
     }
 
     val backupsNewestFirst: List<Backup>
-        get() = backupList.sortedByDescending { item -> item.backupDate }
+        get() = needBackupList().sortedByDescending { item -> item.backupDate }
 
     val latestBackup: Backup?
-        get() = backupList.maxByOrNull { it.backupDate }
+        get() = needBackupList().maxByOrNull { it.backupDate }
 
     val oldestBackup: Backup?
-        get() = backupList.minByOrNull { it.backupDate }
+        get() = needBackupList().minByOrNull { it.backupDate }
 
-    val numberOfBackups: Int get() = backupList.size
+    val numberOfBackups: Int get() = needBackupList().size
 
     private val isApp: Boolean
         get() = packageInfo is AppInfo && !packageInfo.isSpecial
@@ -387,8 +418,14 @@ class Package {
     val hasMediaData: Boolean
         get() = backupList.any { it.hasMediaData }
 
+    val appBytes: Long
+        get() = if (packageInfo.isSpecial) 0 else storageStats?.appBytes ?: 0
+
     val dataBytes: Long
         get() = if (packageInfo.isSpecial) 0 else storageStats?.dataBytes ?: 0
+
+    val backupBytes: Long
+        get() = latestBackup?.size ?: 0
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -423,7 +460,14 @@ class Package {
 
     companion object {
         fun get(packageName: String, creator: () -> Package): Package {
-            return OABX.app.packageCache.get(packageName) ?: creator()
+            if (pref_cachePackages.value)
+                return OABX.app.packageCache[packageName] ?: creator()
+            return creator()
+        }
+
+        fun invalidateAllPackages() {
+            StorageFile.invalidateCache()
+            OABX.app.packageCache.clear()
         }
 
         fun invalidateCacheForPackage(packageName: String) {

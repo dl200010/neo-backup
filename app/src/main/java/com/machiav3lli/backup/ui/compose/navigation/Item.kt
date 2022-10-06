@@ -1,32 +1,66 @@
 package com.machiav3lli.backup.ui.compose.navigation
 
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.machiav3lli.backup.R
+import com.machiav3lli.backup.ui.compose.icons.Phosphor
+import com.machiav3lli.backup.ui.compose.icons.phosphor.ArchiveTray
+import com.machiav3lli.backup.ui.compose.icons.phosphor.Bug
+import com.machiav3lli.backup.ui.compose.icons.phosphor.CalendarX
+import com.machiav3lli.backup.ui.compose.icons.phosphor.ClockCounterClockwise
+import com.machiav3lli.backup.ui.compose.icons.phosphor.Flask
+import com.machiav3lli.backup.ui.compose.icons.phosphor.GearSix
+import com.machiav3lli.backup.ui.compose.icons.phosphor.House
+import com.machiav3lli.backup.ui.compose.icons.phosphor.SlidersHorizontal
+import com.machiav3lli.backup.ui.compose.icons.phosphor.UserGear
+import com.machiav3lli.backup.ui.compose.icons.phosphor.Warning
+import com.machiav3lli.backup.ui.compose.icons.phosphor.Wrench
 
-sealed class BottomNavItem(var title: Int, var icon: Int, var destination: String) {
+sealed class NavItem(var title: Int, var icon: ImageVector, var destination: String) {
+    object Welcome :
+        NavItem(R.string.welcome_to_oabx, Phosphor.House, "intro_welcome")
+
+    object Permissions :
+        NavItem(R.string.permission_not_granted, Phosphor.Warning, "intro_permissions")
+
     object Home :
-        BottomNavItem(R.string.home, R.drawable.ic_home, "home")
+        NavItem(R.string.home, Phosphor.House, "home")
 
     object Backup :
-        BottomNavItem(R.string.backup, R.drawable.ic_backup, "batch_backup")
+        NavItem(R.string.backup, Phosphor.ArchiveTray, "batch_backup")
 
     object Restore :
-        BottomNavItem(R.string.restore, R.drawable.ic_restore, "batch_restore")
+        NavItem(R.string.restore, Phosphor.ClockCounterClockwise, "batch_restore")
 
     object Scheduler :
-        BottomNavItem(R.string.sched_title, R.drawable.ic_scheduler, "scheduler")
+        NavItem(R.string.sched_title, Phosphor.CalendarX, "scheduler")
+
+    object Main :
+        NavItem(R.string.main, Phosphor.House, "main")
 
     object Settings :
-        BottomNavItem(R.string.prefs_title, R.drawable.ic_settings, "settings")
+        NavItem(R.string.prefs_title, Phosphor.GearSix, "settings")
 
     object UserPrefs :
-        BottomNavItem(R.string.prefs_user, R.drawable.ic_prefs_user, "prefs_user")
+        NavItem(R.string.prefs_user_short, Phosphor.UserGear, "prefs_user")
 
     object ServicePrefs :
-        BottomNavItem(R.string.prefs_service, R.drawable.ic_prefs_service, "prefs_service")
+        NavItem(R.string.prefs_service_short, Phosphor.SlidersHorizontal, "prefs_service")
 
     object AdvancedPrefs :
-        BottomNavItem(R.string.prefs_advanced, R.drawable.ic_prefs_advanced, "prefs_advanced")
+        NavItem(R.string.prefs_advanced_short, Phosphor.Flask, "prefs_advanced")
 
     object ToolsPrefs :
-        BottomNavItem(R.string.prefs_tools, R.drawable.ic_prefs_tools, "prefs_tools")
+        NavItem(R.string.prefs_tools_short, Phosphor.Wrench, "prefs_tools")
+
+    object Exports : NavItem(
+        R.string.prefs_schedulesexportimport,
+        Phosphor.CalendarX,
+        "prefs_tools/exports"
+    )
+
+    object Logs : NavItem(
+        R.string.prefs_logviewer,
+        Phosphor.Bug,
+        "prefs_tools/logs"
+    )
 }

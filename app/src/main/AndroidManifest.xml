@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.machiav3lli.backup"
     android:installLocation="auto">
 
     <!-- for Android 12 -->
@@ -117,7 +116,7 @@
         <activity android:name=".activities.IntroActivityX" />
         <activity android:name=".activities.MainActivityX" />
         <activity
-            android:name=".activities.PrefsActivity"
+            android:name=".activities.PrefsActivityX"
             android:exported="true"
             android:label="@string/prefs_title"
             android:launchMode="singleTask"

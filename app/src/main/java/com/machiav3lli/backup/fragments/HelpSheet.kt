@@ -27,14 +27,17 @@ import android.view.ViewGroup
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -45,15 +48,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.text.HtmlCompat
+import com.machiav3lli.backup.BuildConfig
 import com.machiav3lli.backup.R
 import com.machiav3lli.backup.legendList
 import com.machiav3lli.backup.linksList
+import com.machiav3lli.backup.ui.compose.icons.Phosphor
+import com.machiav3lli.backup.ui.compose.icons.phosphor.CaretDown
+import com.machiav3lli.backup.ui.compose.icons.phosphor.CaretUp
 import com.machiav3lli.backup.ui.compose.item.LegendItem
 import com.machiav3lli.backup.ui.compose.item.LinkItem
 import com.machiav3lli.backup.ui.compose.item.RoundButton
@@ -77,41 +88,62 @@ class HelpSheet : BaseSheet() {
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
+    @Preview
+    @Composable
+    fun DefaultPreview() {
+        HelpPage()
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
     @Composable
     private fun HelpPage() {
-        AppTheme(
-            darkTheme = isSystemInDarkTheme()
-        ) {
+        val nestedScrollConnection = rememberNestedScrollInteropConnection()
+
+        AppTheme {
             Scaffold(
                 topBar = {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .height(IntrinsicSize.Min)
                             .padding(horizontal = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
                             text = stringResource(id = R.string.app_name),
                             style = MaterialTheme.typography.headlineMedium,
-                            modifier = Modifier.weight(1f),
                             maxLines = 1
                         )
-                        RoundButton(icon = painterResource(id = R.drawable.ic_arrow_down)) {
+                        Text(
+                            text = BuildConfig.VERSION_NAME,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .weight(1f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        RoundButton(icon = Phosphor.CaretDown) {
                             dismissAllowingStateLoss()
                         }
                     }
                 }
-            ) {
+            ) { paddingValues ->
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .padding(paddingValues)
+                        .nestedScroll(nestedScrollConnection)
+                        .fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(8.dp)
                 ) {
                     item {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            containerColor = MaterialTheme.colorScheme.background,
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.background,
+                            ),
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.surface)
                         ) {
                             linksList.forEach {
@@ -148,7 +180,9 @@ class HelpSheet : BaseSheet() {
 
                         OutlinedCard(
                             modifier = Modifier.fillMaxWidth(),
-                            containerColor = MaterialTheme.colorScheme.background,
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.background,
+                            ),
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.surface)
                         ) {
                             Row(
@@ -163,10 +197,8 @@ class HelpSheet : BaseSheet() {
                                     modifier = Modifier.weight(1f)
                                 )
                                 Icon(
-                                    painter = painterResource(
-                                        id = if (showNotes) R.drawable.ic_arrow_up
-                                        else R.drawable.ic_arrow_down
-                                    ),
+                                    imageVector = if (showNotes) Phosphor.CaretUp
+                                    else Phosphor.CaretDown,
                                     contentDescription = null
                                 )
                             }
@@ -184,7 +216,6 @@ class HelpSheet : BaseSheet() {
     }
 
     private fun getUsageNotes(): String = try {
-        // binding.helpVersionName.text = requireActivity().packageManager.getPackageInfo(requireActivity().packageName, 0).versionName
         val stream = resources.openRawResource(R.raw.help)
         val htmlString = convertStreamToString(stream)
         stream.close()

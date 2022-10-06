@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,11 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.annotation.ExperimentalCoilApi
 import com.machiav3lli.backup.items.Package
 import com.machiav3lli.backup.ui.compose.theme.LocalShapes
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalCoilApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UpdatedPackageItem(
     item: Package,
@@ -42,7 +42,9 @@ fun UpdatedPackageItem(
         modifier = Modifier,
         border = BorderStroke(0.dp, MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(LocalShapes.current.medium),
-        containerColor = MaterialTheme.colorScheme.surface,
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
         onClick = { onClick(item) },
     ) {
         Column(

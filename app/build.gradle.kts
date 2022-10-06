@@ -21,20 +21,28 @@ plugins {
     id("com.android.application")
     kotlin("android")
     kotlin("kapt")
-    kotlin("plugin.serialization").version("1.6.10")
+    kotlin("plugin.serialization").version("1.7.10")
 }
+val vKotlin = "1.7.10"
+val vComposeCompiler = "1.3.1"
+val vCompose = "1.3.0-beta03"
+val vRoom = "2.5.0-alpha03"
+val vNavigation = "2.5.2"
+val vAccompanist = "0.26.4-beta"
+val vLibsu = "3.2.1"
 
 android {
-    compileSdk = 32
+    namespace = "com.machiav3lli.backup"
+    compileSdk = 33
 
     defaultConfig {
         applicationId = "com.machiav3lli.backup"
         minSdk = 26
         targetSdk = 32
-        versionCode = 8016
-        versionName = "8.0.2"
+        versionCode = 8200
+        versionName = "8.2.0"
         buildConfigField("int", "MAJOR", "8")
-        buildConfigField("int", "MINOR", "0")
+        buildConfigField("int", "MINOR", "2")
 
         testApplicationId = "${applicationId}.tests"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -58,19 +66,21 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            versionNameSuffix = "-alpha01"
             isMinifyEnabled = true
             manifestPlaceholders["appIcon"] = "@mipmap/ic_launcher"
             manifestPlaceholders["appIconRound"] = "@mipmap/ic_launcher_round"
         }
         named("debug") {
             applicationIdSuffix = ".debug"
+            versionNameSuffix = "-alpha01"
             isMinifyEnabled = false
-            manifestPlaceholders["appIcon"] = "@mipmap/ic_launcher"
-            manifestPlaceholders["appIconRound"] = "@mipmap/ic_launcher_round"
+            manifestPlaceholders["appIcon"] = "@mipmap/ic_launcher_vv"
+            manifestPlaceholders["appIconRound"] = "@mipmap/ic_launcher_round_vv"
         }
         create("neo") {
             applicationIdSuffix = ".neo"
-            versionNameSuffix = "-alpha14"
+            versionNameSuffix = "-alpha01"
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -89,7 +99,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.2.0-alpha07"
+        kotlinCompilerExtensionVersion = vComposeCompiler
     }
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions {
@@ -111,50 +121,52 @@ android {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.10")
+    //implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$vKotlin")
+    implementation(kotlin("stdlib"))
+    implementation(kotlin("reflect"))
 
     // Libs
-    implementation("androidx.room:room-runtime:2.5.0-alpha01")
-    implementation("androidx.room:room-ktx:2.5.0-alpha01")
-    kapt("androidx.room:room-compiler:2.5.0-alpha01")
-    implementation("androidx.work:work-runtime-ktx:2.8.0-alpha02")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
-    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.4.1")
+    implementation("androidx.room:room-runtime:$vRoom")
+    implementation("androidx.room:room-ktx:$vRoom")
+    kapt("androidx.room:room-compiler:$vRoom")
+    implementation("androidx.work:work-runtime-ktx:2.8.0-alpha04")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.0")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.5.1")
     implementation("androidx.security:security-crypto-ktx:1.1.0-alpha03")
-    implementation("androidx.biometric:biometric:1.2.0-alpha04")
+    implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation("org.apache.commons:commons-compress:1.21")
-    implementation("commons-io:commons-io:2.11.0")
+    implementation("commons-io:commons-io:2.11.0")      // attention, there is an old 2003 version, that looks like newer
     implementation("com.jakewharton.timber:timber:5.0.1")
-    val libsu = "3.2.1"
-    implementation("com.github.topjohnwu.libsu:core:$libsu")
-    implementation("com.github.topjohnwu.libsu:io:$libsu")
+    implementation("com.github.topjohnwu.libsu:core:$vLibsu")
+    implementation("com.github.topjohnwu.libsu:io:$vLibsu")
     //implementation("com.github.topjohnwu.libsu:busybox:$libsu")
+    implementation("de.voize:semver4k:4.1.0")
     //implementation("com.github.tony19:named-regexp:0.2.6") // regex named groups
 
     // UI
-    implementation("androidx.fragment:fragment-ktx:1.5.0-beta01")
-    implementation("com.google.android.material:material:1.7.0-alpha01")
+    implementation("androidx.fragment:fragment-ktx:1.5.3")
+    implementation("com.google.android.material:material:1.8.0-alpha01")
     implementation("androidx.preference:preference-ktx:1.2.0")
-    implementation("androidx.navigation:navigation-fragment-ktx:2.5.0-beta01")
-    implementation("androidx.navigation:navigation-ui-ktx:2.5.0-beta01")
-    implementation("io.coil-kt:coil-compose:2.0.0-rc03")
+    implementation("androidx.navigation:navigation-fragment-ktx:$vNavigation")
+    implementation("androidx.navigation:navigation-ui-ktx:$vNavigation")
+    implementation("io.coil-kt:coil-compose:2.2.1")
 
     // Compose
-    val compose = "1.2.0-alpha07"
-    implementation("androidx.compose.runtime:runtime:$compose")
-    implementation("androidx.compose.ui:ui:$compose")
-    implementation("androidx.compose.ui:ui-tooling:$compose")
-    implementation("androidx.compose.foundation:foundation:$compose")
-    implementation("androidx.compose.runtime:runtime-livedata:$compose")
-    implementation("androidx.compose.material:material:$compose")
-    implementation("androidx.navigation:navigation-compose:2.5.0-alpha04")
-    implementation("com.google.android.material:compose-theme-adapter:1.1.6")
-    implementation("androidx.compose.material3:material3:1.0.0-alpha09")
-    implementation("com.google.accompanist:accompanist-flowlayout:0.24.6-alpha")
+    implementation("androidx.compose.runtime:runtime:$vCompose")
+    implementation("androidx.compose.ui:ui:$vCompose")
+    implementation("androidx.compose.ui:ui-tooling:$vCompose")
+    implementation("androidx.compose.foundation:foundation:$vCompose")
+    implementation("androidx.compose.runtime:runtime-livedata:$vCompose")
+    implementation("androidx.navigation:navigation-compose:$vNavigation")
+    implementation("com.google.android.material:compose-theme-adapter-3:1.0.19")
+    implementation("androidx.compose.material3:material3:1.0.0-beta03")
+    implementation("com.google.accompanist:accompanist-flowlayout:$vAccompanist")
+    implementation("com.google.accompanist:accompanist-systemuicontroller:$vAccompanist")
+    implementation("com.google.accompanist:accompanist-navigation-animation:$vAccompanist")
 
     // Testing
     implementation("androidx.test.ext:junit-ktx:1.1.3")
-    androidTestImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
+    androidTestImplementation("org.junit.jupiter:junit-jupiter:5.9.1")
     val androidxTest = "1.4.0"
     implementation("androidx.test:rules:$androidxTest")
     androidTestImplementation("androidx.test:runner:$androidxTest")

@@ -17,6 +17,7 @@
  */
 package com.machiav3lli.backup
 
+import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.Intent
@@ -24,22 +25,36 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.PowerManager
 import android.util.LruCache
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.google.android.material.color.DynamicColors
+import com.google.android.material.color.DynamicColorsOptions
 import com.machiav3lli.backup.activities.MainActivityX
 import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.handler.WorkHandler
 import com.machiav3lli.backup.items.Package
+import com.machiav3lli.backup.preferences.pref_cancelOnStart
+import com.machiav3lli.backup.preferences.pref_maxCrashLines
 import com.machiav3lli.backup.services.PackageUnInstalledReceiver
 import com.machiav3lli.backup.services.ScheduleService
 import com.machiav3lli.backup.utils.getDefaultSharedPreferences
+import com.machiav3lli.backup.utils.getPrivateSharedPrefs
+import com.machiav3lli.backup.utils.styleTheme
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.lang.ref.WeakReference
+import java.time.LocalDateTime
 
 class OABX : Application() {
 
     // packages are an external resource, so handle them as a singleton
-    val maxNumberOfPackagesInCache = 4000   //TODO hg42 add a setting!?
-    var packageCache: LruCache<String, Package> = LruCache(maxNumberOfPackagesInCache)
-    var cache: LruCache<String, MutableList<Package>> = LruCache(10)    //TODO hg42 not caching 4000 lists? right?
+    var packageCache = mutableMapOf<String, Package>()
+    var cache: LruCache<String, MutableList<Package>> =
+        LruCache(10)    //TODO hg42 not caching 4000 lists? right?
 
     var work: WorkHandler? = null
 
@@ -51,6 +66,25 @@ class OABX : Application() {
                 priority: Int, tag: String?, message: String, t: Throwable?
             ) {
                 super.log(priority, "$tag", message, t)
+
+                val prio =
+                        when (priority) {
+                            android.util.Log.VERBOSE -> "V"
+                            android.util.Log.ASSERT -> "A"
+                            android.util.Log.DEBUG -> "D"
+                            android.util.Log.ERROR -> "E"
+                            android.util.Log.INFO -> "I"
+                            android.util.Log.WARN -> "W"
+                            else                  -> "?"
+                        }
+                val date = LocalDateTime.now()
+                lastLogMessages.add("$date $prio $tag : $message")
+                try {
+                    while (lastLogMessages.size > pref_maxCrashLines.value)
+                        lastLogMessages.removeAt(0)
+                } catch(e: Throwable) {
+                    // ignore
+                }
             }
 
             override fun createStackElementTag(element: StackTraceElement): String {
@@ -68,6 +102,12 @@ class OABX : Application() {
     // TODO Add BroadcastReceiver for (UN)INSTALL_PACKAGE intents
     override fun onCreate() {
         super.onCreate()
+        DynamicColors.applyToActivitiesIfAvailable(
+            this,
+            DynamicColorsOptions.Builder()
+                .setPrecondition { _, _ -> styleTheme == THEME_DYNAMIC }
+                .build()
+        )
         appRef = WeakReference(this)
 
         initShellHandler()
@@ -76,14 +116,21 @@ class OABX : Application() {
             IntentFilter().apply {
                 addAction(Intent.ACTION_PACKAGE_ADDED)
                 addAction(Intent.ACTION_PACKAGE_REMOVED)
+                addAction(Intent.ACTION_PACKAGE_REPLACED)
                 addDataScheme("package")
             }
         )
 
         work = WorkHandler(context)
-        if (prefFlag(PREFS_CANCELONSTART, false))
+        if (pref_cancelOnStart.value)
             work?.cancel()
         work?.prune()
+
+        MainScope().launch {
+            delay(1000)
+            addInfoText("[click to hide/show permanently]")
+            addInfoText("")
+        }
     }
 
     override fun onTerminate() {
@@ -93,6 +140,8 @@ class OABX : Application() {
     }
 
     companion object {
+
+        val lastLogMessages = mutableListOf<String>()
 
         // app should always be created
         var appRef: WeakReference<OABX> = WeakReference(null)
@@ -109,13 +158,23 @@ class OABX : Application() {
             }
 
         // activity might be null
-        var activityRef: WeakReference<MainActivityX> = WeakReference(null)
-        var activity: MainActivityX?
+        var activityRef: WeakReference<Activity> = WeakReference(null)
+        var activity: Activity?
             get() {
                 return activityRef.get()
             }
             set(activity) {
                 activityRef = WeakReference(activity)
+            }
+
+        // main might be null
+        var mainRef: WeakReference<MainActivityX> = WeakReference(null)
+        var main: MainActivityX?
+            get() {
+                return mainRef.get()
+            }
+            set(mainActivity) {
+                mainRef = WeakReference(mainActivity)
             }
 
         var appsSuspendedChecked = false
@@ -135,11 +194,58 @@ class OABX : Application() {
         val context: Context get() = app.applicationContext
         val work: WorkHandler get() = app.work!!
 
+        fun getString(resId: Int) = context.getString(resId)
+
         fun prefFlag(name: String, default: Boolean) = context.getDefaultSharedPreferences()
             .getBoolean(name, default)
 
+        fun setPrefFlag(name: String, value: Boolean) = context.getDefaultSharedPreferences()
+            .edit()
+            .putBoolean(name, value).apply()
+
+        fun prefString(name: String, default: String) = context.getDefaultSharedPreferences()
+            .getString(name, default) ?: default
+
+        fun setPrefString(name: String, value: String) = context.getDefaultSharedPreferences()
+            .edit()
+            .putString(name, value).apply()
+
+        fun prefPrivateString(name: String, default: String) = context.getPrivateSharedPrefs()
+            .getString(name, default) ?: default
+
+        fun setPrefPrivateString(name: String, value: String) = context.getPrivateSharedPrefs()
+            .edit()
+            .putString(name, value).apply()
+
         fun prefInt(name: String, default: Int) = context.getDefaultSharedPreferences()
             .getInt(name, default)
+
+        fun setPrefInt(name: String, value: Int) = context.getDefaultSharedPreferences()
+            .edit()
+            .putInt(name, value).apply()
+
+        var infoLines = mutableStateListOf<String>()
+
+        val nInfoLines = 100
+        var showInfo by mutableStateOf(false)
+
+        fun clearInfoText() {
+            infoLines = mutableStateListOf()
+        }
+
+        fun addInfoText(value: String) {
+            infoLines.add(value)
+            if (infoLines.size > nInfoLines)
+                infoLines.drop(1)
+        }
+
+        fun getInfoText(n: Int, fill: String? = null): String {
+            val lines = infoLines.takeLast(n).toMutableList()
+            if (fill != null)
+                while (lines.size < n)
+                    lines.add(fill)
+            return lines.joinToString("\n")
+        }
 
         // if any background work is to be done
         private var theWakeLock: PowerManager.WakeLock? = null

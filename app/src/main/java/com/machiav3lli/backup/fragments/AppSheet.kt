@@ -24,43 +24,48 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
-import android.text.format.Formatter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Divider
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -70,8 +75,7 @@ import com.machiav3lli.backup.ActionListener
 import com.machiav3lli.backup.BUNDLE_USERS
 import com.machiav3lli.backup.OABX
 import com.machiav3lli.backup.R
-import com.machiav3lli.backup.databinding.FragmentComposeBinding
-import com.machiav3lli.backup.dbs.entity.AppExtras
+import com.machiav3lli.backup.dbs.ODatabase
 import com.machiav3lli.backup.dbs.entity.Backup
 import com.machiav3lli.backup.dialogs.BackupDialogFragment
 import com.machiav3lli.backup.dialogs.RestoreDialogFragment
@@ -80,94 +84,117 @@ import com.machiav3lli.backup.handler.BackupRestoreHelper.ActionType
 import com.machiav3lli.backup.handler.ShellCommands
 import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.items.Package
+import com.machiav3lli.backup.preferences.pref_useWorkManagerForSingleManualJob
 import com.machiav3lli.backup.tasks.BackupActionTask
 import com.machiav3lli.backup.tasks.RestoreActionTask
-import com.machiav3lli.backup.ui.compose.item.ActionChip
+import com.machiav3lli.backup.ui.compose.icons.Icon
+import com.machiav3lli.backup.ui.compose.icons.Phosphor
+import com.machiav3lli.backup.ui.compose.icons.icon.Exodus
+import com.machiav3lli.backup.ui.compose.icons.phosphor.ArchiveTray
+import com.machiav3lli.backup.ui.compose.icons.phosphor.ArrowSquareOut
+import com.machiav3lli.backup.ui.compose.icons.phosphor.CaretDown
+import com.machiav3lli.backup.ui.compose.icons.phosphor.Info
+import com.machiav3lli.backup.ui.compose.icons.phosphor.Leaf
+import com.machiav3lli.backup.ui.compose.icons.phosphor.Prohibit
+import com.machiav3lli.backup.ui.compose.icons.phosphor.ProhibitInset
+import com.machiav3lli.backup.ui.compose.icons.phosphor.TrashSimple
+import com.machiav3lli.backup.ui.compose.icons.phosphor.Warning
+import com.machiav3lli.backup.ui.compose.item.BackupItem
 import com.machiav3lli.backup.ui.compose.item.CardButton
+import com.machiav3lli.backup.ui.compose.item.ElevatedActionButton
+import com.machiav3lli.backup.ui.compose.item.MorphableTextField
 import com.machiav3lli.backup.ui.compose.item.PackageIcon
 import com.machiav3lli.backup.ui.compose.item.RoundButton
+import com.machiav3lli.backup.ui.compose.item.TagsBlock
 import com.machiav3lli.backup.ui.compose.item.TitleText
-import com.machiav3lli.backup.ui.compose.recycler.BackupRecycler
+import com.machiav3lli.backup.ui.compose.recycler.InfoChipsBlock
 import com.machiav3lli.backup.ui.compose.theme.AppTheme
 import com.machiav3lli.backup.ui.compose.theme.LocalShapes
-import com.machiav3lli.backup.ui.compose.theme.Updated
+import com.machiav3lli.backup.utils.infoChips
+import com.machiav3lli.backup.utils.show
 import com.machiav3lli.backup.utils.showError
-import com.machiav3lli.backup.utils.showToast
 import com.machiav3lli.backup.viewmodels.AppSheetViewModel
+import kotlinx.coroutines.CoroutineScope
 import timber.log.Timber
 
-class AppSheet(val appInfo: Package, var appExtras: AppExtras) :
-    BaseSheet(), ActionListener {
-    private lateinit var binding: FragmentComposeBinding
+class AppSheet(val appInfo: Package) : BaseSheet(), ActionListener {
     private lateinit var viewModel: AppSheetViewModel
-
-    val packageName: String?
-        get() = viewModel.appInfo.value?.packageName
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentComposeBinding.inflate(inflater, container, false)
+        val database = ODatabase.getInstance(requireContext())
         val users =
             if (savedInstanceState != null) savedInstanceState.getStringArrayList(BUNDLE_USERS) else ArrayList()
         val shellCommands = ShellCommands(users)
         val viewModelFactory =
-            AppSheetViewModel.Factory(appInfo, shellCommands, requireActivity().application)
+            AppSheetViewModel.Factory(
+                appInfo,
+                database,
+                shellCommands,
+                requireActivity().application
+            )
         viewModel = ViewModelProvider(this, viewModelFactory)[AppSheetViewModel::class.java]
 
-        viewModel.refreshNow.observe(viewLifecycleOwner) {
-            if (it) {
-                requireMainActivity().updateAppExtras(appExtras)
-                requireMainActivity().updatePackage(viewModel.appInfo.value?.packageName ?: "")
-                viewModel.refreshNow.value = false
-            }
+        return ComposeView(requireContext()).apply {
+            setContent { AppPage() }
         }
-
-        return binding.root
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        redrawPage()
     }
 
     fun updateApp(app: Package) {
-        viewModel.appInfo.value = app
-        redrawPage()
+        viewModel.thePackage.value = app
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
-    private fun redrawPage() {
-        viewModel.appInfo.value?.let {
-            binding.composeView.setContent {
-                val imageData by remember(it) {
-                    mutableStateOf(
-                        if (it.isSpecial) it.packageInfo.icon
-                        else "android.resource://${it.packageName}/${it.packageInfo.icon}"
-                    )
-                }
-                val snackbarText by viewModel.snackbarText.observeAsState()
+    @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
+    @Composable
+    fun AppPage() {
+        val thePackage by viewModel.thePackage.observeAsState()
+        val snackbarText by viewModel.snackbarText.observeAsState()
+        val appExtras by viewModel.appExtras.observeAsState()
+        val snackbarHostState = remember { SnackbarHostState() }
+        val nestedScrollConnection = rememberNestedScrollInteropConnection()
+        val coroutineScope = rememberCoroutineScope()
 
-                AppTheme(
-                    darkTheme = isSystemInDarkTheme()
-                ) {
-                    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .verticalScroll(rememberScrollState())
-                                .padding(horizontal = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
+        thePackage?.let { packageInfo ->
+            val imageData by remember(packageInfo) {
+                mutableStateOf(
+                    if (packageInfo.isSpecial) packageInfo.packageInfo.icon
+                    else "android.resource://${packageInfo.packageName}/${packageInfo.packageInfo.icon}"
+                )
+            }
+            if (viewModel.refreshNow) {
+                requireMainActivity().updatePackage(packageInfo.packageName ?: "")
+                viewModel.refreshNow = false
+            }
+
+
+            AppTheme {
+                Scaffold(
+                    containerColor = Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.onBackground,
+                    bottomBar = {
+
+                    },
+                    snackbarHost = { SnackbarHost(snackbarHostState) }
+                ) { paddingValues ->
+                    LazyColumn(
+                        modifier = Modifier
+                            .padding(paddingValues)
+                            .nestedScroll(nestedScrollConnection)
+                            .fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(8.dp)
+                    ) {
+                        item {
                             OutlinedCard(
                                 modifier = Modifier.padding(top = 8.dp),
                                 shape = RoundedCornerShape(LocalShapes.current.medium),
                                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.surface),
-                                //colors = CardDefaults.outlinedCardColors(
-                                containerColor = MaterialTheme.colorScheme.background
-                                //)
+                                colors = CardDefaults.outlinedCardColors(
+                                    containerColor = MaterialTheme.colorScheme.background
+                                )
                             ) {
                                 Row(
                                     modifier = Modifier
@@ -177,68 +204,56 @@ class AppSheet(val appInfo: Package, var appExtras: AppExtras) :
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    PackageIcon(item = it, imageData = imageData)
+                                    PackageIcon(item = packageInfo, imageData = imageData)
 
                                     Column(
                                         modifier = Modifier
                                             .wrapContentHeight()
-                                            .width(IntrinsicSize.Min)
-                                            .weight(1f)
+                                            .weight(1f),
+                                        verticalArrangement = Arrangement.Center
                                     ) {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .fillMaxHeight(0.4f),
-                                        ) {
-                                            Text(
-                                                text = it.packageLabel,
-                                                modifier = Modifier
-                                                    .align(Alignment.CenterVertically)
-                                                    .weight(1f),
-                                                softWrap = true,
-                                                overflow = TextOverflow.Ellipsis,
-                                                maxLines = 1,
-                                                style = MaterialTheme.typography.titleMedium
-                                            )
-                                        }
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .fillMaxHeight(0.4f),
-                                        ) {
-                                            Text(
-                                                text = it.packageName,
-                                                modifier = Modifier
-                                                    .align(Alignment.CenterVertically)
-                                                    .weight(1f),
-                                                softWrap = true,
-                                                overflow = TextOverflow.Ellipsis,
-                                                maxLines = 1,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
+                                        Text(
+                                            text = packageInfo.packageLabel,
+                                            softWrap = true,
+                                            overflow = TextOverflow.Ellipsis,
+                                            maxLines = 1,
+                                            style = MaterialTheme.typography.titleMedium
+                                        )
+                                        Text(
+                                            text = packageInfo.packageName,
+                                            softWrap = true,
+                                            overflow = TextOverflow.Ellipsis,
+                                            maxLines = 1,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     }
-                                    AnimatedVisibility(visible = it.isInstalled && !it.isSpecial) {
+                                    AnimatedVisibility(visible = packageInfo.isInstalled && !packageInfo.isSpecial) {
                                         RoundButton(
-                                            icon = painterResource(id = R.drawable.ic_info),
+                                            icon = Phosphor.Info,
                                             modifier = Modifier.fillMaxHeight()
                                         ) {
                                             val intent =
                                                 Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                                             intent.data =
-                                                Uri.fromParts("package", it.packageName, null)
+                                                Uri.fromParts(
+                                                    "package",
+                                                    packageInfo.packageName,
+                                                    null
+                                                )
                                             startActivity(intent)
                                         }
                                     }
                                     RoundButton(
-                                        icon = painterResource(id = R.drawable.ic_arrow_down),
+                                        icon = Phosphor.CaretDown,
                                         modifier = Modifier.fillMaxHeight()
                                     ) {
                                         dismissAllowingStateLoss()
                                     }
                                 }
                             }
+                        }
+                        item {
                             AnimatedVisibility(visible = !snackbarText.isNullOrEmpty()) {
                                 Text(
                                     text = snackbarText.toString(),
@@ -248,9 +263,14 @@ class AppSheet(val appInfo: Package, var appExtras: AppExtras) :
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
+                        }
+                        item {
+                            InfoChipsBlock(list = packageInfo.infoChips())
+                        }
+                        item {
                             AnimatedVisibility(
                                 modifier = Modifier.fillMaxWidth(),
-                                visible = !it.isSpecial
+                                visible = !packageInfo.isSpecial
                             ) {
                                 Row(
                                     modifier = Modifier
@@ -264,289 +284,220 @@ class AppSheet(val appInfo: Package, var appExtras: AppExtras) :
                                         modifier = Modifier
                                             .fillMaxHeight()
                                             .weight(1f),
-                                        icon = painterResource(id = R.drawable.ic_exodus),
+                                        icon = Icon.Exodus,
                                         tint = colorResource(id = R.color.ic_exodus),
                                         description = stringResource(id = R.string.exodus_report)
                                     ) {
                                         requireContext().startActivity(
                                             Intent(
                                                 Intent.ACTION_VIEW,
-                                                Uri.parse(exodusUrl(it.packageName))
+                                                Uri.parse(exodusUrl(packageInfo.packageName))
                                             )
                                         )
                                     }
                                     AnimatedVisibility(
-                                        visible = it.isInstalled,
+                                        visible = true, //appInfo.isInstalled && ! appInfo.isDisabled,
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         CardButton(
+                                            enabled = packageInfo.isInstalled && !packageInfo.isDisabled,
                                             modifier = Modifier
                                                 .fillMaxHeight()
                                                 .weight(1f),
-                                            icon = painterResource(id = R.drawable.ic_launchable),
+                                            icon = Phosphor.ArrowSquareOut,
                                             tint = colorResource(id = R.color.ic_obb),
                                             description = stringResource(id = R.string.launch_app)
                                         ) {
                                             requireContext().packageManager.getLaunchIntentForPackage(
-                                                it.packageName
+                                                packageInfo.packageName
                                             )?.let {
                                                 startActivity(it)
                                             }
                                         }
                                     }
                                     AnimatedVisibility(
-                                        visible = it.isInstalled,
+                                        visible = packageInfo.isInstalled,
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         CardButton(
                                             modifier = Modifier
                                                 .fillMaxHeight()
                                                 .weight(1f),
-                                            icon = painterResource(
-                                                id = if (it.isDisabled) R.drawable.ic_battery_optimization
-                                                else R.drawable.ic_exclude
-                                            ),
-                                            tint = if (it.isDisabled) MaterialTheme.colorScheme.primaryContainer
-                                            else MaterialTheme.colorScheme.secondary,
+                                            icon = if (packageInfo.isDisabled) Phosphor.Leaf
+                                            else Phosphor.ProhibitInset,
+                                            tint = if (packageInfo.isDisabled) MaterialTheme.colorScheme.primaryContainer
+                                            else MaterialTheme.colorScheme.tertiaryContainer,
                                             description = stringResource(
-                                                id = if (it.isDisabled) R.string.enablePackage
+                                                id = if (packageInfo.isDisabled) R.string.enablePackage
                                                 else R.string.disablePackage
                                             ),
-                                            onClick = { showEnableDisableDialog(it.isDisabled) }
+                                            onClick = { showEnableDisableDialog(packageInfo.isDisabled) }
                                         )
                                     }
                                     AnimatedVisibility(
-                                        visible = it.isInstalled && !it.isSystem,
+                                        visible = packageInfo.isInstalled && !packageInfo.isSystem,
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         CardButton(
                                             modifier = Modifier
                                                 .fillMaxHeight()
                                                 .weight(1f),
-                                            icon = painterResource(id = R.drawable.ic_delete),
-                                            tint = MaterialTheme.colorScheme.secondary,
+                                            icon = Phosphor.TrashSimple,
+                                            tint = MaterialTheme.colorScheme.tertiary,
                                             description = stringResource(id = R.string.uninstall),
-                                            onClick = { showUninstallDialog(it) }
+                                            onClick = {
+                                                snackbarHostState.showUninstallDialog(
+                                                    packageInfo,
+                                                    coroutineScope
+                                                )
+                                            }
                                         )
                                     }
                                     CardButton(
                                         modifier = Modifier
                                             .weight(1f),
-                                        icon = painterResource(id = R.drawable.ic_blocklist),
+                                        icon = Phosphor.Prohibit,
                                         tint = colorResource(id = R.color.ic_updated),
                                         description = stringResource(id = R.string.global_blocklist_add)
                                     ) {
-                                        requireMainActivity().viewModel.addToBlocklist(it.packageName)
+                                        requireMainActivity().viewModel.addToBlocklist(packageInfo.packageName)
                                     }
                                 }
                             }
-                            AnimatedVisibility(
-                                visible = !it.isSpecial,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .width(IntrinsicSize.Min)
-                                ) {
-                                    Row {
-                                        Text(text = stringResource(id = R.string.app_s_type_title))
-                                        Text(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            textAlign = TextAlign.End,
-                                            text = stringResource(id = if (it.isSpecial) R.string.apptype_special else if (it.isSystem) R.string.apptype_system else R.string.apptype_user),
-                                            color = when {
-                                                !it.isInstalled -> MaterialTheme.colorScheme.onSurfaceVariant
-                                                it.isDisabled -> MaterialTheme.colorScheme.surfaceVariant
-                                                it.isSpecial -> colorResource(R.color.ic_special)
-                                                it.isSystem -> colorResource(R.color.ic_system)
-                                                else -> colorResource(R.color.ic_user)
-                                            }
-                                        )
-                                    }
-                                    Row {
-                                        Text(text = stringResource(id = R.string.version_name_title))
-                                        Text(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            textAlign = TextAlign.End,
-                                            text = if (it.isUpdated) "${it.latestBackup?.versionName.orEmpty()} (${it.versionName})"
-                                            else it.versionName.orEmpty(),
-                                            color = if (it.isUpdated) Updated else MaterialTheme.colorScheme.onBackground
-                                        )
-                                    }
-                                    AnimatedVisibility(
-                                        visible = it.isInstalled,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(IntrinsicSize.Min),
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            Column(
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .width(IntrinsicSize.Min)
-                                            ) {
-                                                Text(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    text = stringResource(id = R.string.app_size)
-                                                )
-                                                Text(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    textAlign = TextAlign.End,
-                                                    text = Formatter.formatFileSize(
-                                                        requireContext(),
-                                                        it.storageStats?.appBytes ?: 0
-                                                    )
-                                                )
-                                                Text(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    text = stringResource(id = R.string.split_apks)
-                                                )
-                                                Text(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    textAlign = TextAlign.End,
-                                                    text = stringResource(id = if (it.apkSplits.isNullOrEmpty()) R.string.dialogNo else R.string.dialogYes)
-                                                )
-                                            }
-                                            Divider(
-                                                color = MaterialTheme.colorScheme.surface,
-                                                modifier = Modifier
-                                                    .fillMaxHeight()
-                                                    .width(1.dp)
-                                            )
-                                            Column(
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .width(IntrinsicSize.Min)
-                                            ) {
-                                                AnimatedVisibility(
-                                                    visible = it.isInstalled,
-                                                    modifier = Modifier.fillMaxWidth()
-                                                ) {
-                                                    Column {
-                                                        Text(
-                                                            modifier = Modifier.fillMaxWidth(),
-                                                            text = stringResource(id = R.string.data_size)
-                                                        )
-                                                        Text(
-                                                            modifier = Modifier.fillMaxWidth(),
-                                                            textAlign = TextAlign.End,
-                                                            text = Formatter.formatFileSize(
-                                                                requireContext(),
-                                                                it.storageStats?.dataBytes ?: 0
-                                                            ),
-                                                        )
-                                                        Text(
-                                                            modifier = Modifier.fillMaxWidth(),
-                                                            text = stringResource(id = R.string.cache_size)
-                                                        )
-                                                        Text(
-                                                            modifier = Modifier.fillMaxWidth(),
-                                                            textAlign = TextAlign.End,
-                                                            text = Formatter.formatFileSize(
-                                                                requireContext(),
-                                                                it.storageStats?.cacheBytes ?: 0
-                                                            ),
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
+                        }
+                        item {
+                            TitleText(textId = R.string.title_tags)
+                            TagsBlock(
+                                tags = appExtras?.customTags ?: mutableSetOf(),
+                                onRemove = {
+                                    viewModel.setExtras(appExtras?.apply {
+                                        customTags.remove(it)
+                                    })
+                                },
+                                onAdd = {
+                                    viewModel.setExtras(appExtras?.apply {
+                                        if (customTags.isNotEmpty())
+                                            customTags.add(it)
+                                        else
+                                            customTags = mutableSetOf(it)
+                                    })
                                 }
-                            }
+                            )
+                        }
+                        item {
+                            TitleText(textId = R.string.title_note)
+                            MorphableTextField(
+                                text = appExtras?.note,
+                                onCancel = {
+                                },
+                                onSave = {
+                                    viewModel.setExtras(appExtras?.apply { note = it })
+                                }
+                            )
+                        }
+                        item {
                             TitleText(textId = R.string.available_actions)
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                AnimatedVisibility(visible = it.isInstalled || it.isSpecial) {
-                                    ActionChip(
-                                        icon = painterResource(id = R.drawable.ic_backup),
+                                AnimatedVisibility(visible = packageInfo.isInstalled || packageInfo.isSpecial) {
+                                    ElevatedActionButton(
+                                        icon = Phosphor.ArchiveTray,
                                         text = stringResource(id = R.string.backup),
                                         fullWidth = true,
                                         enabled = snackbarText.isNullOrEmpty(),
-                                        onClick = { showBackupDialog(it) }
+                                        onClick = { showBackupDialog(packageInfo) }
                                     )
                                 }
-                                AnimatedVisibility(visible = it.hasBackups) {
-                                    ActionChip(
-                                        icon = painterResource(id = R.drawable.ic_delete),
+                                AnimatedVisibility(visible = packageInfo.hasBackups) {
+                                    ElevatedActionButton(
+                                        icon = Phosphor.TrashSimple,
                                         text = stringResource(id = R.string.delete_all_backups),
                                         fullWidth = true,
                                         positive = false,
                                         enabled = snackbarText.isNullOrEmpty(),
-                                        onClick = { showDeleteAllBackupsDialog(it) }
+                                        onClick = {
+                                            snackbarHostState.showDeleteAllBackupsDialog(
+                                                packageInfo,
+                                                coroutineScope
+                                            )
+                                        }
                                     )
                                 }
-                                AnimatedVisibility(visible = it.isInstalled && !it.isSpecial) {
-                                    ActionChip(
-                                        icon = painterResource(id = R.drawable.ic_force_kill),
+                                AnimatedVisibility(visible = packageInfo.isInstalled && !packageInfo.isSpecial) {
+                                    ElevatedActionButton(
+                                        icon = Phosphor.Warning,
                                         text = stringResource(id = R.string.forceKill),
                                         fullWidth = true,
                                         colored = false,
-                                        onClick = { showForceKillDialog(it) }
+                                        onClick = { showForceKillDialog(packageInfo) }
                                     )
                                 }
-                                AnimatedVisibility(visible = it.isInstalled && !it.isSpecial && ((it.storageStats?.dataBytes ?: 0L) >= 0L)) {
-                                    ActionChip(
-                                        icon = painterResource(id = R.drawable.ic_delete),
+                                AnimatedVisibility(
+                                    visible = packageInfo.isInstalled && !packageInfo.isSpecial && ((packageInfo.storageStats?.dataBytes
+                                        ?: 0L) >= 0L)
+                                ) {
+                                    ElevatedActionButton(
+                                        icon = Phosphor.TrashSimple,
                                         text = stringResource(id = R.string.clear_cache),
                                         fullWidth = true,
                                         colored = false,
-                                        onClick = { showClearCacheDialog(it) }
+                                        onClick = { showClearCacheDialog(packageInfo) }
                                     )
                                 }
                             }
-                            if (it.hasBackups) {
-                                BackupRecycler(productsList = it.backupsNewestFirst,
-                                    onRestore = { item ->
-                                        viewModel.appInfo.value?.let { app ->
-                                            if (!app.isSpecial && !app.isInstalled
-                                                && !item.hasApk && item.hasAppData
-                                            ) {
-                                                requireActivity().showToast(getString(R.string.notInstalledModeDataWarning))
-                                            } else {
-                                                RestoreDialogFragment(
-                                                    app,
-                                                    item,
-                                                    this@AppSheet
+                        }
+                        items(items = packageInfo.backupsNewestFirst) {
+                            BackupItem(
+                                it,
+                                onRestore = { item ->
+                                    packageInfo.let { app ->
+                                        if (!app.isSpecial && !app.isInstalled
+                                            && !item.hasApk && item.hasAppData
+                                        ) {
+                                            snackbarHostState.show(
+                                                coroutineScope = coroutineScope,
+                                                message = getString(R.string.notInstalledModeDataWarning)
+                                            )
+                                        } else {
+                                            RestoreDialogFragment(
+                                                app,
+                                                item,
+                                                this@AppSheet
+                                            )
+                                                .show(
+                                                    requireActivity().supportFragmentManager,
+                                                    "restoreDialog"
                                                 )
-                                                    .show(
-                                                        requireActivity().supportFragmentManager,
-                                                        "restoreDialog"
-                                                    )
-                                            }
-                                        }
-                                    },
-                                    onDelete = { item ->
-                                        viewModel.appInfo.value?.let { app ->
-                                            AlertDialog.Builder(requireContext())
-                                                .setTitle(app.packageLabel)
-                                                .setMessage(R.string.deleteBackupDialogMessage)
-                                                .setPositiveButton(R.string.dialogYes) { dialog: DialogInterface?, _: Int ->
-                                                    requireActivity().showToast(
-                                                        "${app.packageLabel}: ${
-                                                            getString(
-                                                                R.string.deleteBackup
-                                                            )
-                                                        }"
-                                                    )
-                                                    if (!app.hasBackups) {
-                                                        Timber.w("UI Issue! Tried to delete backups for app without backups.")
-                                                        dialog?.dismiss()
-                                                    }
-                                                    viewModel.deleteBackup(item)
-                                                }
-                                                .setNegativeButton(R.string.dialogNo, null)
-                                                .show()
                                         }
                                     }
-                                )
-                            }
+                                },
+                                onDelete = { item ->
+                                    packageInfo.let { app ->
+                                        AlertDialog.Builder(requireContext())
+                                            .setTitle(app.packageLabel)
+                                            .setMessage(R.string.deleteBackupDialogMessage)
+                                            .setPositiveButton(R.string.dialogYes) { dialog: DialogInterface?, _: Int ->
+                                                snackbarHostState.show(
+                                                    coroutineScope = coroutineScope,
+                                                    message = "${app.packageLabel}: ${
+                                                        getString(
+                                                            R.string.deleteBackup
+                                                        )
+                                                    }"
+                                                )
+                                                if (!app.hasBackups) {
+                                                    Timber.w("UI Issue! Tried to delete backups for app without backups.")
+                                                    dialog?.dismiss()
+                                                }
+                                                viewModel.deleteBackup(item)
+                                            }
+                                            .setNegativeButton(R.string.dialogNo, null)
+                                            .show()
+                                    }
+                                }
+                            )
                         }
                     }
                 }
@@ -554,74 +505,51 @@ class AppSheet(val appInfo: Package, var appExtras: AppExtras) :
         }
     }
 
-    /* TODO re-add extras
-    private fun setupExtras() {
-
-        binding.noteText.setText(appExtras.note.toCharArray(), 0, appExtras.note.length)
-        binding.tagsGroup.removeAllViews()
-        appExtras.customTags.forEach { pn ->
-            val chip = Chip(requireContext())
-            chip.text = pn
-            chip.setChipDrawable(
-                ChipDrawable.createFromAttributes(
-                    requireContext(),
-                    null,
-                    0,
-                    R.style.Chip_Tag
-                )
-            )
-            chip.isClickable = false
-            chip.setCloseIconResource(R.drawable.ic_close)
-            val typedValue = TypedValue()
-            requireContext().theme.resolveAttribute(R.attr.colorSecondary, typedValue, true)
-            chip.closeIconTint = ColorStateList.valueOf(typedValue.data)
-            chip.isCloseIconVisible = true
-            chip.setOnCloseIconClickListener {
-                binding.tagsGroup.removeView(it)
-                appExtras.customTags = appExtras.customTags.minus(pn)
-                viewModel.refreshNow.value = true
-            }
-            binding.tagsGroup.addView(chip)
-        }
-    }
-
-    private fun setupOnClicks() {
-        // tags
-        binding.addTag.setOnClickListener {
-            appExtras.customTags = appExtras.customTags.plus(binding.newTag.text.toString())
-            binding.newTag.text = null
-            viewModel.refreshNow.value = true
-        }
-
-        // note
-        binding.saveNote.setOnClickListener {
-            appExtras.note = binding.noteText.text.toString()
-            viewModel.refreshNow.value = true
-        }
-    } */
-
     override fun onActionCalled(
         actionType: ActionType?,
         mode: Int,
         backup: Backup?
     ) {
-        viewModel.appInfo.value?.let {
+        viewModel.thePackage.value?.let { p ->
             when {
-                // TODO fix not refreshing when the package does the first backup
                 actionType === ActionType.BACKUP -> {
-                    BackupActionTask(
-                        it, requireMainActivity(), OABX.shellHandlerInstance!!, mode,
-                        this
-                    ).execute()
+                    if (pref_useWorkManagerForSingleManualJob.value) {
+                        OABX.main?.startBatchAction(
+                            true,
+                            listOf(this.appInfo.packageName),
+                            listOf(mode)
+                        ) {
+                            //viewModel.refreshNow.value = true
+                            // TODO refresh only the influenced packages
+                            it.removeObserver(this)
+                        }
+                    } else {
+                        BackupActionTask(
+                            p, requireMainActivity(), OABX.shellHandlerInstance!!, mode,
+                            this
+                        ).execute()
+                    }
                 }
                 actionType === ActionType.RESTORE -> {
-                    backup?.let { backupProps: Backup ->
-                        val backupDir =
-                            backupProps.getBackupInstanceFolder(viewModel.appInfo.value?.getAppBackupRoot())
-                        RestoreActionTask(
-                            it, requireMainActivity(), OABX.shellHandlerInstance!!, mode,
-                            backupProps, backupDir!!, this
-                        ).execute()
+                    if (pref_useWorkManagerForSingleManualJob.value) {
+                        OABX.main?.startBatchAction(
+                            false,
+                            listOf(this.appInfo.packageName),
+                            listOf(mode)
+                        ) {
+                            //viewModel.refreshNow.value = true
+                            // TODO refresh only the influenced packages
+                            it.removeObserver(this)
+                        }
+                    } else {
+                        backup?.let { backupProps: Backup ->
+                            val backupDir =
+                                backupProps.getBackupInstanceFolder(p.getAppBackupRoot())
+                            RestoreActionTask(
+                                p, requireMainActivity(), OABX.shellHandlerInstance!!, mode,
+                                backupProps, backupDir!!, this
+                            ).execute()
+                        }
                     }
                 }
                 else -> {
@@ -666,36 +594,42 @@ class AppSheet(val appInfo: Package, var appExtras: AppExtras) :
         }
     }
 
-    private fun showUninstallDialog(app: Package) {
+    private fun SnackbarHostState.showUninstallDialog(
+        app: Package,
+        coroutineScope: CoroutineScope
+    ) {
         AlertDialog.Builder(requireContext())
             .setTitle(app.packageLabel)
             .setMessage(R.string.uninstallDialogMessage)
             .setPositiveButton(R.string.dialogYes) { _: DialogInterface?, _: Int ->
-                requireActivity().showToast("${app.packageLabel}: ${getString(R.string.uninstallProgress)}")
                 viewModel.uninstallApp()
+                this.show(
+                    coroutineScope = coroutineScope,
+                    message = "${app.packageLabel}: ${getString(R.string.uninstallProgress)}"
+                )
             }
             .setNegativeButton(R.string.dialogNo, null)
             .show()
     }
 
-    private fun showBackupDialog(app: Package) {
+    fun showBackupDialog(app: Package) {
         BackupDialogFragment(app, this)
             .show(requireActivity().supportFragmentManager, "backupDialog")
     }
 
-    private fun showDeleteAllBackupsDialog(app: Package) {
+    fun SnackbarHostState.showDeleteAllBackupsDialog(
+        app: Package,
+        coroutineScope: CoroutineScope
+    ) {
         AlertDialog.Builder(requireContext())
             .setTitle(app.packageLabel)
             .setMessage(R.string.deleteBackupDialogMessage)
             .setPositiveButton(R.string.dialogYes) { _: DialogInterface?, _: Int ->
-                requireActivity().showToast(
-                    "${app.packageLabel}: ${
-                        getString(
-                            R.string.delete_all_backups
-                        )
-                    }"
-                )
                 viewModel.deleteAllBackups()
+                this.show(
+                    coroutineScope = coroutineScope,
+                    message = "${app.packageLabel}: ${getString(R.string.delete_all_backups)}"
+                )
             }
             .setNegativeButton(R.string.dialogNo, null)
             .show()
@@ -718,18 +652,18 @@ class AppSheet(val appInfo: Package, var appExtras: AppExtras) :
         try {
             Timber.i("${app.packageLabel}: Wiping cache")
             ShellCommands.wipeCache(requireContext(), app)
-            viewModel.refreshNow.value = true
+            viewModel.refreshNow = true
         } catch (e: ShellCommands.ShellActionFailedException) {
             // Not a critical issue
             val errorMessage: String =
-                when (e.cause) {
+                when (val cause = e.cause) {
                     is ShellHandler.ShellCommandFailedException -> {
-                        e.cause.shellResult.err.joinToString(
+                        cause.shellResult.err.joinToString(
                             " "
                         )
                     }
                     else -> {
-                        e.cause?.message ?: "unknown error"
+                        cause?.message ?: "unknown error"
                     }
                 }
             Timber.w("Cache couldn't be deleted: $errorMessage")

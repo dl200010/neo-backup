@@ -100,7 +100,7 @@
     <string name="prefs_excludecache_summary">Bersihkan cache aplikasi sebelum melakukan mencadangkan data</string>
     <string name="prefs_acquirewakelock_summary">Dapatkan wakelock saat operasi batch sedang berjalan untuk mencegah tidur. Mempercepat backup dan memulihkan secara signifikan tetapi akan mengkonsumsi lebih banyak daya.</string>
     <string name="prefs_oldbackups_summary">Saring cadangan yang lebih lama dari nilai dalam beberapa hari. digunakan dengan filter \'tampilkan backup lama\'.</string>
-    <string name="prefs_copyselfapk_summary">Tempatkan salinan OAndBackupX di tingkat atas folder cadangan</string>
+    <string name="prefs_copyselfapk_summary">Tempatkan salinan Neo Backup di tingkat atas folder cadangan</string>
     <string name="prefs_rememberfiltering_summary">Menyimpan metode penyortiran dan penyaringan yang dipilih. Hanya yang ditandai oleh kotak centang di menu yang dipertimbangkan.</string>
     <string name="prefs_batchdelete_summary">Hapus cadangan semua aplikasi yang saat ini tidak diinstal.</string>
     <string name="sched_title">Penjadwalan</string>
@@ -174,16 +174,13 @@
     <string name="intro_permission_storage_location">Aplikasi ini membutuhkan lokasi cadangan untuk menyimpan cadangan. Aplikasi ini mungkin membutuhkan beberapa gigabyte penyimpanan untuk cadangan lengkap dan banyak mengkueri sistem file. Harap diingat ketika memilih lokasi penyimpanan berbasis jaringan.</string>
     <string name="intro_permission_usageaccess">Aplikasi ini memerlukan izin ini untuk dapat memeriksa statistik dan ukuran data dan cache aplikasi Anda.</string>
     <string name="intro_permission_storage">Aplikasi ini menggunakan izin baca/tulis penyimpanan untuk dapat mengakses penyimpanan eksternal dan memberikan kemungkinan untuk pencadangan data/obb eksternal aplikasi lain.</string>
-    <string name="intro_welcome_message">OAndBackupX adalah cabang dari OAndBackup yang terkenal dengan tujuan membawanya ke tahun 2020 dan selanjutnya. Untuk saat ini sebagian besar fungsionalitas dan UI aplikasi ditulis ulang dan beberapa ditambahkan.
-\n Aplikasi ini masih dalam tahap beta dan banyak rebasing yang sering dilakukan. Jadi, harap baca log perubahan dengan cermat pada setiap rilis baru.
-\n Semua jenis kontribusi diterima baik itu terjemahan, ide, pelaporan bug, atau pekerjaan kode.
-\n
-\n Sekarang tentang fungsionalitas Aplikasi kami:
-\n • Ini membutuhkan root dan memungkinkan Anda untuk mencadangkan aplikasi individu dan datanya.
-\n • Baik mencadangkan dan memulihkan program satu per satu dan mendukung pencadangan dan pemulihan banyak program.
-\n • Mengembalikan aplikasi sistem semestinya dapat dilakukan tanpa memerlukan reboot setelahnya, tetapi kami tetap tidak menyarankan untuk melakukannya.
-\n • Pencadangan dapat dijadwalkan tanpa batasan jumlah jadwal individu dan ada kemungkinan membuat daftar kustom yang unik.</string>
-    <string name="welcome_to_oabx">Selamat datang di OABX!</string>
+    <string name="intro_welcome_message">Neo Backup (sebelumnya OAndBackupX) adalah cabang dari OAndBackup yang terkenal dengan tujuan untuk membawa OAndBackup ke 202X dan bagian dari rangkaian Neo Applications. Untuk saat ini aplikasi sudah sepenuhnya ditulis ulang, kedatangannya akan membuatnya kuat dan menambahkan beberapa fitur yang direncanakan secara panjang yang dapat memudahkan alur kerja pencadangan/pemulihan dengan perangkat apa pun. Oleh karena itu semua jenis kontribusi selalu diterima.
+\nSekarang tentang fungsionalitas Aplikasi kami:
+\n• Ini membutuhkan root dan memungkinkan Anda untuk membuat cadangan aplikasi individual dan datanya.
+\n• Pencadangan dan pemulihan program masing-masing secara individual dan pencadangan dan pemulihan dari beberapa program didukung.
+\n• Memulihkan aplikasi sistem dapat dilakukan tanpa memerlukan reboot setelahnya.
+\n• Pencadangan dapat dijadwalkan tanpa batasan jumlah jadwal individu dan memungkinkan untuk membuat daftar khusus dari daftar aplikasi yang diinstal.</string>
+    <string name="welcome_to_oabx">Selamat datang di Neo Backup!</string>
     <string name="storage_access">Akses Penyimpanan</string>
     <string name="sort_and_filter">Urutkan &amp; Saring</string>
     <string name="enable_encryption_message">Tidak aman menyimpan data Anda di perangkat Anda yang tidak dienkripsi. Untuk keamanan data Anda, aktifkan enkripsi dan setel kata sandi.</string>
@@ -299,13 +296,60 @@
     <string name="error_datachanged">Data aplikasi telah diubah secara aktif saat melakukan pencadangan. Coba matikan prosesnya sebelum melakukan pencadangan</string>
     <string name="intro_permission_storage_location_warning">Jangan pilih direktori penyimpanan utama atau folder Unduhan, buat sebuah folder hanya untuk pencadangan Anda. Lebih lanjut di FAQ</string>
     <string name="prefs_accent_8">Labu Perano</string>
-    <string name="prefs_secondary_3">Harimau Amber</string>
-    <string name="prefs_secondary_4">Oranye Lava</string>
-    <string name="prefs_secondary_5">Flamingo Merah Muda</string>
-    <string name="prefs_secondary_7">Biru Azure</string>
+    <string name="prefs_secondary_3">Tiger Amber</string>
+    <string name="prefs_secondary_4">Lava Orange</string>
+    <string name="prefs_secondary_5">Flamingo Pink</string>
+    <string name="prefs_secondary_7">Azure Blue</string>
     <string name="prefs_secondary_8">Mint</string>
     <string name="home">Beranda</string>
     <string name="all_data">Periksa semua data</string>
     <string name="all_apk">Periksa semua APK</string>
     <string name="showDisabled">Aplikasi nonaktif</string>
+    <string name="sortAppSize">ukuran aplikasi</string>
+    <string name="sortAppDataSize">ukuran data aplikasi</string>
+    <string name="sortBackupSize">ukuran cadangan</string>
+    <string name="grant_contacts_message">Ini penting untuk dapat mencocokkan kontak dengan SMS/MMS.</string>
+    <string name="prefs_restorepermissions">Pulihkan izin</string>
+    <string name="prefs_loadingtoasts_summary">Tampilkan toast saat daftar sedang dimuat</string>
+    <string name="contacts_permission_title">izin kontak</string>
+    <string name="dialogCancelAll">batalkan semua</string>
+    <string name="grant_smsmms_message">Ini penting untuk dapat mencadangkan/mengembalikan SMS/MMS Anda.</string>
+    <string name="spec_fingerprint">Sidik jari</string>
+    <string name="calllogs_permission_title">izin log panggilan</string>
+    <string name="grant_calllogs_message">Ini penting untuk dapat mencadangkan/memulihkan Log Panggilan Anda.</string>
+    <string name="spec_smsmmsjson">SMS/MMS JSON</string>
+    <string name="spec_calllogsjson">log panggilan JSON</string>
+    <string name="smsmms_permission_title">Izin SMS/MMS</string>
+    <string name="prefs_sessionIinstaller">gunakan sesi penginstalan</string>
+    <string name="prefs_sessionIinstaller_summary">Gunakan penginstal sesi daripada penginstal dasar. Lebih lambat tetapi menghindari masalah dengan Android 13+</string>
+    <string name="prefs_installerpackagename">Nama paket penginstal:</string>
+    <string name="prefs_restorepermissions_summary">Pulihkan izin yang diberikan ke aplikasi pada saat pencadangan. Perhatikan bahwa beberapa izin tidak dapat diberikan secara terprogram sehingga menyebabkan pemulihan paket gagal secara keseluruhan, yang kemudian dicakup oleh Neo Backup untuk memulihkan paket tanpa izin.</string>
+    <string name="prefs_loadingtoasts">memuat toasts</string>
+    <string name="prefs_secondary_6">Slate</string>
+    <string name="schedule">Jadwal</string>
+    <string name="finished">Selesai</string>
+    <string name="loading_list">Memuat daftar…</string>
+    <string name="delete">Hapus</string>
+    <string name="dismiss">Membubarkan</string>
+    <string name="enabled">aktifkan</string>
+    <string name="supended_apps_cleanup">bersihkan semua sisa aplikasi yang ditunda</string>
+    <string name="root_is_mandatory">Dikarenakan aplikasi terisolasi, akses superuser wajib untuk dapat melakukan backup dan restore data mereka.</string>
+    <string name="add_tag">tambah tanda baru</string>
+    <string name="edit_note">edit catatan</string>
+    <string name="intro_permission_calllogs">aplikasi membutuhkan izin ini untuk memungkinkan anda membackup/memulihkan log panggilan.</string>
+    <string name="intro_permission_smsmms">aplikasi membutuhkan izin ini untuk memungkinkan anda membackup/memulihkan SMS/MMS.</string>
+    <string name="root_missing">ROOT hilang!</string>
+    <string name="see_faq">Lihat FAQ!</string>
+    <string name="intro_permission_contacts">aplikasi memerlukan izin ini untuk mencocokkan kontak SMS/MMS.</string>
+    <string name="batch">Kumpulan</string>
+    <string name="sortAsc">naik</string>
+    <string name="sortDesc">turun</string>
+    <string name="prefs_theme_dynamic">tema dinamis (jika tersedia)</string>
+    <string name="prefs_user_short">Pribadi</string>
+    <string name="prefs_service_short">Layanan</string>
+    <string name="prefs_advanced_short">Lanjutan</string>
+    <string name="prefs_tools_short">Peralatan</string>
+    <string name="dialog_export_schedules">Ekspor jadwal Saya</string>
+    <string name="prefs_dev_settings">Pengaturan Pengembang</string>
+    <string name="prefs_dev_settings_summary">Jangan diubah kecuali jika pengembang menyuruh Anda melakukannya!</string>
 </resources>

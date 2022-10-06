@@ -19,15 +19,15 @@ package com.machiav3lli.backup.actions
 
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
 import com.machiav3lli.backup.BuildConfig
-import com.machiav3lli.backup.OABX
-import com.machiav3lli.backup.PREFS_PMSUSPEND
 import com.machiav3lli.backup.handler.LogsHandler
 import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.handler.ShellHandler.Companion.runAsRoot
+import com.machiav3lli.backup.handler.ShellHandler.Companion.utilBox
 import com.machiav3lli.backup.handler.ShellHandler.Companion.utilBoxQ
 import com.machiav3lli.backup.handler.ShellHandler.ShellCommandFailedException
+import com.machiav3lli.backup.preferences.pref_backupNoBackupData
+import com.machiav3lli.backup.preferences.pref_pmSuspend
 import com.machiav3lli.backup.tasks.AppActionWork
 import com.topjohnwu.superuser.Shell
 import com.topjohnwu.superuser.ShellUtils
@@ -55,7 +55,7 @@ abstract class BaseAppAction protected constructor(
         protected constructor(message: String?, cause: Throwable?) : super(message, cause)
     }
 
-    private fun prepostOptions(): String = if (OABX.prefFlag(PREFS_PMSUSPEND, true))
+    private fun prepostOptions(): String = if (pref_pmSuspend.value)
         "--suspend"
     else
         ""
@@ -65,8 +65,8 @@ abstract class BaseAppAction protected constructor(
             val applicationInfo = context.packageManager.getApplicationInfo(packageName, 0)
             val script = ShellHandler.findAssetFile("package.sh").toString()
             Timber.w("---------------------------------------- Preprocess package $packageName uid ${applicationInfo.uid}")
-            if (applicationInfo.uid < 10000) { // exclude several system users, e.g. system, radio
-                Timber.w("Ignore processes of system user UID < 10000")
+            if (applicationInfo.uid < android.os.Process.FIRST_APPLICATION_UID) { // exclude several system users, e.g. system, radio
+                Timber.w("Ignore processes of system user UID < ${android.os.Process.FIRST_APPLICATION_UID}")
                 return
             }
             if (!packageName.matches(doNotStop)) { // will stop most activity, needs a good blacklist
@@ -91,8 +91,8 @@ abstract class BaseAppAction protected constructor(
             val applicationInfo = context.packageManager.getApplicationInfo(packageName, 0)
             val script = ShellHandler.findAssetFile("package.sh").toString()
             Timber.w("........................................ Postprocess package $packageName uid ${applicationInfo.uid}")
-            if (applicationInfo.uid < 10000) { // exclude several system users, e.g. system, radio
-                Timber.w("Ignore processes of system user UID < 10000")
+            if (applicationInfo.uid < android.os.Process.FIRST_APPLICATION_UID) { // exclude several system users, e.g. system, radio
+                Timber.w("Ignore processes of system user UID < ${android.os.Process.FIRST_APPLICATION_UID}")
                 return
             }
             stopped[packageName]?.let { pids ->
@@ -136,48 +136,43 @@ abstract class BaseAppAction protected constructor(
             "cache",
             "code_cache"
         )
-        val DATA_EXCLUDED_BASENAMES = listOf(
+        val DATA_EXCLUDED_BASENAMES = listOfNotNull(
             "lib",      //TODO hg42 what about architecture dependent names? or may be application specific? lib* ???
-            "no_backup" //TODO hg42 use Context.getNoBackupFilesDir() ??? tricky, because it's an absolute path (remove common part...)
+            if (!pref_backupNoBackupData.value) "no_backup" else null //TODO hg42 use Context.getNoBackupFilesDir() ??? tricky, because it's an absolute path (remove common part...)
         )
-        val DATA_EXCLUDED_NAMES = listOf(
+        val DATA_EXCLUDED_NAMES = listOfNotNull(
             "com.google.android.gms.appid.xml",
             "cache",
             "trash",
             ".thumbnails",
-            if (OABX.minSDK(Build.VERSION_CODES.R)) "..*" else null
+            if (utilBox.hasBugDotDotDir) "..*" else null
         )
 
         val ignoredPackages = ("""(?x)
-            # complete matches
               android
-            # pattern matches
-            | .*\.android\.shell
-            | .*\.android\.systemui
-            | .*\.android\.externalstorage
-            | .*\.android\.mtp
-            | .*\.android\.providers\.downloads\.ui
-            | .*\.android\.gms
-            | .*\.android\.gsf
-            | .*\.android\.providers\.media\b.*
-            # program values
+            | ^com\.(google\.)?android\.shell
+            | ^com\.(google\.)?android\.systemui
+            | ^com\.(google\.)?android\.externalstorage
+            | ^com\.(google\.)?android\.mtp
+            | ^com\.(google\.)?android\.providers\.downloads\.ui
+            | ^com\.(google\.)?android\.gms
+            | ^com\.(google\.)?android\.gsf
+            | ^com\.(google\.)?android\.providers\.media\b.*
             | """ + Regex.escape(BuildConfig.APPLICATION_ID) + """
             """).toRegex()
 
         val doNotStop = ("""(?x)
-            # complete matches
               android
-            # pattern matches
-            | .*\.android\.shell
-            | .*\.android\.systemui
-            | .*\.android\.externalstorage
-            | .*\.android\.mtp
-            | .*\.android\.providers\.downloads\.ui
-            | .*\.android\.gms
-            | .*\.android\.gsf
-            | .*\.android\.providers\.media\b.*
-            | .*\.android\.providers\..*
-            # program values
+            | ^com\.(google\.)?android\.shell
+            | ^com\.(google\.)?android\.systemui
+            | ^com\.(google\.)?android\.externalstorage
+            | ^com\.(google\.)?android\.mtp
+            | ^com\.(google\.)?android\.providers\.downloads\.ui
+            | ^com\.(google\.)?android\.gms
+            | ^com\.(google\.)?android\.gsf
+            | ^com\.(google\.)?android\.providers\.media\b.*
+            | ^com\.(google\.)?android\.providers\..*
+            | ^com\.topjohnwu\.magisk
             | """ + Regex.escape(BuildConfig.APPLICATION_ID) + """
             """).toRegex()
 

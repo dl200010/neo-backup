@@ -1,14 +1,80 @@
 CHANGELOG
 =========
-8.0.2 (29.04.2021) 2 Commits
+8.1.3 (20.09.2022) +50 Commits
+------------------
+- Update: Migrate navigation fully to Compose
+- Update: Convert AppInfo to chips
+- Update: Layouts of BackupItem, Welcome Page, Permissions Page and AppSheet
+- Update: Unify TopBar and sort management by Main
+- Update: Apply Sort/Filter options to sheet's stats
+- Update: Make sheets fill available size
+- Update: Tag editor animation
+- Update: Revamp prefs UI
+- Update: Matrix link
+- Update: NavBar items UI
+- Fix: Inconsistent default theme pref (@hg42)
+- Fix: Cropping package name in AppSheet
+
+8.1.2 (12.09.2022) +30 Commits
+------------------
+- Fix: Wrong default for pmSuspend (@hg42)
+- Fix: Disabled app's text color in app sheet (@hg42)
+- Fix: List item selection
+- Fix: Pref's slider text color (@hg42)
+- Add: Pref's slider adaptive steps (@hg42)
+- Add: Prefs' dynamic title
+- Update: Prefs' BottomNavBar UI
+
+8.1.1 (07.08.2022) +65 Commits
+------------------
+- Fix: Sheets scrolling
+- Fix: Clumsy updates button on devices with low dpi
+- Fix: Restrict process pausing detection
+- Fix: Cleaning search bar on close
+- Update: Revamp Prefs (based on Compose)
+- Update: Revamp export/import tool
+- Update: Backups retention limit to 100
+- Update: Dynamic theme
+
+8.1.0 (23.07.2022) +300 Commits
+------------------
+- Add: Dynamic color support (aka Material You)
+- Add: Backup size (applies only to new backups)
+- Add: Tags & Note
+- Add: Optional info log in the topBar (@hg42)
+- Add: Installer package name
+- Add: Session installer (in anticipation of A13 restrictions)
+- Add: New sort criteria
+- Add: Gray coloring of app type's label
+- Add: Loading and batch progress bars
+- Add: Filter permissions list
+- Add: Version name in HelpSheet (@hg42)
+- Add: Repeat restore try without permissions once if it fails
+- Fix: Data reset after reboot (@hg42)
+- Fix: Initial Root check (@hg42)
+- Fix: (catch&ignore) List-related irregular crash
+- Fix: DocumentInfo/size of files (@hg42)
+- Fix: Obey search with select all (@hg42)
+- Fix: Use proper first user appId instead of hardcoded one (@hg42)
+- Fix: Schedule's special filter visbility
+- Fix: OAndBackupX to Neo Backup in some strings (@whalehub)
+- Fix: Packages placeholder icons
+- Update: Use cancelable SnackBar for popup info
+- Update: Migrate sheets to stateful Compose
+- Update: Adapt --mount-master option to what libsu detected (@hg42)
+- Update: Show encryption reminder only three times
+- Update: Improve SAF access performance (@hg42)
+- Update: Select utilBox by score (@hg42)
+
+8.0.2 (29.04.2022) 2 Commits
 ------------------
 - Fix: Auto-updating AppSheet package
 
-8.0.1 (29.04.2021) 2 Commits
+8.0.1 (29.04.2022) 2 Commits
 ------------------
 - Fix: Showing uninstalled apps
 
-8.0.0 (29.04.2021, a hot-fix for the unintended release of an alpha on F-Droid) +700 Commits
+8.0.0 (29.04.2022, a hot-fix for the unintended release of an alpha on F-Droid) +700 Commits
 ------------------
 NEW BACKUP STRUCTURE: Older backups (v6-v7) are experimentally supported. It's nevertheless preferred to use a new backup directory for a cleaner experience.
 NEW FILTER FORMAT: Requires resetting sort/filter manually.

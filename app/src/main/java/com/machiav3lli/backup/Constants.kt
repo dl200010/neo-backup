@@ -17,9 +17,24 @@
  */
 package com.machiav3lli.backup
 
+import android.Manifest
+import android.content.Context
+import android.content.Intent
+import com.machiav3lli.backup.preferences.pref_allowShadowingDefault
+import com.machiav3lli.backup.preferences.pref_biometricLock
+import com.machiav3lli.backup.preferences.pref_deviceLock
+import com.machiav3lli.backup.preferences.pref_encryption
+import com.machiav3lli.backup.preferences.pref_password
+import com.machiav3lli.backup.preferences.pref_pauseApps
+import com.machiav3lli.backup.preferences.pref_pmSuspend
+import com.machiav3lli.backup.preferences.pref_shadowRootFile
 import com.machiav3lli.backup.ui.item.ChipItem
 import com.machiav3lli.backup.ui.item.Legend
 import com.machiav3lli.backup.ui.item.Link
+import com.machiav3lli.backup.ui.item.Pref
+import com.machiav3lli.backup.utils.isBiometricLockAvailable
+import com.machiav3lli.backup.utils.isDeviceLockAvailable
+import com.machiav3lli.backup.utils.isDeviceLockEnabled
 import java.time.format.DateTimeFormatter
 
 const val PREFS_SHARED_PRIVATE = "com.machiav3lli.backup"
@@ -42,80 +57,71 @@ const val ACTION_CRASH = "crash"
 const val NAV_MAIN = 0
 const val NAV_PREFS = 1
 
-const val PREFS_SORT_FILTER = "sortFilter"
-const val PREFS_FIRST_LAUNCH = "firstLaunch"
-const val PREFS_IGNORE_BATTERY_OPTIMIZATION = "ignoreBatteryOptimization"
-const val PREFS_SKIPPEDENCRYPTION = "skippedEncryptionCounter"
-
-const val PREFS_LANGUAGES = "languages"
-const val PREFS_THEME = "themes"
-const val PREFS_ACCENT_COLOR = "themeAccentColor"
-const val PREFS_SECONDARY_COLOR = "themeSecondaryColor"
 const val PREFS_LANGUAGES_DEFAULT = "system"
-const val PREFS_PATH_BACKUP_DIRECTORY = "pathBackupFolder"
-const val PREFS_LOADINGTOASTS = "loadingToasts"
-const val PREFS_DEVICELOCK = "deviceLock"
-const val PREFS_BIOMETRICLOCK = "biometricLock"
-const val PREFS_OLDBACKUPS = "oldBackups"
-const val PREFS_REMEMBERFILTERING = "rememberFiltering"
-const val PREFS_COMPRESSION_LEVEL = "compressionLevel"
-const val PREFS_ENCRYPTION = "encryption"
-const val PREFS_PASSWORD = "password"
-const val PREFS_PASSWORD_CONFIRMATION = "passwordConfirmation"
-const val PREFS_ENABLESPECIALBACKUPS = "enableSpecialBackups"
-const val PREFS_SALT = "salt"
-const val PREFS_EXCLUDECACHE = "excludeCache"
-const val PREFS_EXTERNALDATA = "backupExternalData"
-const val PREFS_OBBDATA = "backupObbData"
-const val PREFS_MEDIADATA = "backupMediaData"
-const val PREFS_RESTOREPERMISSIONS = "restorePermissions"
-const val PREFS_DEVICEPROTECTEDDATA = "backupDeviceProtectedData"
-const val PREFS_NUM_BACKUP_REVISIONS = "numBackupRevisions"
-const val PREFS_HOUSEKEEPING_MOMENT = "housekeepingMoment"
-const val PREFS_DISABLEVERIFICATION = "disableVerification"
-const val PREFS_RESTOREWITHALLPERMISSIONS = "giveAllPermissions"
-const val PREFS_ALLOWDOWNGRADE = "allowDowngrade"
-const val PREFS_CANCELONSTART = "cancelOnStart"
-const val PREFS_USEALARMCLOCK = "useAlarmClock"
-const val PREFS_USEEXACTRALARM = "useExactAlarm"
-const val PREFS_USEFOREGROUND = "useForeground"
-const val PREFS_PAUSEAPPS = "pauseApps"
-const val PREFS_PMSUSPEND = "pmSuspend"
-const val PREFS_BACKUPTARCMD = "backupTarCmd"
-const val PREFS_RESTORETARCMD = "restoreTarCmd"
-const val PREFS_STRICTHARDLINKS = "strictHardLinks"
-const val PREFS_RESTOREAVOIDTEMPCOPY = "restoreAvoidTemporaryCopy"
-const val PREFS_SHADOWROOTFILE = "shadowRootFileForSAF"
-const val PREFS_ALLOWSHADOWINGDEFAULT = "allowShadowingDefault"
-const val PREFS_CATCHUNCAUGHT = "catchUncaughtException"
-const val PREFS_MAXCRASHLINES = "maxCrashLines"
-const val PREFS_CACHEROOTFILEATTRIBUTES = "cacheRootFileAttributes"
-const val PREFS_MAXRETRIES = "maxRetriesPerPackage"
-const val PREFS_REFRESHDELAY = "delayBeforeRefreshAppInfo"
-const val PREFS_REFRESHTIMEOUT = "refreshAppInfoTimeout"
-const val PREFS_REFRESHTIMEOUT_DEFAULT = 30
-const val PREFS_BATCH_DELETE = "batchDelete"
-const val PREFS_COPYSELF = "copySelfApk"
-const val PREFS_SCHEDULESEXPORTIMPORT = "schedulesExportImport"
-const val PREFS_SAVEAPPSLIST = "saveAppsList"
-const val PREFS_LOGVIEWER = "logViewer"
+
+val Context.PrefsDependencies: Map<Pref, Boolean>
+    get() = mutableMapOf(
+        pref_biometricLock to (isBiometricLockAvailable() && isDeviceLockEnabled()),
+        pref_deviceLock to isDeviceLockAvailable(),
+        pref_password to pref_encryption.value,
+        pref_pmSuspend to pref_pauseApps.value,
+        pref_shadowRootFile to pref_allowShadowingDefault.value
+    )
+
+const val THEME_LIGHT = 0
+const val THEME_DARK = 1
+const val THEME_SYSTEM = 2
+const val THEME_DYNAMIC = 3
+
+val themeItems = mutableMapOf(
+    THEME_LIGHT to R.string.prefs_theme_light,
+    THEME_DARK to R.string.prefs_theme_dark,
+    THEME_SYSTEM to R.string.prefs_theme_system
+).apply {
+    if (OABX.minSDK(31)) set(THEME_DYNAMIC, R.string.prefs_theme_dynamic)
+}
+
+val accentColorItems = mapOf(
+    0 to R.string.prefs_accent_0,
+    1 to R.string.prefs_accent_1,
+    2 to R.string.prefs_accent_2,
+    3 to R.string.prefs_accent_3,
+    4 to R.string.prefs_accent_4,
+    5 to R.string.prefs_accent_5,
+    6 to R.string.prefs_accent_6,
+    7 to R.string.prefs_accent_7,
+    8 to R.string.prefs_accent_8
+)
+
+val secondaryColorItems = mapOf(
+    0 to R.string.prefs_secondary_0,
+    1 to R.string.prefs_secondary_1,
+    2 to R.string.prefs_secondary_2,
+    3 to R.string.prefs_secondary_3,
+    4 to R.string.prefs_secondary_4,
+    5 to R.string.prefs_secondary_5,
+    6 to R.string.prefs_secondary_6,
+    7 to R.string.prefs_secondary_7,
+    8 to R.string.prefs_secondary_8
+)
 
 const val ALT_MODE_UNSET = 0
 const val ALT_MODE_APK = 1
 const val ALT_MODE_DATA = 2
 const val ALT_MODE_BOTH = 3
 
-const val MODE_UNSET = 0b000000
-const val MODE_NONE = 0b0100000
-const val MODE_APK = 0b0010000
-const val MODE_DATA = 0b0001000
-const val MODE_DATA_DE = 0b0000100
-const val MODE_DATA_EXT = 0b0000010
-const val MODE_DATA_OBB = 0b0000001
-const val MODE_DATA_MEDIA = 0b1000000
+const val MODE_UNSET            = 0b0000000
+const val MODE_NONE             = 0b0100000
+const val MODE_APK              = 0b0010000
+const val MODE_DATA             = 0b0001000
+const val MODE_DATA_DE          = 0b0000100
+const val MODE_DATA_EXT         = 0b0000010
+const val MODE_DATA_OBB         = 0b0000001
+const val MODE_DATA_MEDIA       = 0b1000000
 const val BACKUP_FILTER_DEFAULT = 0b1111111
-val possibleSchedModes =
+val possibleSchedModes  =
     listOf(MODE_APK, MODE_DATA, MODE_DATA_DE, MODE_DATA_EXT, MODE_DATA_OBB, MODE_DATA_MEDIA)
+val MODE_ALL = possibleSchedModes.reduce { a, b -> a.or(b) }
 
 val scheduleBackupModeChipItems = listOf(
     ChipItem.Apk,
@@ -131,13 +137,19 @@ val mainBackupModeChipItems: List<ChipItem> =
 
 const val MAIN_SORT_LABEL = 0
 const val MAIN_SORT_PACKAGENAME = 1
-const val MAIN_SORT_DATASIZE = 2
-const val MAIN_SORT_BACKUPDATE = 3
+const val MAIN_SORT_APPSIZE = 2
+const val MAIN_SORT_DATASIZE = 3
+const val MAIN_SORT_APPDATASIZE = 4
+const val MAIN_SORT_BACKUPSIZE = 5
+const val MAIN_SORT_BACKUPDATE = 6
 
 val sortChipItems = listOf(
     ChipItem.Label,
     ChipItem.PackageName,
+    ChipItem.AppSize,
     ChipItem.DataSize,
+    ChipItem.AppDataSize,
+    ChipItem.BackupSize,
     ChipItem.BackupDate
 )
 
@@ -168,13 +180,35 @@ val schedSpecialFilterChipItems = listOf(
 
 val mainSpecialFilterChipItems = schedSpecialFilterChipItems.plus(ChipItem.NotInstalled)
 
+val IGNORED_PERMISSIONS = listOfNotNull(
+    Manifest.permission.ACCESS_WIFI_STATE,
+    Manifest.permission.ACCESS_NETWORK_STATE,
+    Manifest.permission.ACCESS_NETWORK_STATE,
+    Manifest.permission.CHANGE_WIFI_MULTICAST_STATE,
+    if (OABX.minSDK(28)) Manifest.permission.FOREGROUND_SERVICE else null,
+    Manifest.permission.INSTALL_SHORTCUT,
+    Manifest.permission.INTERNET,
+    if (OABX.minSDK(30)) Manifest.permission.QUERY_ALL_PACKAGES else null,
+    Manifest.permission.REQUEST_DELETE_PACKAGES,
+    Manifest.permission.RECEIVE_BOOT_COMPLETED,
+    Manifest.permission.READ_SYNC_SETTINGS,
+    Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+    Manifest.permission.USE_FINGERPRINT,
+    Manifest.permission.WAKE_LOCK,
+)
 
 const val BUNDLE_USERS = "users"
 
+const val CHIP_TYPE = 0
+const val CHIP_VERSION = 1
+const val CHIP_SIZE_APP = 2
+const val CHIP_SIZE_DATA = 3
+const val CHIP_SIZE_CACHE = 4
+const val CHIP_SPLIT = 5
+
 const val HELP_CHANGELOG = "https://github.com/NeoApplications/Neo-Backup/blob/master/CHANGELOG.md"
 const val HELP_TELEGRAM = "https://t.me/neo_backup"
-const val HELP_ELEMENT =
-    "https://matrix.to/#/!PiXJUneYCnkWAjekqX:matrix.org?via=matrix.org&via=chat.astafu.de&via=zerc.net"
+const val HELP_MATRIX = "https://matrix.to/#/#neo-backup:matrix.org"
 const val HELP_LICENSE = "https://github.com/NeoApplications/Neo-Backup/blob/master/LICENSE.md"
 const val HELP_ISSUES = "https://github.com/NeoApplications/Neo-Backup/blob/master/ISSUES.md"
 const val HELP_FAQ = "https://github.com/NeoApplications/Neo-Backup/blob/master/FAQ.md"
@@ -204,9 +238,24 @@ val BACKUP_DATE_TIME_FORMATTER_OLD: DateTimeFormatter =
 val BACKUP_DATE_TIME_FORMATTER: DateTimeFormatter =
     DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss-SSS")
 
+val BACKUP_DIRECTORY_INTENT = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+    .addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+    .addFlags(Intent.FLAG_GRANT_PREFIX_URI_PERMISSION)
+
 fun classAddress(address: String): String = PREFS_SHARED_PRIVATE + address
 
 fun exodusUrl(app: String): String = "https://reports.exodus-privacy.eu.org/reports/$app/latest"
+
+
+const val HOUSEKEEPING_BEFORE = 0
+const val HOUSEKEEPING_AFTER = 1
+
+val housekeepingOptions = mapOf(
+    HOUSEKEEPING_BEFORE to R.string.prefs_housekeepingmoment_before,
+    HOUSEKEEPING_AFTER to R.string.prefs_housekeepingmoment_after
+)
 
 enum class HousekeepingMoment(val value: String) {
     BEFORE("before"), AFTER("after");

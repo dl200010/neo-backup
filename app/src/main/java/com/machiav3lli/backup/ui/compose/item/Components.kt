@@ -1,11 +1,19 @@
 package com.machiav3lli.backup.ui.compose.item
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,33 +23,37 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Chip
-import androidx.compose.material.ChipDefaults
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.FilterChip
-import androidx.compose.material.SelectableChipColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.SelectableChipColors
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -49,6 +61,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.machiav3lli.backup.MAIN_FILTER_SPECIAL
 import com.machiav3lli.backup.MAIN_FILTER_SYSTEM
 import com.machiav3lli.backup.MAIN_FILTER_USER
@@ -66,29 +79,77 @@ import com.machiav3lli.backup.SPECIAL_FILTER_OLD
 import com.machiav3lli.backup.dbs.entity.Backup
 import com.machiav3lli.backup.dbs.entity.Schedule
 import com.machiav3lli.backup.items.Package
-import com.machiav3lli.backup.ui.compose.theme.APK
-import com.machiav3lli.backup.ui.compose.theme.Data
-import com.machiav3lli.backup.ui.compose.theme.DeData
-import com.machiav3lli.backup.ui.compose.theme.Exodus
-import com.machiav3lli.backup.ui.compose.theme.ExtDATA
+import com.machiav3lli.backup.ui.compose.icons.Phosphor
+import com.machiav3lli.backup.ui.compose.icons.phosphor.ArrowSquareOut
+import com.machiav3lli.backup.ui.compose.icons.phosphor.AsteriskSimple
+import com.machiav3lli.backup.ui.compose.icons.phosphor.Checks
+import com.machiav3lli.backup.ui.compose.icons.phosphor.CircleWavyWarning
+import com.machiav3lli.backup.ui.compose.icons.phosphor.Clock
+import com.machiav3lli.backup.ui.compose.icons.phosphor.DiamondsFour
+import com.machiav3lli.backup.ui.compose.icons.phosphor.FloppyDisk
+import com.machiav3lli.backup.ui.compose.icons.phosphor.GameController
+import com.machiav3lli.backup.ui.compose.icons.phosphor.HardDrives
+import com.machiav3lli.backup.ui.compose.icons.phosphor.PlayCircle
+import com.machiav3lli.backup.ui.compose.icons.phosphor.ProhibitInset
+import com.machiav3lli.backup.ui.compose.icons.phosphor.ShieldCheckered
+import com.machiav3lli.backup.ui.compose.icons.phosphor.Spinner
+import com.machiav3lli.backup.ui.compose.icons.phosphor.User
+import com.machiav3lli.backup.ui.compose.theme.ColorAPK
+import com.machiav3lli.backup.ui.compose.theme.ColorData
+import com.machiav3lli.backup.ui.compose.theme.ColorDeData
+import com.machiav3lli.backup.ui.compose.theme.ColorDisabled
+import com.machiav3lli.backup.ui.compose.theme.ColorExodus
+import com.machiav3lli.backup.ui.compose.theme.ColorExtDATA
+import com.machiav3lli.backup.ui.compose.theme.ColorMedia
+import com.machiav3lli.backup.ui.compose.theme.ColorOBB
+import com.machiav3lli.backup.ui.compose.theme.ColorSpecial
+import com.machiav3lli.backup.ui.compose.theme.ColorSystem
+import com.machiav3lli.backup.ui.compose.theme.ColorUpdated
+import com.machiav3lli.backup.ui.compose.theme.ColorUser
 import com.machiav3lli.backup.ui.compose.theme.LocalShapes
-import com.machiav3lli.backup.ui.compose.theme.Media
-import com.machiav3lli.backup.ui.compose.theme.OBB
-import com.machiav3lli.backup.ui.compose.theme.Special
-import com.machiav3lli.backup.ui.compose.theme.System
-import com.machiav3lli.backup.ui.compose.theme.Updated
-import com.machiav3lli.backup.ui.compose.theme.User
+import com.machiav3lli.backup.utils.brighter
+
+@Composable
+fun ButtonIcon(
+    icon: ImageVector,
+    @StringRes textId: Int,
+    tint: Color? = null
+) {
+    Icon(
+        imageVector = icon,
+        contentDescription = stringResource(id = textId),
+        modifier = Modifier.size(24.dp),
+        tint = tint ?: LocalContentColor.current
+    )
+}
+
+@Composable
+fun PrefIcon(
+    icon: ImageVector,
+    text: String,
+    tint: Color? = null
+) {
+    Icon(
+        imageVector = icon,
+        contentDescription = text,
+        modifier = Modifier.size(32.dp),
+        tint = tint ?: MaterialTheme.colorScheme.onBackground
+    )
+}
 
 @Composable
 fun PackageIcon(
-    item: Package,
+    item: Package?,
     imageData: Any
 ) {
     AsyncImage(
         modifier = Modifier
             .size(48.dp)
             .clip(RoundedCornerShape(LocalShapes.current.medium)),
-        model = imageData,
+        model = ImageRequest.Builder(LocalContext.current)
+            .crossfade(true)
+            .data(imageData)
+            .build(),
         contentDescription = null,
         contentScale = ContentScale.Crop,
         error = placeholderIconPainter(item),
@@ -96,41 +157,44 @@ fun PackageIcon(
     )
 }
 
+
 @Composable
-fun placeholderIconPainter(item: Package) = painterResource(
+fun placeholderIconPainter(item: Package?) = painterResource(
     when {
-        item.isSpecial -> R.drawable.ic_placeholder_special
-        item.isSystem -> R.drawable.ic_placeholder_system
+        item?.isSpecial == true -> R.drawable.ic_placeholder_special
+        item?.isSystem == true -> R.drawable.ic_placeholder_system
         else -> R.drawable.ic_placeholder_user
     }
 )
 
 @Composable
 fun ActionButton(
-    modifier: Modifier = Modifier.fillMaxWidth(),
+    modifier: Modifier = Modifier,
     text: String,
     positive: Boolean = true,
-    icon: Painter? = null,
+    iconOnSide: Boolean = false,
+    icon: ImageVector? = null,
     onClick: () -> Unit
 ) {
     TextButton(
         modifier = modifier,
         colors = ButtonDefaults.textButtonColors(
-            contentColor = if (positive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+            contentColor = if (positive) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.tertiary
         ),
         onClick = onClick
     ) {
         Text(
-            modifier = Modifier.padding(start = 4.dp),
+            modifier = Modifier.padding(horizontal = 4.dp),
             text = text,
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.titleSmall
         )
         if (icon != null) {
-            Spacer(modifier = Modifier.weight(1f))
+            if (iconOnSide) Spacer(modifier = Modifier.weight(1f))
             Icon(
-                modifier = Modifier.size(20.dp),
-                painter = icon,
+                modifier = Modifier.size(24.dp),
+                imageVector = icon,
                 contentDescription = text
             )
         }
@@ -139,37 +203,50 @@ fun ActionButton(
 
 @Composable
 fun ElevatedActionButton(
-    modifier: Modifier = Modifier.fillMaxWidth(),
+    modifier: Modifier = Modifier,
     text: String,
     positive: Boolean = true,
-    icon: Painter? = null,
+    icon: ImageVector? = null,
     fullWidth: Boolean = false,
+    enabled: Boolean = true,
+    colored: Boolean = true,
+    withText: Boolean = text.isNotEmpty(),
     onClick: () -> Unit
 ) {
     ElevatedButton(
         modifier = modifier,
         colors = ButtonDefaults.elevatedButtonColors(
-            contentColor = if (positive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
-            containerColor = if (positive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer
+            contentColor = when {
+                !colored -> MaterialTheme.colorScheme.onSurface
+                positive -> MaterialTheme.colorScheme.onPrimaryContainer
+                else -> MaterialTheme.colorScheme.onTertiaryContainer
+            },
+            containerColor = when {
+                !colored -> MaterialTheme.colorScheme.surface
+                positive -> MaterialTheme.colorScheme.primaryContainer
+                else -> MaterialTheme.colorScheme.tertiaryContainer
+            }
         ),
+        enabled = enabled,
         onClick = onClick
     ) {
         if (icon != null) {
             Icon(
-                modifier = Modifier.size(20.dp),
-                painter = icon,
+                modifier = Modifier.size(24.dp),
+                imageVector = icon,
                 contentDescription = text
             )
         }
-        Text(
-            modifier = when {
-                fullWidth -> Modifier.weight(1f)
-                else -> Modifier.padding(start = 8.dp)
-            },
-            text = text,
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.titleSmall
-        )
+        if (withText)
+            Text(
+                modifier = when {
+                    fullWidth -> Modifier.weight(1f)
+                    else -> Modifier.padding(start = 8.dp)
+                },
+                text = text,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.titleSmall
+            )
     }
 }
 
@@ -179,7 +256,7 @@ fun TopBarButton(
     modifier: Modifier = Modifier
         .padding(4.dp)
         .size(52.dp),
-    icon: Painter,
+    icon: ImageVector,
     description: String = "",
     onClick: () -> Unit
 ) {
@@ -187,13 +264,13 @@ fun TopBarButton(
         modifier = modifier,
         colors = ButtonDefaults.elevatedButtonColors(
             containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
+            contentColor = MaterialTheme.colorScheme.onSurface
         ),
         contentPadding = PaddingValues(horizontal = 2.dp, vertical = 10.dp),
         shape = MaterialTheme.shapes.medium,
         onClick = { onClick() }
     ) {
-        Icon(painter = icon, contentDescription = description)
+        Icon(imageVector = icon, contentDescription = description)
     }
 }
 
@@ -201,22 +278,24 @@ fun TopBarButton(
 @Composable
 fun CardButton(
     modifier: Modifier = Modifier,
-    icon: Painter,
+    icon: ImageVector,
     tint: Color,
     description: String,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     ElevatedButton(
         modifier = modifier.padding(4.dp),
         colors = ButtonDefaults.elevatedButtonColors(
-            containerColor = tint,
-            contentColor = MaterialTheme.colorScheme.onSurface
+            containerColor = tint.brighter(0.2f),
+            contentColor = MaterialTheme.colorScheme.background
         ),
         contentPadding = PaddingValues(12.dp),
         shape = MaterialTheme.shapes.medium,
+        enabled = enabled,
         onClick = { onClick() }
     ) {
-        Icon(painter = icon, contentDescription = description)
+        Icon(imageVector = icon, contentDescription = description)
         /*Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = description,
@@ -232,7 +311,7 @@ fun RoundButton(
     modifier: Modifier = Modifier
         .padding(4.dp)
         .size(52.dp),
-    icon: Painter,
+    icon: ImageVector,
     description: String = "",
     onClick: () -> Unit
 ) {
@@ -240,70 +319,14 @@ fun RoundButton(
         modifier = modifier,
         onClick = { onClick() }
     ) {
-        Icon(painter = icon, contentDescription = description)
-    }
-}
-
-@OptIn(ExperimentalMaterialApi::class)
-@Composable
-fun ActionChip(
-    modifier: Modifier = Modifier,
-    icon: Painter,
-    text: String,
-    withText: Boolean = true,
-    positive: Boolean = true,
-    colored: Boolean = true,
-    enabled: Boolean = true,
-    fullWidth: Boolean = false,
-    onClick: () -> Unit
-) {
-    Chip(
-        modifier = modifier,
-        colors = ChipDefaults.chipColors(
-            backgroundColor = when {
-                positive && colored -> MaterialTheme.colorScheme.primaryContainer
-                colored -> MaterialTheme.colorScheme.secondaryContainer
-                else -> MaterialTheme.colorScheme.surface
-            },
-            contentColor = when {
-                positive && colored -> MaterialTheme.colorScheme.onPrimaryContainer
-                colored -> MaterialTheme.colorScheme.onSecondaryContainer
-                else -> MaterialTheme.colorScheme.onSurface
-            },
-            disabledBackgroundColor = MaterialTheme.colorScheme.background,
-            disabledContentColor = MaterialTheme.colorScheme.surface
-        ),
-        enabled = enabled,
-        onClick = onClick,
-    ) {
-        Row(
-            Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                modifier = Modifier.size(20.dp),
-                painter = icon,
-                contentDescription = text
-            )
-            if (withText) Text(
-                modifier = when {
-                    fullWidth -> Modifier.weight(1f)
-                    else -> Modifier.padding(start = 8.dp)
-                },
-                text = text,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.titleSmall
-            )
-        }
+        Icon(imageVector = icon, contentDescription = description)
     }
 }
 
 @Composable
 fun StateChip(
     modifier: Modifier = Modifier,
-    icon: Painter,
+    icon: ImageVector,
     text: String,
     color: Color,
     checked: Boolean,
@@ -321,14 +344,14 @@ fun StateChip(
         onClick = onClick,
     ) {
         Icon(
-            modifier = Modifier.size(20.dp),
-            painter = icon,
+            modifier = Modifier.size(24.dp),
+            imageVector = icon,
             contentDescription = text
         )
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CheckChip(
     checked: Boolean,
@@ -337,44 +360,49 @@ fun CheckChip(
     modifier: Modifier = Modifier,
     onCheckedChange: (Boolean) -> Unit
 ) {
+    val (checked, check) = remember { mutableStateOf(checked) }
+
     FilterChip(
-        modifier = modifier,
+        modifier = modifier.padding(vertical = 8.dp, horizontal = 4.dp),
         selected = checked,
-        colors = ChipDefaults.filterChipColors(
-            contentColor = MaterialTheme.colorScheme.onBackground,
-            selectedContentColor = MaterialTheme.colorScheme.primary,
-            backgroundColor = MaterialTheme.colorScheme.background,
-            selectedBackgroundColor = MaterialTheme.colorScheme.primaryContainer
+        colors = FilterChipDefaults.filterChipColors(
+            labelColor = MaterialTheme.colorScheme.onBackground,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            iconColor = MaterialTheme.colorScheme.onBackground,
+            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            containerColor = MaterialTheme.colorScheme.background,
+            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
         ),
-        selectedIcon = {
-            Icon(
-                painterResource(id = R.drawable.ic_all),
-                contentDescription = "",
-                modifier = Modifier.size(24.dp)
-            )
+        leadingIcon = {
+            if (checked) ButtonIcon(Phosphor.Checks, R.string.enabled)
         },
-        onClick = { onCheckedChange(!checked) }) {
-        Row(
-            Modifier.padding(vertical = 8.dp, horizontal = 4.dp)
-        ) {
-            Text(text = if (checked) stringResource(id = checkedTextId) else stringResource(id = textId))
+        onClick = {
+            onCheckedChange(!checked)
+            check(!checked)
+        },
+        label = {
+            Row {
+                Text(text = if (checked) stringResource(id = checkedTextId) else stringResource(id = textId))
+            }
         }
-    }
+    )
 }
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SwitchChip(
     firstTextId: Int,
-    firstIconId: Int,
+    firstIcon: ImageVector,
     secondTextId: Int,
-    secondIconId: Int,
+    secondIcon: ImageVector,
     firstSelected: Boolean = true,
-    colors: SelectableChipColors = ChipDefaults.filterChipColors(
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        selectedContentColor = MaterialTheme.colorScheme.primary,
-        backgroundColor = MaterialTheme.colorScheme.surface,
-        selectedBackgroundColor = MaterialTheme.colorScheme.primaryContainer
+    colors: SelectableChipColors = FilterChipDefaults.filterChipColors(
+        labelColor = MaterialTheme.colorScheme.onSurface,
+        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        iconColor = MaterialTheme.colorScheme.onSurface,
+        selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        containerColor = MaterialTheme.colorScheme.surface,
+        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
     ),
     onCheckedChange: (Boolean) -> Unit
 ) {
@@ -382,7 +410,7 @@ fun SwitchChip(
         modifier = Modifier
             .background(
                 MaterialTheme.colorScheme.surface,
-                MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
+                MaterialTheme.shapes.small
             )
             .padding(horizontal = 6.dp)
             .fillMaxWidth(),
@@ -392,55 +420,148 @@ fun SwitchChip(
 
         FilterChip(
             modifier = Modifier.weight(1f),
+            border = FilterChipDefaults.filterChipBorder(
+                borderColor = Color.Transparent,
+                borderWidth = 0.dp
+            ),
             selected = firstSelected,
             colors = colors,
             onClick = {
                 onCheckedChange(true)
                 selectFirst(true)
-            }) {
-            Icon(
-                painterResource(id = firstIconId),
-                contentDescription = stringResource(id = firstTextId),
-                modifier = Modifier.size(24.dp)
-            )
-            Row(
-                Modifier
-                    .padding(vertical = 8.dp, horizontal = 4.dp)
-                    .weight(1f)
-            ) {
-                Text(
-                    text = stringResource(id = firstTextId),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f)
-                )
+            },
+            leadingIcon = {
+                ButtonIcon(firstIcon, firstTextId)
+            },
+            label = {
+                Row(
+                    Modifier
+                        .padding(vertical = 8.dp, horizontal = 4.dp)
+                        .weight(1f)
+                ) {
+                    Text(
+                        text = stringResource(id = firstTextId),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
-        }
+        )
         FilterChip(
             modifier = Modifier.weight(1f),
+            border = FilterChipDefaults.filterChipBorder(
+                borderColor = Color.Transparent,
+                borderWidth = 0.dp
+            ),
             selected = !firstSelected,
             colors = colors,
             onClick = {
                 onCheckedChange(false)
                 selectFirst(false)
-            }) {
-            Row(
-                Modifier
-                    .padding(vertical = 8.dp, horizontal = 4.dp)
-                    .weight(1f)
-            ) {
-                Text(
-                    text = stringResource(id = secondTextId),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f)
-                )
+            },
+            label = {
+                Row(
+                    Modifier
+                        .padding(vertical = 8.dp, horizontal = 4.dp)
+                        .weight(1f)
+                ) {
+                    Text(
+                        text = stringResource(id = secondTextId),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            },
+            trailingIcon = {
+                ButtonIcon(secondIcon, secondTextId)
             }
-            Icon(
-                painterResource(id = secondIconId),
-                contentDescription = stringResource(id = secondTextId),
-                modifier = Modifier.size(24.dp)
-            )
-        }
+        )
     }
+}
+
+@Composable
+fun SelectableRow(
+    modifier: Modifier = Modifier,
+    title: String,
+    selectedState: MutableState<Boolean>,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable {
+                selectedState.value = true
+                onClick()
+            },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(
+            selected = selectedState.value,
+            onClick = {
+                selectedState.value = true
+                onClick()
+            },
+            modifier = Modifier.padding(horizontal = 8.dp),
+            colors = RadioButtonDefaults.colors(
+                selectedColor = MaterialTheme.colorScheme.primary,
+                unselectedColor = MaterialTheme.colorScheme.onSurface
+            )
+        )
+        Text(text = title)
+    }
+}
+
+@Composable
+fun CheckableRow(
+    title: String,
+    checkedState: MutableState<Boolean>,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                checkedState.value = !checkedState.value
+                onClick()
+            },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            checked = checkedState.value,
+            onCheckedChange = {
+                checkedState.value = it
+            },
+            modifier = Modifier.padding(horizontal = 8.dp),
+            colors = CheckboxDefaults.colors(
+                checkedColor = MaterialTheme.colorScheme.primary,
+            )
+        )
+        Text(text = title)
+    }
+}
+
+@Composable
+fun StatefulAnimatedVisibility(
+    currentState: Boolean = false,
+    enterPositive: EnterTransition,
+    exitPositive: ExitTransition,
+    enterNegative: EnterTransition,
+    exitNegative: ExitTransition,
+    expandedView: @Composable (AnimatedVisibilityScope.() -> Unit),
+    collapsedView: @Composable (AnimatedVisibilityScope.() -> Unit)
+) {
+    AnimatedVisibility(
+        visible = !currentState,
+        enter = enterNegative,
+        exit = exitNegative,
+        content = collapsedView
+    )
+    AnimatedVisibility(
+        visible = currentState,
+        enter = enterPositive,
+        exit = exitPositive,
+        content = expandedView
+    )
 }
 
 @Composable
@@ -448,95 +569,89 @@ fun HorizontalExpandingVisibility(
     expanded: Boolean = false,
     expandedView: @Composable (AnimatedVisibilityScope.() -> Unit),
     collapsedView: @Composable (AnimatedVisibilityScope.() -> Unit)
-) {
-    AnimatedVisibility(
-        visible = !expanded,
-        enter = expandHorizontally(expandFrom = Alignment.Start),
-        exit = shrinkHorizontally(shrinkTowards = Alignment.Start),
-        content = collapsedView
-    )
-    AnimatedVisibility(
-        visible = expanded,
-        enter = expandHorizontally(expandFrom = Alignment.End),
-        exit = shrinkHorizontally(shrinkTowards = Alignment.End),
-        content = expandedView
-    )
-}
+) = StatefulAnimatedVisibility(
+    currentState = expanded,
+    enterPositive = expandHorizontally(expandFrom = Alignment.End),
+    exitPositive = shrinkHorizontally(shrinkTowards = Alignment.End),
+    enterNegative = expandHorizontally(expandFrom = Alignment.Start),
+    exitNegative = shrinkHorizontally(shrinkTowards = Alignment.Start),
+    collapsedView = collapsedView,
+    expandedView = expandedView
+)
+
+@Composable
+fun VerticalFadingVisibility(
+    expanded: Boolean = false,
+    expandedView: @Composable (AnimatedVisibilityScope.() -> Unit),
+    collapsedView: @Composable (AnimatedVisibilityScope.() -> Unit)
+) = StatefulAnimatedVisibility(
+    currentState = expanded,
+    enterPositive = fadeIn() + expandVertically(expandFrom = Alignment.Bottom),
+    exitPositive = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Bottom),
+    enterNegative = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+    exitNegative = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+    collapsedView = collapsedView,
+    expandedView = expandedView
+)
 
 @Composable
 fun PackageLabels(
     item: Package
 ) {
     AnimatedVisibility(visible = item.isUpdated) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_updated),
-            contentDescription = stringResource(id = R.string.radio_updated),
-            tint = Updated
+        ButtonIcon(
+            Phosphor.CircleWavyWarning, R.string.radio_updated,
+            tint = ColorUpdated
         )
     }
     AnimatedVisibility(visible = item.hasMediaData) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_media_data),
-            contentDescription = stringResource(id = R.string.radio_mediadata),
-            tint = Media
+        ButtonIcon(
+            Phosphor.PlayCircle, R.string.radio_mediadata,
+            tint = ColorMedia
         )
     }
     AnimatedVisibility(visible = item.hasObbData) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_obb_data),
-            contentDescription = stringResource(id = R.string.radio_obbdata),
-            tint = OBB
+        ButtonIcon(
+            Phosphor.GameController, R.string.radio_obbdata,
+            tint = ColorOBB
         )
     }
     AnimatedVisibility(visible = item.hasExternalData) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_external_data),
-            contentDescription = stringResource(id = R.string.radio_externaldata),
-            tint = ExtDATA
+        ButtonIcon(
+            Phosphor.FloppyDisk, R.string.radio_externaldata,
+            tint = ColorExtDATA
         )
     }
     AnimatedVisibility(visible = item.hasDevicesProtectedData) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_de_data),
-            contentDescription = stringResource(id = R.string.radio_deviceprotecteddata),
-            tint = DeData
+        ButtonIcon(
+            Phosphor.ShieldCheckered, R.string.radio_deviceprotecteddata,
+            tint = ColorDeData
         )
     }
     AnimatedVisibility(visible = item.hasAppData) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_data),
-            contentDescription = stringResource(id = R.string.radio_data),
-            tint = Data
+        ButtonIcon(
+            Phosphor.HardDrives, R.string.radio_data,
+            tint = ColorData
         )
     }
     AnimatedVisibility(visible = item.hasApk) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_apk),
-            contentDescription = stringResource(id = R.string.radio_apk),
-            tint = APK
+        ButtonIcon(
+            Phosphor.DiamondsFour, R.string.radio_apk,
+            tint = ColorAPK
         )
     }
-    Icon(
-        modifier = Modifier.size(24.dp),
-        painter = painterResource(
-            id = when {
-                item.isSpecial -> R.drawable.ic_special
-                item.isSystem -> R.drawable.ic_system
-                else -> R.drawable.ic_user
-            }
-        ),
-        contentDescription = stringResource(id = R.string.app_s_type_title),
+    ButtonIcon(
+        when {
+            item.isSpecial -> Phosphor.AsteriskSimple
+            item.isSystem -> Phosphor.Spinner
+            else -> Phosphor.User
+        },
+        R.string.app_s_type_title,
         tint = when {
-            item.isSpecial -> Special
-            item.isSystem -> System
-            else -> User
+            item.isDisabled -> ColorDisabled
+            item.isSpecial -> ColorSpecial
+            item.isSystem -> ColorSystem
+            else -> ColorUser
         }
     )
 }
@@ -546,51 +661,39 @@ fun BackupLabels(
     item: Backup
 ) {
     AnimatedVisibility(visible = item.hasMediaData) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_media_data),
-            contentDescription = stringResource(id = R.string.radio_mediadata),
-            tint = Media
+        ButtonIcon(
+            Phosphor.PlayCircle, R.string.radio_mediadata,
+            tint = ColorMedia
         )
     }
     AnimatedVisibility(visible = item.hasObbData) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_obb_data),
-            contentDescription = stringResource(id = R.string.radio_obbdata),
-            tint = OBB
+        ButtonIcon(
+            Phosphor.GameController, R.string.radio_obbdata,
+            tint = ColorOBB
         )
     }
     AnimatedVisibility(visible = item.hasExternalData) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_external_data),
-            contentDescription = stringResource(id = R.string.radio_externaldata),
-            tint = ExtDATA
+        ButtonIcon(
+            Phosphor.FloppyDisk, R.string.radio_externaldata,
+            tint = ColorExtDATA
         )
     }
     AnimatedVisibility(visible = item.hasDevicesProtectedData) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_de_data),
-            contentDescription = stringResource(id = R.string.radio_deviceprotecteddata),
-            tint = DeData
+        ButtonIcon(
+            Phosphor.ShieldCheckered, R.string.radio_deviceprotecteddata,
+            tint = ColorDeData
         )
     }
     AnimatedVisibility(visible = item.hasAppData) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_data),
-            contentDescription = stringResource(id = R.string.radio_data),
-            tint = Data
+        ButtonIcon(
+            Phosphor.HardDrives, R.string.radio_data,
+            tint = ColorData
         )
     }
     AnimatedVisibility(visible = item.hasApk) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_apk),
-            contentDescription = stringResource(id = R.string.radio_apk),
-            tint = APK
+        ButtonIcon(
+            Phosphor.DiamondsFour, R.string.radio_apk,
+            tint = ColorAPK
         )
     }
 }
@@ -599,51 +702,39 @@ fun BackupLabels(
 @Composable
 fun ScheduleTypes(item: Schedule) {
     AnimatedVisibility(visible = item.mode and MODE_DATA_MEDIA == MODE_DATA_MEDIA) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_media_data),
-            contentDescription = stringResource(id = R.string.radio_mediadata),
-            tint = Media
+        ButtonIcon(
+            Phosphor.PlayCircle, R.string.radio_mediadata,
+            tint = ColorMedia
         )
     }
     AnimatedVisibility(visible = item.mode and MODE_DATA_OBB == MODE_DATA_OBB) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_obb_data),
-            contentDescription = stringResource(id = R.string.radio_obbdata),
-            tint = OBB
+        ButtonIcon(
+            Phosphor.GameController, R.string.radio_obbdata,
+            tint = ColorOBB
         )
     }
     AnimatedVisibility(visible = item.mode and MODE_DATA_EXT == MODE_DATA_EXT) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_external_data),
-            contentDescription = stringResource(id = R.string.radio_externaldata),
-            tint = ExtDATA
+        ButtonIcon(
+            Phosphor.FloppyDisk, R.string.radio_externaldata,
+            tint = ColorExtDATA
         )
     }
     AnimatedVisibility(visible = item.mode and MODE_DATA_DE == MODE_DATA_DE) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_de_data),
-            contentDescription = stringResource(id = R.string.radio_deviceprotecteddata),
-            tint = DeData
+        ButtonIcon(
+            Phosphor.ShieldCheckered, R.string.radio_deviceprotecteddata,
+            tint = ColorDeData
         )
     }
     AnimatedVisibility(visible = item.mode and MODE_DATA == MODE_DATA) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_data),
-            contentDescription = stringResource(id = R.string.radio_data),
-            tint = Data
+        ButtonIcon(
+            Phosphor.HardDrives, R.string.radio_data,
+            tint = ColorData
         )
     }
     AnimatedVisibility(visible = item.mode and MODE_APK == MODE_APK) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_apk),
-            contentDescription = stringResource(id = R.string.radio_apk),
-            tint = APK
+        ButtonIcon(
+            Phosphor.DiamondsFour, R.string.radio_apk,
+            tint = ColorAPK
         )
     }
 }
@@ -654,46 +745,37 @@ fun ScheduleFilters(
     item: Schedule
 ) {
     AnimatedVisibility(visible = item.filter and MAIN_FILTER_SYSTEM == MAIN_FILTER_SYSTEM) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_system),
-            contentDescription = stringResource(id = R.string.radio_system),
-            tint = System
+        ButtonIcon(
+            Phosphor.Spinner, R.string.radio_system,
+            tint = ColorSystem
         )
     }
     AnimatedVisibility(visible = item.filter and MAIN_FILTER_USER == MAIN_FILTER_USER) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_user),
-            contentDescription = stringResource(id = R.string.radio_user),
-            tint = User
+        ButtonIcon(
+            Phosphor.User, R.string.radio_user,
+            tint = ColorUser
         )
     }
     AnimatedVisibility(visible = item.filter and MAIN_FILTER_SPECIAL == MAIN_FILTER_SPECIAL) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(id = R.drawable.ic_special),
-            contentDescription = stringResource(id = R.string.radio_special),
-            tint = Special
+        ButtonIcon(
+            Phosphor.AsteriskSimple, R.string.radio_special,
+            tint = ColorSpecial
         )
     }
-    AnimatedVisibility(visible = item.specialFilter and SPECIAL_FILTER_ALL != SPECIAL_FILTER_ALL) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            painter = painterResource(
-                id = when (item.specialFilter) {
-                    SPECIAL_FILTER_DISABLED -> R.drawable.ic_exclude
-                    SPECIAL_FILTER_LAUNCHABLE -> R.drawable.ic_launchable
-                    SPECIAL_FILTER_OLD -> R.drawable.ic_old
-                    else -> R.drawable.ic_updated
-                }
-            ),
-            contentDescription = stringResource(id = R.string.app_s_type_title),
+    AnimatedVisibility(visible = item.specialFilter != SPECIAL_FILTER_ALL) {
+        ButtonIcon(
+            when (item.specialFilter) {
+                SPECIAL_FILTER_DISABLED -> Phosphor.ProhibitInset
+                SPECIAL_FILTER_LAUNCHABLE -> Phosphor.ArrowSquareOut
+                SPECIAL_FILTER_OLD -> Phosphor.Clock
+                else -> Phosphor.CircleWavyWarning
+            },
+            R.string.app_s_type_title,
             tint = when (item.specialFilter) {
-                SPECIAL_FILTER_DISABLED -> DeData
-                SPECIAL_FILTER_LAUNCHABLE -> OBB
-                SPECIAL_FILTER_OLD -> Exodus
-                else -> Updated
+                SPECIAL_FILTER_DISABLED -> ColorDeData
+                SPECIAL_FILTER_LAUNCHABLE -> ColorOBB
+                SPECIAL_FILTER_OLD -> ColorExodus
+                else -> ColorUpdated
             }
         )
     }
@@ -737,14 +819,16 @@ fun DoubleVerticalText(
 @Composable
 fun CardSubRow(
     text: String,
-    icon: Painter,
+    icon: ImageVector,
     iconColor: Color = MaterialTheme.colorScheme.onBackground,
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {}
 ) {
     Card(
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.background,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.background,
+        ),
         elevation = CardDefaults.cardElevation(0.dp),
         onClick = onClick
     ) {
@@ -753,7 +837,7 @@ fun CardSubRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(painter = icon, contentDescription = text, tint = iconColor)
+            Icon(imageVector = icon, contentDescription = text, tint = iconColor)
             Text(
                 text = text,
                 maxLines = 1,

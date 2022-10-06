@@ -21,11 +21,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import com.machiav3lli.backup.BuildConfig
 import com.machiav3lli.backup.HousekeepingMoment
-import com.machiav3lli.backup.HousekeepingMoment.Companion.fromString
 import com.machiav3lli.backup.MODE_APK
 import com.machiav3lli.backup.MODE_DATA
-import com.machiav3lli.backup.PREFS_HOUSEKEEPING_MOMENT
-import com.machiav3lli.backup.PREFS_NUM_BACKUP_REVISIONS
 import com.machiav3lli.backup.actions.BackupAppAction
 import com.machiav3lli.backup.actions.BackupSpecialAction
 import com.machiav3lli.backup.actions.RestoreAppAction
@@ -37,11 +34,12 @@ import com.machiav3lli.backup.items.ActionResult
 import com.machiav3lli.backup.items.Package
 import com.machiav3lli.backup.items.StorageFile
 import com.machiav3lli.backup.items.StorageFile.Companion.invalidateCache
+import com.machiav3lli.backup.preferences.pref_housekeepingMoment
+import com.machiav3lli.backup.preferences.pref_numBackupRevisions
 import com.machiav3lli.backup.tasks.AppActionWork
 import com.machiav3lli.backup.utils.FileUtils.BackupLocationInAccessibleException
 import com.machiav3lli.backup.utils.StorageLocationNotConfiguredException
 import com.machiav3lli.backup.utils.getBackupDir
-import com.machiav3lli.backup.utils.getDefaultSharedPreferences
 import com.machiav3lli.backup.utils.suCopyFileToDocument
 import timber.log.Timber
 import java.io.FileNotFoundException
@@ -57,13 +55,9 @@ object BackupRestoreHelper {
         backupMode: Int
     ): ActionResult {
         var reBackupMode = backupMode
-        val housekeepingWhen = fromString(
-            context.getDefaultSharedPreferences()
-                .getString(PREFS_HOUSEKEEPING_MOMENT, HousekeepingMoment.AFTER.value)
-                ?: HousekeepingMoment.AFTER.value
-        )
-        if (housekeepingWhen == HousekeepingMoment.BEFORE) {
-            housekeepingPackageBackups(context, packageItem, true)
+        val housekeepingWhen = pref_housekeepingMoment.value
+        if (housekeepingWhen == HousekeepingMoment.BEFORE.ordinal) {
+            housekeepingPackageBackups(packageItem, true)
         }
         // Select and prepare the action to use
         val action: BackupAppAction = when {
@@ -90,8 +84,8 @@ object BackupRestoreHelper {
             Timber.i("[${packageItem.packageName}] Backup FAILED: ${result.succeeded} ${result.message}")
         }
 
-        if (housekeepingWhen == HousekeepingMoment.AFTER) {
-            housekeepingPackageBackups(context, packageItem, false)
+        if (housekeepingWhen == HousekeepingMoment.AFTER.ordinal) {
+            housekeepingPackageBackups(packageItem, false)
         }
         return result
     }
@@ -118,7 +112,7 @@ object BackupRestoreHelper {
             val apkFile = backupRoot.findFile(filename)
             apkFile?.delete()
             try {
-                val myInfo = context.packageManager.getPackageInfo(BuildConfig.APPLICATION_ID, 0)
+                val myInfo = context.packageManager.getPackageInfo(BuildConfig.APPLICATION_ID, 0) // TODO
                 val fileInfos =
                     shell.suGetDetailedDirectoryContents(myInfo.applicationInfo.sourceDir, false)
                 if (fileInfos.size != 1) {
@@ -151,9 +145,9 @@ object BackupRestoreHelper {
         return true
     }
 
-    private fun housekeepingPackageBackups(context: Context, app: Package, before: Boolean) {
+    fun housekeepingPackageBackups(app: Package, before: Boolean) {
         var numBackupRevisions =
-            context.getDefaultSharedPreferences().getInt(PREFS_NUM_BACKUP_REVISIONS, 2)
+            pref_numBackupRevisions.value
         if (numBackupRevisions == 0) {
             Timber.i("[${app.packageName}] Infinite backup revisions configured. Not deleting any backup.")
             return
