@@ -26,9 +26,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.machiav3lli.backup.R
 import com.machiav3lli.backup.ui.compose.icons.Phosphor
@@ -40,7 +41,7 @@ import com.machiav3lli.backup.viewmodels.ExportsViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExportsPage(viewModel: ExportsViewModel) {
-    val exports by viewModel.exportsList.observeAsState()
+    val exports by viewModel.exportsList.collectAsState()
 
     SideEffect {
         viewModel.refreshList()
@@ -48,6 +49,7 @@ fun ExportsPage(viewModel: ExportsViewModel) {
 
     AppTheme {
         Scaffold(
+            containerColor = Color.Transparent,
             floatingActionButton = {
                 ExtendedFloatingActionButton(onClick = viewModel::exportSchedules) {
                     Icon(

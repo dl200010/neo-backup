@@ -28,7 +28,7 @@ import com.machiav3lli.backup.preferences.ui.PrefsGroup
 import com.machiav3lli.backup.secondaryColorItems
 import com.machiav3lli.backup.themeItems
 import com.machiav3lli.backup.ui.compose.icons.Phosphor
-import com.machiav3lli.backup.ui.compose.icons.phosphor.ArrowsOutlineVertical
+import com.machiav3lli.backup.ui.compose.icons.phosphor.ArrowsOutLineVertical
 import com.machiav3lli.backup.ui.compose.icons.phosphor.Clock
 import com.machiav3lli.backup.ui.compose.icons.phosphor.EyedropperSample
 import com.machiav3lli.backup.ui.compose.icons.phosphor.FingerprintSimple
@@ -55,6 +55,9 @@ import com.machiav3lli.backup.ui.item.StringPref
 import com.machiav3lli.backup.utils.StorageLocationNotConfiguredException
 import com.machiav3lli.backup.utils.backupDirConfigured
 import com.machiav3lli.backup.utils.getLanguageList
+import com.machiav3lli.backup.utils.isBiometricLockAvailable
+import com.machiav3lli.backup.utils.isDeviceLockAvailable
+import com.machiav3lli.backup.utils.isDeviceLockEnabled
 import com.machiav3lli.backup.utils.restartApp
 import com.machiav3lli.backup.utils.setBackupDir
 import com.machiav3lli.backup.utils.setCustomTheme
@@ -65,7 +68,7 @@ fun UserPrefsPage() {
     val context = LocalContext.current
     val openDialog = remember { mutableStateOf(false) }
     var dialogsPref by remember { mutableStateOf<Pref?>(null) }
-    var backupDir by remember { mutableStateOf(context.backupDirConfigured) }
+    var backupDir by remember { mutableStateOf(context.backupDirConfigured) }   //TODO hg42 remember ???
 
     val prefs = Pref.preferences["user"] ?: listOf()
 
@@ -111,7 +114,7 @@ fun UserPrefsPage() {
                 launcher.launch(BACKUP_DIRECTORY_INTENT)
             } else BaseDialog(openDialogCustom = openDialog) {
                 when (dialogsPref) {
-                    pref_languages -> ListDialogUI(
+                    pref_languages         -> ListDialogUI(
                         pref = dialogsPref as ListPref,
                         openDialogCustom = openDialog,
                         onChanged = { context.restartApp() }
@@ -182,7 +185,8 @@ val pref_deviceLock = BooleanPref(
     summaryId = R.string.prefs_devicelock_summary,
     icon = Phosphor.Lock,
     iconTint = ColorUpdated,
-    defaultValue = false
+    defaultValue = false,
+    enableIf = { OABX.context.isDeviceLockAvailable() }
 )
 
 val pref_biometricLock = BooleanPref(
@@ -191,14 +195,15 @@ val pref_biometricLock = BooleanPref(
     summaryId = R.string.prefs_biometriclock_summary,
     icon = Phosphor.FingerprintSimple,
     iconTint = ColorDeData,
-    defaultValue = false
+    defaultValue = false,
+    enableIf = { OABX.context.isBiometricLockAvailable() && OABX.context.isDeviceLockEnabled() }
 )
 
 val pref_multilineInfoChips = BooleanPref(
     key = "user.multilineInfoChips",
     titleId = R.string.prefs_multilineinfochips,
     summaryId = R.string.prefs_multilineinfochips_summary,
-    icon = Phosphor.ArrowsOutlineVertical,
+    icon = Phosphor.ArrowsOutLineVertical,
     iconTint = ColorSystem,
     defaultValue = false
 )
@@ -220,12 +225,4 @@ val pref_oldBackups = IntPref(
     iconTint = ColorExodus,
     entries = (1..30).toList(),
     defaultValue = 2
-)
-
-val pref_rememberFiltering = BooleanPref(
-    key = "user.rememberFiltering",
-    titleId = R.string.prefs_rememberfiltering,
-    summaryId = R.string.prefs_rememberfiltering_summary,
-    icon = Phosphor.FunnelSimple,
-    defaultValue = false
 )

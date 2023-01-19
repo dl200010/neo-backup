@@ -1,5 +1,149 @@
 CHANGELOG
 =========
+
+8.2.5 (03.12.2022) +15 Commits & +20 Translations
+------------------
+
+#### Function
+- Fix: Schedules ignoring specials in blocklists
+- Fix: Running schedules twice
+- Add: Fake schedules
+- Add: More tracing prefs
+
+#### UI
+- Fix: Add space to info chips
+
+8.2.4 (25.11.2022) +10 Commits
+------------------
+
+#### Function
+- Fix: BlockLists in schedules
+- Fix: Repetitive running schedules
+- Update: Default disable tracing
+
+#### UI
+- Fix: Restore full height of terminal
+
+#### Usability/UX
+- Update: Separate service prefs into backup and restore ones
+
+8.2.3 (25.11.2022) +25 Commits
+------------------
+
+#### Function
+- Fix: Note & Tags in AppSheet
+- Fix: Log not updated when deleting items
+- Update: Separate PrefGroups for logging and tracing
+
+#### UI
+- Fix: Schedule filters
+- Fix: Height calculation of LogItem/TerminalText, button colors
+- Update: Revamp Chips layout
+
+#### Usability/UX
+- Add: Batch settings Sheet
+- Add: Tooltips to check all buttons in Batch
+
+8.2.2 (23.11.2022) +160 Commits
+------------------
+
+#### Function
+- Fix: Schedules handling
+
+#### UI
+- Add: System theme based icon
+
+8.2.1 (18.11.2022) +290 Commits
+------------------
+
+#### Function
+- Add: Persisting backups
+- Add: Dev Prefs: restoreKillApps, pref_refreshOnStart, pref_logToSystemLogcat
+- Add: Dev Prefs: Trace options
+- Add: Terminal for support (retrieving infos by buttons, e.g. toybox versions, su version, text can be saved to Log)
+- Fix: Support of non-magisk SU implementations (`su 0` now is the only feature su needs to have)
+- Fix: Bug in `ls -l` of statically linked toybox variants (e.g. toybox-ext Magisk module)
+- Fix: Handling of `ls -l` numeric user ids output (xxx_cache group adds 10000 if numeric)
+- Fix: Quoting/escaping problems of Magisk su
+- Fix: Do not use restorecon if selinux context cannot be retrieved from the file system
+- Fix: Don't change group of a cache directory if it'S a system group (e.g. sdcard_rw)
+- Fix: A StorageFile bug resulting more issues
+- Fix: Make startup more robust in case NB was restored by backup software
+- Fix: Cache invalidation
+- Fix: Restoring (un)compressed data/specials
+- Fix: Specials and data: don't restorecon in case of selinux context = "?"
+- Fix: Updating a Package on (Un)Install when there's backups
+- Fix: Delete any password accidentally saved to non-encrypted preferences
+- Update: Special folders start with `!-` to put them at the top of a directory listing
+- Update: Activities hold VMs (avoid memory duplicates)
+- Update: Simplify files creation
+- Update: Improve tar error output handling
+- Update: Dev prefs: pauseApps + pmSuspend is now backupPauseApps + backupSuspendApps
+- Update: Toybox scores
+- Update: Migrate fields from LiveData to Flow
+- Update: Context menu actions to non-blocking
+- Update: Replace AppInfo of uninstalled packages that left backups
+
+#### UI
+- Add: Missing buttons to legend on HelpSheet
+- Add: Save button to error dialogs
+- Fix: Share button on Logs works now
+- Fix: LogsPage
+- Fix: ScheduleSheet custom & block lists state update
+- Update: Allow swiping between pages
+- Update: Minimize & simplify UI layouts
+- Update: Hide NavBar when in a Tool page
+- Update: Log entries have a maximum height and are scrollable
+- Update: Global loading/busy bar
+- Update: Migrate updatedApps bar into expandable FAB
+- Update: Make StatusBar transparent
+
+#### Usability/UX
+- Add: Tooltips to AppSheet action buttons
+- Add: Save/Load context menu selections
+- Fix: Dependent preferences should now work flawless
+- Fix: Re-initiating app state when rotating screen
+- Fix: Show Launch action only for launchable apps
+- Update: Alphabetical sort respects Locale
+- Update: Short touch on the app icon will select it, a long touch opens context menu
+- Update: Hide irrelevant actions for Specials
+- Update: Search term is applied again when changing tab
+- Update: Make SortFilterSheet immediately updating counts
+
+8.2.0 (22.10.2022) +150 Commits
+------------------
+- Add: Support for themed icon on A13
+- Add: Option to backup no_backup files
+- Add: Option for multiline InfoChips Pref
+- Add: Option to Squeeze NavItems' text instead of ellipsis
+- Add: Note about downgrading being only supported by debuggable packages
+- Add: Selectable Home items with context menu (needs heavy testing)
+- Update: New icons (Phosphor icons)
+- Update: Allow to backup the app
+- Update: TopBar layout
+- Update: Set better fitting view composition strategy for Sheets
+- Update: Make progress bars global
+- Update: Migrate SplashActivity to compose
+- Update: BackupItem's layout to better fit low dpi and huge fonts
+- Update: Improve error messages to include a log
+- Update: Revamp password dialog
+- Update: Show error message when passwords don't match
+- Fix: Handling when apk is not called base.apk
+- Fix: Auto updating AppSheet after uninstall/enable/disable/restore
+- Fix: Crash on recreating app with a Sheet initiated
+- Fix: Crash on prefs having wrong data
+- Fix: Forwarding to Main directly from Intro
+- Fix: Tonal surface follows set accent color
+- Fix: Not respecting default Backup prefs
+- Fix: StringPref value not shown
+- Fix: Password field not being marked as password
+- Fix: Device/biometric lock prompt throwing exception
+- Fix: SeekBar's layout
+- Fix: TopBar title for Exports & Logs
+- Fix: Version name alignment in HelpSheet
+- Remove: Tint for Prefs' icons
+- Remove: Xml-based unused resources (replaced with compose-based)
+
 8.1.3 (20.09.2022) +50 Commits
 ------------------
 - Update: Migrate navigation fully to Compose

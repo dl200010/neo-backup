@@ -19,28 +19,24 @@ package com.machiav3lli.backup.viewmodels
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.machiav3lli.backup.dbs.dao.ScheduleDao
 import com.machiav3lli.backup.dbs.entity.Schedule
+import com.machiav3lli.backup.traceSchedule
 import com.machiav3lli.backup.utils.cancelAlarm
 import com.machiav3lli.backup.utils.scheduleAlarm
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class SchedulerViewModel(val database: ScheduleDao, appContext: Application) :
     AndroidViewModel(appContext) {
 
-    var schedules = MediatorLiveData<List<Schedule>>()
-    val progress = MutableLiveData<Pair<Boolean, Float>>()
-
-    init {
-        schedules.addSource(database.liveAll, schedules::setValue)
-    }
+    var schedules = database.allFlow
+    private val progress = MutableStateFlow(Pair(true,0.0f))
 
     fun addSchedule(withSpecial: Boolean) {
         viewModelScope.launch {
@@ -68,14 +64,17 @@ class SchedulerViewModel(val database: ScheduleDao, appContext: Application) :
     private suspend fun updateS(schedule: Schedule, rescheduleBoolean: Boolean) {
         withContext(Dispatchers.IO) {
             database.update(schedule)
-            if (schedule.enabled)
+            if (schedule.enabled) {
+                traceSchedule { "SchedulerViewModel.updateS -> ${if (rescheduleBoolean) "re-" else ""}schedule"}
                 scheduleAlarm(
                     getApplication<Application>().baseContext,
                     schedule.id,
                     rescheduleBoolean
                 )
-            else
+            } else {
+                traceSchedule { "SchedulerViewModel.updateS -> cancelAlarm"}
                 cancelAlarm(getApplication<Application>().baseContext, schedule.id)
+            }
         }
     }
 

@@ -19,8 +19,10 @@ package com.machiav3lli.backup.handler
 
 //import com.google.code.regexp.Pattern
 import android.os.Environment.DIRECTORY_DOCUMENTS
+import androidx.core.text.isDigitsOnly
 import com.machiav3lli.backup.BuildConfig
 import com.machiav3lli.backup.OABX
+import com.machiav3lli.backup.handler.ShellHandler.FileInfo.Companion.utilBoxInfo
 import com.machiav3lli.backup.preferences.pref_useFindLs
 import com.machiav3lli.backup.utils.BUFFER_SIZE
 import com.machiav3lli.backup.utils.FileUtils.translatePosixPermissionToMode
@@ -28,16 +30,22 @@ import com.topjohnwu.superuser.Shell
 import com.topjohnwu.superuser.Shell.ROOT_MOUNT_MASTER
 import com.topjohnwu.superuser.io.SuRandomAccessFile
 import de.voize.semver4k.Semver
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 
-const val testedVersions = "0.8.0 - 0.8.7"
-const val bugDotDotDir = "0.8.3 - 0.8.6"
+const val verKnown = "0.8.0 - 0.8.7"
+const val verBugDotDotDir = "0.8.3 - 0.8.6"
 
 class ShellHandler {
 
@@ -47,52 +55,86 @@ class ShellHandler {
         var name: String = "",
         var version: String = "0.0.0",
         var reason: String = "",
-        var score: Double = 0.0
+        var score: Int = 0
     ) {
+        var bugs = mutableMapOf<String, Boolean>()
 
-        var isTestedVersion = false
-        var hasBugDotDotDir = false
+        var isKnownVersion = false
         val semver: Semver
+
+        companion object {
+            val bugDetectors = mapOf<String, (String, UtilBox) -> Unit>(
+                "DotDotDir" to { name, box ->
+                    box.apply {
+                        //TODO hg42 should use a real "feature" test instead of version (but it hangs)
+                        if (semver.satisfies(verBugDotDotDir)) {
+                            bugs[name] = true
+                            // workaround: ignore directories of this kind
+                        }
+                    }
+                },
+                "LsLNum" to { name, box ->
+                    box.apply {
+                        try {
+                            val line = runAsRoot("${quote()} ls -ld /").out.first() ?: ""
+                            val (attr, n, user, group, tail) = line.split(" ", limit = 5)
+                            if (user.isDigitsOnly() || group.isDigitsOnly()) {
+                                bugs[name] = true
+                                //score = score.mod(1_00_00_00_0)  // fatal
+                                // not fatal, becasue we have a workaround
+                            }
+                        } catch (e: Throwable) {
+                            bugs["unSpec"] = true
+                            score = score.mod(1_00_00_00_0)  //TODO hg42 fatal? when can this happen?
+                            LogsHandler.unhandledException(e)
+                        }
+                    }
+                }
+            )
+
+        }
 
         init {
             version = version.replace(Regex("""^[vV]"""), "")
             version = version.replace(Regex("""-android$"""), "")
             semver = Semver(version, Semver.SemverType.NPM)
             if (semver.satisfies("=0.0.0")) {
-                score = 0.0
+                score =                    0
             } else {
+                score +=           1_00_00_0 * (semver.major ?: 0)
+                score +=              1_00_0 * (semver.minor ?: 0)
+                score +=                 1_0 * (semver.patch ?: 0)
+
                 if (!name.contains("vendor")) {
-                    score += 0.000_000_000_1
+                    score +=               1
+                }
+                if (!name.contains("stock")) {
+                    score +=               1
                 }
                 if (name.contains("ext")) {
-                    score += 0.000_000_000_1
+                    score +=               2
                 }
                 if (name.contains("local")) {
-                    score += 0.000_000_000_1
+                    score +=   10_00_00_00_0
                 }
-                if (semver.satisfies(testedVersions)) {
-                    score += 10.0
-                    isTestedVersion = true
+
+                if (semver.satisfies(verKnown)) {
+                    isKnownVersion = true
+                    score +=    1_00_00_00_0
                 }
-                if (detectBugDotDotDir()) {
-                    hasBugDotDotDir = true
-                } else {
-                    score += 1000.0
+
+                bugDetectors.forEach { it.value(it.key, this) }
+
+                if (!hasBugs()) {
+                    score += 200_00_00_00_0
                 }
-                score += (semver.major?.times(1000) ?: 0)
-                    .plus(semver.minor ?: 0)
-                    .times(1000)
-                    .plus(semver.patch ?: 0)
-                    .div(1_000_000_000)
             }
         }
 
-        private fun detectBugDotDotDir(): Boolean {
-            //TODO hg42 may use a real "feature" test instead of version
-            return semver.satisfies(bugDotDotDir)
-        }
-
         fun quote() = quote(name)
+
+        fun hasBugs() = bugs.isNotEmpty()
+        fun hasBug(name: String) = bugs[name] == true
     }
 
     init {
@@ -104,10 +146,10 @@ class ShellHandler {
         Shell.setDefaultBuilder(builder)
         Shell.getShell()
 
-        Timber.i("is root         = ${Shell.rootAccess()}")
+        Timber.i("is root         = ${Shell.rootAccess()}")     //TODO hg42 use Shell.isAppGrantedRoot() (also at other places)
         Timber.i("is mount-master = $isMountMaster")
 
-        val boxes = mutableListOf<UtilBox>()
+        utilBoxes = mutableListOf<UtilBox>()
         try {
             UTILBOX_NAMES.forEach { box ->
                 var boxVersion = ""
@@ -121,12 +163,12 @@ class ShellHandler {
                         } else {
                             ""
                         }
-                        boxes.add(UtilBox(name = box, version = boxVersion))
+                        utilBoxes.add(UtilBox(name = box, version = boxVersion))
                     } else {
                         throw Exception() // goto catch
                     }
                 } catch (e: Throwable) {
-                    LogsHandler.unhandledException(e, "utilBox $box --version failed")
+                    Timber.d("utilBox FAILED: ----------> $box --version")
                     try {
                         val shellResult = runAsRoot(box)
                         if (shellResult.isSuccess) {
@@ -136,51 +178,28 @@ class ShellHandler {
                             } else {
                                 ""
                             }
-                            boxes.add(UtilBox(name = box, version = boxVersion))
+                            utilBoxes.add(UtilBox(name = box, version = boxVersion))
                         } else {
                             throw Exception("failed") // goto catch
                         }
                     } catch (e: Throwable) {
-                        LogsHandler.unhandledException(e, "utilBox $box failed")
-                        boxes.add(UtilBox(name = box, reason = LogsHandler.message(e)))
+                        Timber.i("utilBox FAILED: ----------> $box")
+                        utilBoxes.add(UtilBox(name = box, reason = LogsHandler.message(e)))
                     }
                 }
             }
         } catch (e: Throwable) {
             LogsHandler.unhandledException(e, "utilBox detection failed miserable")
         }
-        boxes.sortByDescending { it.score }
-        boxes.forEach { box ->
-            Timber.i(
-                "utilBox: ${box.name}: ${
-                    if (box.version.isNotEmpty())
-                        "${box.version} -> ${box.score}"
-                    else
-                        box.reason
-                }"
-            )
-        }
-        utilBox = boxes.first()
-        if (utilBox.score <= 0) {
-            Timber.d("No good utilbox found")
-            val message =
-                boxes.map { box ->
-                    "${box.name}: ${
-                        if (box.version.isNotEmpty())
-                            "${box.version} -> ${box.score}"
-                        else
-                            box.reason
-                    }"
-                }.joinToString("\n")
-            OABX.addInfoText(
-                "No good utilbox found, tried these:\n${
-                    boxes.map { box ->
-                        if (box.version.isNotEmpty()) "${box.version} -> ${box.score}" else ""
-                    }.joinToString("\n")
-                }${
-                    if (message.isEmpty()) "" else "\n$message"
-                }"
-            )
+        OABX.lastErrorCommand = ""  // ignore fails while searching for utilBox
+
+        utilBoxes.sortByDescending { it.score }
+
+        utilBoxInfo().forEach { Timber.i(it) }
+
+        utilBox = utilBoxes.first()
+        if (utilBox.score <= 1) {
+            Timber.e("No good utilbox found (using $utilBox)")
             //throw UtilboxNotAvailableException(message)
         }
 
@@ -194,7 +213,7 @@ class ShellHandler {
     }
 
     @Throws(ShellCommandFailedException::class, UnexpectedCommandResult::class)
-    fun suGetFileInfo(path: String, parent: String? = null): FileInfo {
+    fun suGetFileInfo(path: String, parent: String? = null, utilBoxQ: String = ShellHandler.utilBoxQ): FileInfo {
         val shellResult = runAsRoot("$utilBoxQ ls -bdAll ${quote(path)}")
         val relativeParent = parent ?: ""
         val result = shellResult.out.asSequence()
@@ -240,7 +259,7 @@ class ShellHandler {
             .toMutableList()
         if (recursive && !useFindLs) {
             val directories = result
-                .filter { it.fileType == FileInfo.FileType.DIRECTORY }
+                .filter { it.fileType == FileType.DIRECTORY }
                 .toTypedArray()
             directories.forEach { dir ->
                 result.addAll(
@@ -278,14 +297,15 @@ class ShellHandler {
 
     class ShellCommandFailedException(
         @field:Transient val shellResult: Shell.Result,
-        val commands: Array<out String>
+        val command: String
     ) : Exception()
 
     class UnexpectedCommandResult(message: String, val shellResult: Shell.Result?) :
         Exception(message)
 
-    class UtilboxNotAvailableException(reasons: String) :
-        Exception(reasons)
+    enum class FileType {
+        REGULAR_FILE, BLOCK_DEVICE, CHAR_DEVICE, DIRECTORY, SYMBOLIC_LINK, NAMED_PIPE, SOCKET
+    }
 
     class FileInfo(
         /**
@@ -302,10 +322,6 @@ class ShellHandler {
         var fileSize: Long,
         var fileModTime: Date
     ) {
-        enum class FileType {
-            REGULAR_FILE, BLOCK_DEVICE, CHAR_DEVICE, DIRECTORY, SYMBOLIC_LINK, NAMED_PIPE, SOCKET
-        }
-
         val absolutePath: String = "$absoluteParent/$filePath"
 
         //val fileMode = fileMode
@@ -335,6 +351,24 @@ class ShellHandler {
             private val FALLBACK_MODE_FOR_DIR = translatePosixPermissionToMode("rwxrwx--x")
             private val FALLBACK_MODE_FOR_FILE = translatePosixPermissionToMode("rw-rw----")
             private val FALLBACK_MODE_FOR_CACHE = translatePosixPermissionToMode("rwxrws--x")
+
+            fun utilBoxInfo(): List<String> {
+                return utilBoxes.map { box ->
+                    "${box.name}: ${
+                        if (box.version.isNotEmpty() and (box.version != "0.0.0"))
+                            "${box.version}${
+                                if (utilBox.isKnownVersion) "" else " (unknown)"
+                            } -> ${box.score}${
+                                if (box.hasBugs())
+                                    " bugs: " + box.bugs.keys.joinToString(",")
+                                else
+                                    " good, no known bugs"
+                            }"
+                        else
+                            box.reason
+                    }"
+                }
+            }
 
             /*  from toybox ls.c
 
@@ -579,11 +613,13 @@ class ShellHandler {
             "/data/local/toybox",
             "toybox-ext",
             "toybox_vendor",
+            "toybox-stock",
             "toybox",
         )
 
         val isMountMaster get() = Shell.getShell().status >= ROOT_MOUNT_MASTER
 
+        var utilBoxes = mutableListOf<UtilBox>()
         var utilBox: UtilBox = UtilBox()
         val utilBoxQ get() = utilBox.quote()
 
@@ -596,49 +632,126 @@ class ShellHandler {
         val EXCLUDE_FILE = "tar_EXCLUDE"
 
         interface RunnableShellCommand {
-            fun runCommand(vararg commands: String?): Shell.Job
+            fun runCommand(command: String): Shell.Job
         }
 
         class ShRunnableShellCommand : RunnableShellCommand {
-            override fun runCommand(vararg commands: String?): Shell.Job {
-                return Shell.sh(*commands)
+            override fun runCommand(command: String): Shell.Job {
+                return Shell.sh(command)
             }
         }
 
         class SuRunnableShellCommand : RunnableShellCommand {
-            override fun runCommand(vararg commands: String?): Shell.Job {
-                return Shell.su(*commands)
+            override fun runCommand(command: String): Shell.Job {
+                return Shell.su(command)
             }
         }
 
         @Throws(ShellCommandFailedException::class)
         private fun runShellCommand(
             shell: RunnableShellCommand,
-            vararg commands: String
+            command: String
         ): Shell.Result {
             // defining stdout and stderr on our own
             // otherwise we would have to set set the flag redirect stderr to stdout:
             // Shell.Config.setFlags(Shell.FLAG_REDIRECT_STDERR);
             // stderr is used for logging, so it's better not to call an application that does that
             // and keeps quiet
-            Timber.d("Running Command: ${commands.joinToString(" ; ")}")
+            Timber.d("Running Command: $command")
             val stdout: List<String> = arrayListOf()
             val stderr: List<String> = arrayListOf()
-            val result = shell.runCommand(*commands).to(stdout, stderr).exec()
-            Timber.d("Command(s) ${commands.joinToString(" ; ")} ended with ${result.code}")
-            if (!result.isSuccess)
-                throw ShellCommandFailedException(result, commands)
+            val result = shell.runCommand(command).to(stdout, stderr).exec()
+            Timber.d("Command(s) $command ended with ${result.code}")
+            if (!result.isSuccess) {
+                OABX.lastErrorCommand = command
+                throw ShellCommandFailedException(result, command)
+            }
             return result
         }
 
         @Throws(ShellCommandFailedException::class)
-        fun runAsUser(vararg commands: String): Shell.Result {
-            return runShellCommand(ShRunnableShellCommand(), *commands)
+        fun runAsUser(command: String): Shell.Result {
+            return runShellCommand(ShRunnableShellCommand(), command)
         }
 
         @Throws(ShellCommandFailedException::class)
-        fun runAsRoot(vararg commands: String): Shell.Result {
-            return runShellCommand(SuRunnableShellCommand(), *commands)
+        fun runAsRoot(command: String): Shell.Result {
+            return runShellCommand(SuRunnableShellCommand(), command)
+        }
+
+        fun runAsRootPipeInCollectErr(
+            inStream: InputStream,
+            command: String
+        ) : Pair<Int, String> {
+            Timber.i("SHELL: $command")
+
+            return runBlocking(Dispatchers.IO) {
+
+                val process = Runtime.getRuntime().exec(suCommand)
+
+                val shellIn = process.outputStream
+                //val shellOut = process.inputStream
+                val shellErr = process.errorStream
+
+                val errAsync = async(Dispatchers.IO) {
+                    shellErr.readBytes().decodeToString()
+                }
+
+                shellIn.write("$command\n".encodeToByteArray())
+
+                inStream.copyTo(shellIn, 65536)
+                shellIn.close()
+
+                val err = errAsync.await()
+                withContext(Dispatchers.IO) { process.waitFor(10, TimeUnit.SECONDS) }
+                if (process.isAlive)
+                    process.destroyForcibly()
+                val code = process.exitValue()
+
+                if (code != 0)
+                    OABX.lastErrorCommand = command
+
+                (code to err)
+            }
+        }
+
+        fun runAsRootPipeOutCollectErr(
+                outStream: OutputStream,
+                command: String
+        ) : Pair<Int, String> {
+            Timber.i("SHELL: $command")
+
+            return runBlocking(Dispatchers.IO) {
+
+                val process = Runtime.getRuntime().exec(suCommand)
+
+                val shellIn  = process.outputStream
+                val shellOut = process.inputStream
+                val shellErr = process.errorStream
+
+                val errAsync = async(Dispatchers.IO) {
+                    shellErr.readBytes().decodeToString()
+                }
+
+                shellIn.write(command.encodeToByteArray())
+                shellIn.close()
+
+                shellOut.copyTo(outStream, 65536)
+                outStream.flush()
+
+                val err = errAsync.await()
+                withContext(Dispatchers.IO) {
+                    process.waitFor(10, TimeUnit.SECONDS)
+                }
+                if (process.isAlive)
+                    process.destroyForcibly()
+                val code = process.exitValue()
+
+                if (code != 0)
+                    OABX.lastErrorCommand = command
+
+                (code to err)
+            }
         }
 
         // the Android command line shell is mksh
@@ -669,6 +782,12 @@ class ShellHandler {
             val err = ex.shellResult.err
             return err.isNotEmpty() && err[0].contains("no such file or directory", true)
         }
+
+        val suCommand get() =
+            if (isMountMaster)
+                "su --mount-master 0"
+            else
+                "su 0"
 
         @Throws(IOException::class)
         fun quirkLibsuReadFileWorkaround(inputFile: FileInfo, output: OutputStream) {

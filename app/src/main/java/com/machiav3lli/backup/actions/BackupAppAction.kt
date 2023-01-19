@@ -19,8 +19,6 @@ package com.machiav3lli.backup.actions
 
 import android.annotation.SuppressLint
 import android.content.Context
-import com.machiav3lli.backup.BACKUP_DATE_TIME_FORMATTER
-import com.machiav3lli.backup.BACKUP_INSTANCE_PROPERTIES
 import com.machiav3lli.backup.MODE_APK
 import com.machiav3lli.backup.MODE_DATA
 import com.machiav3lli.backup.MODE_DATA_DE
@@ -29,20 +27,22 @@ import com.machiav3lli.backup.MODE_DATA_MEDIA
 import com.machiav3lli.backup.MODE_DATA_OBB
 import com.machiav3lli.backup.OABX
 import com.machiav3lli.backup.OABX.Companion.app
-import com.machiav3lli.backup.preferences.pref_backupTarCmd
-import com.machiav3lli.backup.preferences.pref_excludeCache
 import com.machiav3lli.backup.dbs.entity.Backup
 import com.machiav3lli.backup.handler.BackupBuilder
 import com.machiav3lli.backup.handler.LogsHandler
 import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.handler.ShellHandler.Companion.isFileNotFoundException
 import com.machiav3lli.backup.handler.ShellHandler.Companion.quote
+import com.machiav3lli.backup.handler.ShellHandler.Companion.runAsRootPipeOutCollectErr
 import com.machiav3lli.backup.handler.ShellHandler.Companion.utilBoxQ
 import com.machiav3lli.backup.handler.ShellHandler.ShellCommandFailedException
 import com.machiav3lli.backup.items.ActionResult
 import com.machiav3lli.backup.items.Package
 import com.machiav3lli.backup.items.RootFile
 import com.machiav3lli.backup.items.StorageFile
+import com.machiav3lli.backup.preferences.pref_backupPauseApps
+import com.machiav3lli.backup.preferences.pref_backupTarCmd
+import com.machiav3lli.backup.preferences.pref_excludeCache
 import com.machiav3lli.backup.preferences.pref_fakeBackupSeconds
 import com.machiav3lli.backup.tasks.AppActionWork
 import com.machiav3lli.backup.utils.CIPHER_ALGORITHM
@@ -56,7 +56,6 @@ import com.machiav3lli.backup.utils.getEncryptionPassword
 import com.machiav3lli.backup.utils.initIv
 import com.machiav3lli.backup.utils.isCompressionEnabled
 import com.machiav3lli.backup.utils.isEncryptionEnabled
-import com.machiav3lli.backup.utils.isPauseApps
 import com.machiav3lli.backup.utils.suAddFiles
 import com.machiav3lli.backup.utils.suCopyFileToDocument
 import com.topjohnwu.superuser.ShellUtils
@@ -66,7 +65,6 @@ import org.apache.commons.compress.compressors.gzip.GzipParameters
 import timber.log.Timber
 import java.io.IOException
 import java.io.OutputStream
-import java.nio.charset.StandardCharsets
 
 const val COMPRESSION_ALGORITHM = "gz"
 
@@ -76,12 +74,36 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
     open fun run(app: Package, backupMode: Int): ActionResult {
         var backup: Backup? = null
         var ok = false
+        val fakeSeconds = pref_fakeBackupSeconds.value
         try {
             Timber.i("Backing up: ${app.packageName} [${app.packageLabel}]")
-            //invalidateCacheForPackage(app.packageName)
+            //invalidateCacheForPackage(app.packageName)    //TODO hg42 ???
             work?.setOperation("pre")
+
+            if (fakeSeconds > 0) {
+
+                val step = 1000L * 1
+                val startTime = System.currentTimeMillis()
+                do {
+                    val now = System.currentTimeMillis()
+                    val seconds = (now - startTime) / 1000.0
+                    work?.setOperation((seconds / 10).toInt().toString().padStart(3, '0'))
+                    Thread.sleep(step)
+                } while (seconds < fakeSeconds)
+
+                val succeeded = true // random() < 0.75
+
+                return if (succeeded) {
+                    Timber.w("package: ${app.packageName} faking success")
+                    ActionResult(app, null, "faked backup succeeded", true)
+                } else {
+                    Timber.w("package: ${app.packageName} faking failure")
+                    ActionResult(app, null, "faked backup failed", false)
+                }
+            }
+
             val appBackupRoot: StorageFile = try {
-                app.getAppBackupRoot(true)!!
+                app.getAppBackupRoot(create = true)!!
             } catch (e: BackupLocationInAccessibleException) {
                 // Usually, this should never happen, but just in case...
                 val realException: Exception =
@@ -118,38 +140,20 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
             backupBuilder.setIv(iv)
 
             val backupInstanceDir = backupBuilder.backupPath
-            val pauseApp = context.isPauseApps
+            val pauseApp = pref_backupPauseApps.value
             if (pauseApp) {
                 Timber.d("pre-process package (to avoid file inconsistencies during backup etc.)")
-                preprocessPackage(app.packageName)
+                preprocessPackage(type = "backup", packageName = app.packageName)
+            }
+
+            fun handleException(e: Throwable): ActionResult {
+                val message =
+                    "${e.javaClass.simpleName}: ${e.message}${e.cause?.let { " - ${it.message}" }}"
+                Timber.e("Backup failed: $message")
+                return ActionResult(app, null, message, false)
             }
 
             try {
-                val fakeSeconds = pref_fakeBackupSeconds.value
-                if (fakeSeconds > 0) {
-
-                    val actionResult: ActionResult? = null
-
-                    val step = 1000L * 1
-                    val startTime = System.currentTimeMillis()
-                    do {
-                        val now = System.currentTimeMillis()
-                        val seconds = (now - startTime) / 1000.0
-                        work?.setOperation((seconds/10).toInt().toString().padStart(3, '0'))
-                        Thread.sleep(step)
-                    } while (seconds < fakeSeconds)
-
-                    val succeeded = true // random() < 0.75
-
-                    return if (succeeded) {
-                        Timber.w("package: ${app.packageName} faking success")
-                        ActionResult(app, null, "faked backup succeeded", true)
-                    } else {
-                        Timber.w("package: ${app.packageName} faking failure")
-                        ActionResult(app, null, "faked backup failed", false)
-                    }
-                }
-
                 if (backupMode and MODE_APK == MODE_APK) {
                     Timber.i("$app: Backing up package")
                     work?.setOperation("apk")
@@ -200,66 +204,58 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
 
                 backup = backupBuilder.createBackup()
 
-                saveBackupProperties(appBackupRoot, backup)  //TODO hg42 move to Package
-
-                ok = true
+                ok = saveBackupProperties(backupBuilder.backupPropsFile, backup)
 
             } catch (e: BackupFailedException) {
-                Timber.e("Backup failed due to ${e.javaClass.simpleName}: ${e.message}")
-                Timber.d("Backup deleted: ${backupBuilder.backupPath.delete()}")
-                return ActionResult(app, null, "${e.javaClass.simpleName}: ${e.message}", false)
+                return handleException(e)
             } catch (e: CryptoSetupException) {
-                Timber.e("Backup failed due to ${e.javaClass.simpleName}: ${e.message}")
-                Timber.d("Backup deleted: ${backupBuilder.backupPath.delete()}")
-                return ActionResult(app, null, "${e.javaClass.simpleName}: ${e.message}", false)
+                return handleException(e)
             } catch (e: IOException) {
-                Timber.e("Backup failed due to ${e.javaClass.simpleName}: ${e.message}")
-                Timber.d("Backup deleted: ${backupBuilder.backupPath.delete()}")
-                return ActionResult(app, null, "${e.javaClass.simpleName}: ${e.message}", false)
+                return handleException(e)
             } catch (e: Throwable) {
-                LogsHandler.unhandledException(e, app)
-                Timber.e("Backup failed due to ${e.javaClass.simpleName}: ${e.message}")
-                Timber.d("Backup deleted: ${backupBuilder.backupPath.delete()}")
-                return ActionResult(app, null, "${e.javaClass.simpleName}: ${e.message}", false)
+                return handleException(e)
             } finally {
                 work?.setOperation("fin")
                 if (pauseApp) {
                     Timber.d("post-process package (to set it back to normal operation)")
-                    postprocessPackage(app.packageName)
+                    postprocessPackage(type = "backup", packageName = app.packageName)
                 }
-                //invalidateCacheForPackage(app.packageName)
                 if (backup == null)
                     backup = backupBuilder.createBackup()
-                // TODO maybe need to handle some emergant props
+                // TODO maybe need to handle some emergent props
                 if (ok)
                     app.addBackup(backup)
-                else
+                else {
+                    Timber.d("Backup failed -> deleting it")
                     app.deleteBackup(backup)
+                }
             }
         } finally {
             work?.setOperation("end")
-            Timber.i("$app: Backup done: ${backup ?: app.packageName}")
+            Timber.i("${app.packageName}: Backup done: ${backup}")
         }
         return ActionResult(app, backup, "", true)
     }
 
     @Throws(IOException::class)
     protected fun saveBackupProperties(
-        packageBackupDir: StorageFile,
+        propertiesFile: StorageFile,
         backup: Backup
-    ) {
-        val propertiesFileName = String.format(
-            BACKUP_INSTANCE_PROPERTIES,
-            BACKUP_DATE_TIME_FORMATTER.format(backup.backupDate), backup.profileId
-        )
-        val propertiesFile =
-            packageBackupDir.createFile("application/octet-stream", propertiesFileName)
-        propertiesFile.outputStream()?.use { propertiesOut ->
-            propertiesOut.write(
-                backup.toJSON().toByteArray(StandardCharsets.UTF_8)
-            )
+    ) : Boolean {
+        //propertiesFile.parent?.let { dir ->       //TODO WECH
+        //    propertiesFile.name?.let { name ->
+        //        dir.createFile(name)
+        //        propertiesFile.writeText(backup.toJSON())
+        //        Timber.i("Wrote $propertiesFile file for backup: $backup")
+        //        return true
+        //    }
+        //}
+        propertiesFile.createFile()?.let { it ->
+            it.writeText(backup.toJSON())
+            Timber.i("Wrote $it for backup: $backup")
+            return true
         }
-        Timber.i("Wrote $propertiesFile file for backup: $backup")
+        return false
     }
 
     @Throws(IOException::class, CryptoSetupException::class)
@@ -279,7 +275,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
             shouldCompress,
             iv != null && context.isEncryptionEnabled()
         )
-        val backupFile = backupInstanceDir.createFile("application/octet-stream", backupFilename)
+        val backupFile = backupInstanceDir.createFile(backupFilename)
 
         var outStream: OutputStream = backupFile.outputStream()!!
 
@@ -356,7 +352,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
             val excludeCache = pref_excludeCache.value
             val allFilesToBackup =
                 shell.suGetDetailedDirectoryContents(sourcePath, true, sourcePath)
-                    .filterNot { f: ShellHandler.FileInfo -> f.filename in DATA_EXCLUDED_BASENAMES } //TODO basenames! not all levels
+                    .filterNot { f: ShellHandler.FileInfo -> f.filename in DATA_BACKUP_EXCLUDED_BASENAMES } //TODO basenames! not all levels
                     .filterNot { f: ShellHandler.FileInfo -> f.filename in DATA_EXCLUDED_NAMES }
                     .filterNot { f: ShellHandler.FileInfo -> excludeCache && f.filename in DATA_EXCLUDED_CACHE_DIRS }
             allFilesToBackup
@@ -439,7 +435,7 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
             shouldCompress,
             iv != null && context.isEncryptionEnabled()
         )
-        val backupFile = backupInstanceDir.createFile("application/octet-stream", backupFilename)
+        val backupFile = backupInstanceDir.createFile(backupFilename)
 
         var outStream: OutputStream = backupFile.outputStream()!!
 
@@ -470,34 +466,34 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
             if (pref_excludeCache.value) {
                 options += " --exclude ${quote(excludeCache)}"
             }
-            var suOptions = if (ShellHandler.isMountMaster) "--mount-master" else ""
 
-            val cmd = "su $suOptions -c sh ${quote(tarScript)} create $utilBoxQ $options ${
-                quote(sourcePath)
-            }"
+            val cmd = "sh ${quote(tarScript)} create $utilBoxQ $options ${quote(sourcePath)}"
+
             Timber.i("SHELL: $cmd")
 
-            val process = Runtime.getRuntime().exec(cmd)
+            val (code, err) = runAsRootPipeOutCollectErr(outStream, cmd)
 
-            val shellIn = process.outputStream
-            val shellOut = process.inputStream
-            val shellErr = process.errorStream
-
-            shellOut.copyTo(outStream, 65536)
-
-            outStream.flush()
-
-            val err = shellErr.readBytes().decodeToString()
+            //---------- ignore error code, because sockets may trigger it
+            // if (err != "") {
+            //     Timber.i(err)
+            //     if (code != 0)
+            //         throw ScriptException(err)
+            // }
+            //---------- instead look at error output and ignore some of the messages
+            if (code != 0)
+                Timber.i("tar returns: code $code: $err") // at least log the full error
             val errLines = err
                 .split("\n")
                 .filterNot { line ->
                     line.isBlank()
                             || line.contains("tar: unknown file type") // e.g. socket 140000
+                            || line.contains("tar: had errors") // summary at the end
                 }
             if (errLines.isNotEmpty()) {
                 val errFiltered = errLines.joinToString("\n")
                 Timber.i(errFiltered)
-                throw ScriptException(errFiltered)
+                if (code != 0)
+                    throw ScriptException(errFiltered)
             }
             result = true
         } catch (e: Throwable) {
@@ -584,11 +580,13 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
                 iv
             )
         } catch (ex: BackupFailedException) {
-            (ex.cause as ShellCommandFailedException).let {
-                if (isFileNotFoundException(it)) {
-                    // no such data found
-                    Timber.i(LOG_NO_THING_TO_BACKUP, dataType, app.packageName)
-                    return false
+            when (ex.cause) {
+                is ShellCommandFailedException -> {
+                    if (isFileNotFoundException(ex.cause as ShellCommandFailedException)) {
+                        // no such data found
+                        Timber.i(LOG_NO_THING_TO_BACKUP, dataType, app.packageName)
+                        return false
+                    }
                 }
             }
             throw ex
@@ -612,11 +610,13 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
                 iv
             )
         } catch (ex: BackupFailedException) {
-            (ex.cause as ShellCommandFailedException).let {
-                if (isFileNotFoundException(it)) {
-                    // no such data found
-                    Timber.i(LOG_NO_THING_TO_BACKUP, dataType, app.packageName)
-                    return false
+            when (ex.cause) {
+                is ShellCommandFailedException -> {
+                    if (isFileNotFoundException(ex.cause as ShellCommandFailedException)) {
+                        // no such data found
+                        Timber.i(LOG_NO_THING_TO_BACKUP, dataType, app.packageName)
+                        return false
+                    }
                 }
             }
             throw ex
@@ -640,11 +640,13 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
                 iv
             )
         } catch (ex: BackupFailedException) {
-            (ex.cause as ShellCommandFailedException).let {
-                if (isFileNotFoundException(it)) {
-                    // no such data found
-                    Timber.i(LOG_NO_THING_TO_BACKUP, dataType, app.packageName)
-                    return false
+            when (ex.cause) {
+                is ShellCommandFailedException -> {
+                    if (isFileNotFoundException(ex.cause as ShellCommandFailedException)) {
+                        // no such data found
+                        Timber.i(LOG_NO_THING_TO_BACKUP, dataType, app.packageName)
+                        return false
+                    }
                 }
             }
             throw ex
@@ -668,11 +670,13 @@ open class BackupAppAction(context: Context, work: AppActionWork?, shell: ShellH
                 iv
             )
         } catch (ex: BackupFailedException) {
-            (ex.cause as ShellCommandFailedException).let {
-                if (isFileNotFoundException(it)) {
-                    // no such data found
-                    Timber.i(LOG_NO_THING_TO_BACKUP, dataType, app.packageName)
-                    return false
+            when (ex.cause) {
+                is ShellCommandFailedException -> {
+                    if (isFileNotFoundException(ex.cause as ShellCommandFailedException)) {
+                        // no such data found
+                        Timber.i(LOG_NO_THING_TO_BACKUP, dataType, app.packageName)
+                        return false
+                    }
                 }
             }
             throw ex

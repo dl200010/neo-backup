@@ -4,6 +4,7 @@
     android:installLocation="auto">
 
     <!-- for Android 12 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
@@ -58,10 +59,10 @@
         android:banner="@mipmap/ic_launcher"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="true"
-        android:icon="${appIcon}"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:requestLegacyExternalStorage="true"
-        android:roundIcon="${appIconRound}"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/AppTheme"
         tools:targetApi="32">
 
@@ -105,7 +106,8 @@
         <activity
             android:name=".activities.SplashActivity"
             android:exported="true"
-            android:theme="@style/AppTheme.Splash">
+            android:theme="@style/AppTheme.Splash"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -120,7 +122,8 @@
             android:exported="true"
             android:label="@string/prefs_title"
             android:launchMode="singleTask"
-            android:parentActivityName=".activities.MainActivityX" />
+            android:parentActivityName=".activities.MainActivityX"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".activities.ComposeSms"

@@ -2,8 +2,8 @@
 <resources>
     <string name="backup">バックアップ</string>
     <string name="restore">復元</string>
-    <string name="backupConfirmation">バックアップ?</string>
-    <string name="restoreConfirmation">復元?</string>
+    <string name="backupConfirmation">バックアップ\?</string>
+    <string name="restoreConfirmation">復元\?</string>
     <string name="handleApk">apk</string>
     <string name="handleData">データ</string>
     <string name="handleBoth">両方</string>
@@ -32,8 +32,8 @@
     <string name="sortByLabel">ラベル順</string>
     <string name="sortByPackageName">パッケージ名で並び替え</string>
     <string name="sort">並び替えとフィルター</string>
-    <string name="uninstallDialogMessage">このアプリをアンインストールしますか?</string>
-    <string name="deleteBackupDialogMessage">バックアップファイルを削除しますか?</string>
+    <string name="uninstallDialogMessage">このアプリをアンインストールしますか\?</string>
+    <string name="deleteBackupDialogMessage">バックアップファイルを削除しますか\?</string>
     <string name="dialogOK">OK</string>
     <string name="dialogCancel">キャンセル</string>
     <string name="dialogYes">はい</string>
@@ -118,8 +118,6 @@
     <string name="prefs_biometriclock_summary">生態認証装置によるアプリで安全にしてください（例：指紋、顔認証）</string>
     <string name="prefs_biometriclock">生態認証ロック</string>
     <string name="prefs_theme_system">システムテーマ</string>
-    <string name="prefs_housekeepingmoment_before">バックアップ前</string>
-    <string name="prefs_housekeepingmoment_after">バックアップ後</string>
     <string name="prefs_theme_dark">暗い</string>
     <string name="prefs_theme_light">明るい</string>
     <string name="radio_obbdata">OBB データ</string>
@@ -130,7 +128,6 @@
     <string name="radio_updated">更新済</string>
     <string name="prefs_allowdowngrade">ダウングレードの許可</string>
     <string name="prefs_restoreallpermissions">すべての権限を復元する</string>
-    <string name="prefs_externaldata_summary">外部ストレージ (例: /storage/emulated/0/Android/data/) に配置されたデータのバックアップとリストアを行います。</string>
     <string name="showSplitAPKs">分割APK</string>
     <string name="radio_mediadata">メディアデータ</string>
     <string name="prefs_advanced">高度な設定</string>
@@ -138,22 +135,17 @@
     <string name="prefs_service">サービスの設定</string>
     <string name="prefs_user">ユーザー設定</string>
     <string name="prefs_deviceprotecteddata">デバイスで保護されたデータのバックアップ</string>
-    <string name="prefs_deviceprotecteddata_summary">data/user_de に配置されたデータのバックアップと復元を行う</string>
     <string name="prefs_devicelock_summary">デバイスの認証情報でアプリを保護</string>
     <string name="prefs_theme">テーマ</string>
     <string name="prefs_obbdata">obbファイルのバックアップ</string>
     <string name="prefs_enablespecial_summary">まだ集中的なテストが必要で、ブートループを起こす危険性を承知の上で試してみてください。フィードバックをお待ちしています。</string>
-    <string name="prefs_obbdata_summary">外部ストレージ（例：/storage/emulated/0/Android/obb/）に置かれているアプリのobbファイルのバックアップとリストアを行います。</string>
     <string name="error_pmDataIncompleteException_dataRestoreFailed">アプリデータは復元されていません。</string>
     <string name="prefs_mediadata">メディアファイルをバックアップ</string>
-    <string name="prefs_mediadata_summary">外部ストレージ（例: /storage/emulated/0/Android/media/）に置かれているアプリのメディアファイルをバックアップ、リストアします。</string>
     <string name="prefs_numBackupRevisions">バックアップの改訂数</string>
     <string name="prefs_numBackupRevisions_summary">この数値を超えると、新しいバックアップを作成する際に最も古い改訂点が削除されます。ゼロに設定すると、全ての改訂点を保持します。</string>
-    <string name="prefs_housekeepingmoment">改訂点のクリーンアップ時間</string>
     <string name="prefs_disableverification">USB経由のアプリの検証を無効化</string>
     <string name="prefs_batchdelete_summary">現在インストールされていない全てのアプリのバックアップを削除する。</string>
     <string name="prefs_saveappslist">アプリリストを保存</string>
-    <string name="prefs_housekeepingmoment_summary">バックアップのディスク容量を解放するため、最も古いバージョンを削除するタイミングを新しいバックアップの作成前、作成後のいずれかに設定します。</string>
     <string name="prefs_compression_level_summary">小さい値は高速ですがサイズが大きくなります。大きい値は圧縮率が上がりますが時間がかかります。</string>
     <string name="prefs_compression_level">圧縮レベル</string>
     <string name="prefs_disableverification_summary">APKのリストア時にこの開発者向けオプションを無効化し、後で有効化してください。INSTALL_FAILED_VERIFICATION_FAILUREエラーを解決します。</string>

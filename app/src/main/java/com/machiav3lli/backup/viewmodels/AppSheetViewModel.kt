@@ -18,12 +18,8 @@
 package com.machiav3lli.backup.viewmodels
 
 import android.app.Application
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -35,36 +31,52 @@ import com.machiav3lli.backup.handler.LogsHandler
 import com.machiav3lli.backup.handler.ShellCommands
 import com.machiav3lli.backup.handler.showNotification
 import com.machiav3lli.backup.items.Package
+import com.machiav3lli.backup.ui.compose.MutableComposableFlow
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 class AppSheetViewModel(
-    app: Package,
+    app: Package?,
     private val database: ODatabase,
     private var shellCommands: ShellCommands,
     private val appContext: Application
 ) : AndroidViewModel(appContext) {
 
-    var thePackage = MutableLiveData(app)
-    var appExtras = MediatorLiveData<AppExtras>()
+    var thePackage = flow<Package?> { app }.stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        app
+    )
 
-    var snackbarText = MutableLiveData("")
+    @OptIn(ExperimentalCoroutinesApi::class)
+    var appExtras = database.appExtrasDao.getFlow(app?.packageName).mapLatest {
+        it ?: AppExtras(app?.packageName ?: "")
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        AppExtras(app?.packageName ?: "")
+    )
+
+    val snackbarText = MutableComposableFlow(
+        "",
+        viewModelScope,
+        "snackBarText"
+    )
 
     private var notificationId: Int = System.currentTimeMillis().toInt()
-    var refreshNow by mutableStateOf(false)
-
-    init {
-        appExtras.addSource(database.appExtrasDao.getLive(app.packageName)) {
-            appExtras.value = it ?: AppExtras(app.packageName)
-        }
-    }
+    val refreshNow = mutableStateOf(true)
 
     fun uninstallApp() {
         viewModelScope.launch {
             uninstall()
-            refreshNow = true
+            refreshNow.value = true
         }
     }
 
@@ -94,7 +106,7 @@ class AppSheetViewModel(
                         appContext.getString(com.machiav3lli.backup.R.string.uninstallFailure),
                         true
                     )
-                    e.message?.let { message -> LogsHandler.logErrors(appContext, message) }
+                    e.message?.let { message -> LogsHandler.logErrors(message) }
                 }
             }
         }
@@ -103,7 +115,7 @@ class AppSheetViewModel(
     fun enableDisableApp(users: MutableList<String>, enable: Boolean) {
         viewModelScope.launch {
             enableDisable(users, enable)
-            refreshNow = true
+            refreshNow.value = true
         }
     }
 
@@ -121,7 +133,7 @@ class AppSheetViewModel(
     fun deleteBackup(backup: Backup) {
         viewModelScope.launch {
             delete(backup)
-            refreshNow = true
+            refreshNow.value = true
         }
     }
 
@@ -134,7 +146,7 @@ class AppSheetViewModel(
     fun deleteAllBackups() {
         viewModelScope.launch {
             deleteAll()
-            refreshNow = true
+            refreshNow.value = true
         }
     }
 
@@ -147,7 +159,7 @@ class AppSheetViewModel(
     fun setExtras(appExtras: AppExtras?) {
         viewModelScope.launch {
             replaceExtras(appExtras)
-            refreshNow = true
+            refreshNow.value = true
         }
     }
 
@@ -160,8 +172,20 @@ class AppSheetViewModel(
         }
     }
 
+    fun rewriteBackup(backup: Backup, changedBackup: Backup) {
+        viewModelScope.launch {
+            rewriteBackupSuspendable(backup, changedBackup)
+        }
+    }
+
+    private suspend fun rewriteBackupSuspendable(backup: Backup, changedBackup: Backup) {
+        withContext(Dispatchers.IO) {
+            thePackage.value?.rewriteBackup(backup, changedBackup)
+        }
+    }
+
     class Factory(
-        private val packageInfo: Package,
+        private val packageInfo: Package?,
         private val database: ODatabase,
         private val shellCommands: ShellCommands,
         private val application: Application

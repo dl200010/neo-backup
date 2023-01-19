@@ -18,110 +18,327 @@
 package com.machiav3lli.backup.viewmodels
 
 import android.app.Application
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.machiav3lli.backup.OABX
-import com.machiav3lli.backup.OABX.Companion.context
 import com.machiav3lli.backup.PACKAGES_LIST_GLOBAL_ID
-import com.machiav3lli.backup.preferences.pref_usePackageCacheOnUpdate
 import com.machiav3lli.backup.dbs.ODatabase
 import com.machiav3lli.backup.dbs.entity.AppExtras
 import com.machiav3lli.backup.dbs.entity.AppInfo
 import com.machiav3lli.backup.dbs.entity.Backup
 import com.machiav3lli.backup.dbs.entity.Blocklist
-import com.machiav3lli.backup.handler.toAppInfoList
+import com.machiav3lli.backup.handler.LogsHandler
+import com.machiav3lli.backup.handler.getBackups
 import com.machiav3lli.backup.handler.toPackageList
 import com.machiav3lli.backup.handler.updateAppTables
 import com.machiav3lli.backup.items.Package
 import com.machiav3lli.backup.items.Package.Companion.invalidateCacheForPackage
+import com.machiav3lli.backup.traceBackups
+import com.machiav3lli.backup.traceFlows
+import com.machiav3lli.backup.ui.compose.MutableComposableFlow
+import com.machiav3lli.backup.ui.compose.item.limitIconCache
+import com.machiav3lli.backup.utils.TraceUtils.formatSortedBackups
+import com.machiav3lli.backup.utils.TraceUtils.trace
+import com.machiav3lli.backup.utils.applyFilter
+import com.machiav3lli.backup.utils.sortFilterModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import kotlin.reflect.*
 import kotlin.system.measureTimeMillis
 
 class MainViewModel(
     private val db: ODatabase,
-    private val appContext: Application
+    private val appContext: Application,
 ) : AndroidViewModel(appContext) {
 
-    var packageList = MediatorLiveData<MutableList<Package>>()
-    var backupsMap = MediatorLiveData<Map<String, List<Backup>>>()
-    var blocklist = MediatorLiveData<List<Blocklist>>()
-    var appExtrasMap = MediatorLiveData<Map<String, AppExtras>>()
+    private var backupsMap = mutableMapOf<String, List<Backup>>()
 
-    // TODO fix force refresh on changing backup directory or change method
-    val isNeedRefresh = MutableLiveData(false)
-    var refreshing = mutableStateOf(0)
-
-    init {
-        blocklist.addSource(db.blocklistDao.liveAll, blocklist::setValue)
-        backupsMap.addSource(db.backupDao.allLive) {
-            viewModelScope.launch {
-                withContext(Dispatchers.IO) {
-                    backupsMap.postValue(it.groupBy(Backup::packageName))
-                }
-            }
-        }
-        packageList.addSource(db.appInfoDao.allLive) {
-            viewModelScope.launch {
-                withContext(Dispatchers.IO) {
-                    packageList.postValue(
-                        it.toPackageList(
-                            appContext,
-                            blocklist.value.orEmpty().mapNotNull(Blocklist::packageName),
-                            backupsMap.value.orEmpty()
-                        )
-                    )
-                }
-            }
-        }
-        packageList.addSource(backupsMap) { map ->
-            viewModelScope.launch {
-                withContext(Dispatchers.IO) {
-                    packageList.postValue(
-                        packageList.value.orEmpty().toAppInfoList().toPackageList(
-                            appContext,
-                            blocklist.value.orEmpty().mapNotNull(Blocklist::packageName),
-                            map
-                        )
-                    )
-                }
-            }
-        }
-        appExtrasMap.addSource(db.appExtrasDao.liveAll) {
-            appExtrasMap.value = it.associateBy(AppExtras::packageName)
+    fun clearBackups() {
+        synchronized(backupsMap) {
+            backupsMap.clear()
         }
     }
+
+    fun putBackups(packageName: String, backups: List<Backup>) {
+        synchronized(backupsMap) {
+            backupsMap.put(packageName, backups)
+        }
+    }
+
+    fun getBackups(packageName: String): List<Backup> {
+        synchronized(backupsMap) {
+            return backupsMap.getOrPut(packageName) {
+                val backups =
+                    OABX.context.getBackups(packageName)  //TODO hg42 may also find glob *packageName* for now
+                backups[packageName] ?: emptyList()  // so we need to take the correct package here
+            }.drop(0)
+        }
+    }
+
+    init {
+        // do it early
+        refreshList()
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - FLOWS
+
+    // most flows are for complete states, so skipping (conflate, mapLatest) is usually allowed
+    // it's noted otherwise
+    // conflate:
+    //   takes the latest item and processes it completely, then takes the next (latest again)
+    //   if input rate is f_in and processing can run at max rate f_proc,
+    //   then with f_in > f_proc the results will only come out with about f_proc
+    // mapLatest: (use mapLatest { it } as an equivalent form similar to conflate())
+    //   kills processing the item, when a new one comes in
+    //   so, as long as items come in faster than processing time, there won't be results, in short:
+    //   if f_in > f_proc, then there is no output at all
+    //   this is much like processing on idle only
+
+    val blocklist =
+        //------------------------------------------------------------------------------------------ blocklist
+        db.blocklistDao.allFlow
+            .trace { "*** blocklist <<- ${it.size}" }
+            .stateIn(
+                viewModelScope + Dispatchers.Default,
+                SharingStarted.Eagerly,
+                emptyList()
+            )
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val backupsMapDb =
+        //------------------------------------------------------------------------------------------ backupsMap
+        db.backupDao.allFlow
+            .mapLatest { it.groupBy(Backup::packageName) }
+            .trace { "*** backupsMapDb <<- p=${it.size} b=${it.map { it.value.size }.sum()}" }
+            //.trace { "*** backupsMap <<- p=${it.size} b=${it.map { it.value.size }.sum()} #################### egg ${showSortedBackups(it["com.android.egg"])}" }  // for testing use com.android.egg
+            .stateIn(
+                viewModelScope + Dispatchers.Default,
+                SharingStarted.Eagerly,
+                emptyMap()
+            )
+
+    val backupsUpdateFlow = MutableSharedFlow<Pair<String, List<Backup>>?>()
+    val backupsUpdate = backupsUpdateFlow
+        // don't skip anything here (no conflate or map Latest etc.)
+        // we need to process each update as it's the update for a single package
+        .filterNotNull()
+        .trace { "*** backupsUpdate <<- ${it.first} ${formatSortedBackups(it.second)}" }
+        .onEach {
+            viewModelScope.launch(Dispatchers.IO) {
+                traceBackups {
+                    "*** updating database ---------------------------> ${it.first} ${
+                        formatSortedBackups(
+                            it.second
+                        )
+                    }"
+                }
+                ODatabase.getInstance(OABX.context).backupDao.updateList(
+                    it.first,
+                    it.second.sortedByDescending { it.backupDate })
+            }
+        }
+        .stateIn(
+            viewModelScope + Dispatchers.Default,
+            SharingStarted.Eagerly,
+            null
+        )
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val appExtrasMap =
+        //------------------------------------------------------------------------------------------ appExtrasMap
+        db.appExtrasDao.allFlow
+            .mapLatest { it.associateBy(AppExtras::packageName) }
+            .trace { "*** appExtrasMap <<- ${it.size}" }
+            .stateIn(
+                viewModelScope + Dispatchers.Default,
+                SharingStarted.Eagerly,
+                emptyMap()
+            )
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val packageList =
+        //========================================================================================== packageList
+        combine(db.appInfoDao.allFlow, backupsMapDb) { p, b ->
+
+            traceFlows {
+                "******************** packages-db: ${p.size} backups-db: ${
+                    b.map { it.value.size }.sum()
+                }"
+            }
+
+            val pkgs = p.toPackageList(appContext, emptyList(), b)
+
+            limitIconCache(pkgs)
+
+            traceFlows { "***** packages ->> ${pkgs.size}" }
+            pkgs
+        }
+            .mapLatest { it }
+            .trace { "*** packageList <<- ${it.size}" }
+            .stateIn(
+                viewModelScope + Dispatchers.Default,
+                SharingStarted.Eagerly,
+                emptyList()
+            )
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val packageMap =
+        //------------------------------------------------------------------------------------------ packageMap
+        packageList
+            .mapLatest { it.associateBy(Package::packageName) }
+            .trace { "*** packageMap <<- ${it.size}" }
+            .stateIn(
+                viewModelScope + Dispatchers.Default,
+                SharingStarted.Eagerly,
+                emptyMap()
+            )
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val notBlockedList =
+        //========================================================================================== notBlockedList
+        combine(packageList, blocklist) { p, b ->
+
+            traceFlows {
+                "******************** blocking - list: ${p.size} block: ${
+                    b.joinToString(",")
+                }"
+            }
+
+            val block = b.map { it.packageName }
+            val list = p.filterNot { block.contains(it.packageName) }
+
+            traceFlows { "***** blocked ->> ${list.size}" }
+            list
+        }
+            .mapLatest { it }
+            .trace { "*** notBlockedList <<- ${it.size}" }
+            .stateIn(
+                viewModelScope + Dispatchers.Default,
+                SharingStarted.Eagerly,
+                emptyList()
+            )
+
+    val searchQuery =
+        //------------------------------------------------------------------------------------------ searchQuery
+        MutableComposableFlow(
+            "",
+            viewModelScope + Dispatchers.Default,
+            "searchQuery"
+        )
+
+    var modelSortFilter =
+        //------------------------------------------------------------------------------------------ modelSortFilter
+        MutableComposableFlow(
+            OABX.context.sortFilterModel,
+            viewModelScope + Dispatchers.Default,
+            "modelSortFilter"
+        )
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val filteredList =
+        //========================================================================================== filteredList
+        combine(notBlockedList, modelSortFilter.flow, searchQuery.flow) { p, f, s ->
+
+            traceFlows { "******************** filtering - list: ${p.size} filter: $f" }
+
+            while (OABX.isBusy) {
+                traceFlows { "*** filtering wait for not busy" }
+                delay(500)
+            }
+
+            val list = p
+                .filter { item: Package ->
+                    s.isEmpty() || (
+                            listOf(item.packageName, item.packageLabel)
+                                .any { it.contains(s, ignoreCase = true) }
+                            )
+                }
+                .applyFilter(f, OABX.main!!)
+
+            traceFlows { "***** filtered ->> ${list.size}" }
+            list
+        }
+            // if the filter changes we can drop the older filter
+            .mapLatest { it }
+            .trace { "*** filteredList <<- ${it.size}" }
+            .stateIn(
+                viewModelScope + Dispatchers.Default,
+                SharingStarted.Eagerly,
+                emptyList()
+            )
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val updatedPackages =
+        //------------------------------------------------------------------------------------------ updatedPackages
+        notBlockedList
+            .trace { "updatePackages? ..." }
+            .onEach {
+                while (OABX.isBusy) {
+                    traceFlows { "*** updatePackages wait for not busy" }
+                    delay(3000)
+                }
+            }
+            .mapLatest { it.filter(Package::isUpdated).toMutableList() }
+            .trace {
+                "*** updatedPackages <<- updated: (${it.size})${
+                    it.map {
+                        "${it.packageName}(${it.versionCode}!=${it.latestBackup?.versionCode ?: ""})"
+                    }
+                }"
+            }
+            .stateIn(
+                viewModelScope + Dispatchers.Default,
+                SharingStarted.Eagerly,
+                emptyList()
+            )
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - FLOWS end
+
+    val selection = mutableStateMapOf<String, Boolean>()
+    val menuExpanded = mutableStateOf(false)
 
     // TODO add to interface
     fun refreshList() {
         viewModelScope.launch {
             recreateAppInfoList()
-            isNeedRefresh.postValue(false)
         }
     }
 
     private suspend fun recreateAppInfoList() {
-        withContext(Dispatchers.IO) {
-            refreshing.value++;
-            val time = measureTimeMillis {
-                packageList.postValue(null)
-                appContext.updateAppTables(db.appInfoDao, db.backupDao)
+        withContext(Dispatchers.Default) {
+            try {
+                OABX.beginBusy("recreateAppInfoList")
+                val time = measureTimeMillis {
+                    appContext.updateAppTables(db.appInfoDao, db.backupDao)
+                }
+                OABX.addInfoText("recreateAppInfoList: ${(time / 1000 + 0.5).toInt()} sec")
+            } catch (e: Throwable) {
+                LogsHandler.logException(e, backTrace = true)
+            } finally {
+                OABX.endBusy("recreateAppInfoList")
             }
-            OABX.addInfoText("recreateAppInfoList: ${(time / 1000 + 0.5).toInt()} sec")
-            refreshing.value--;
         }
     }
 
     fun updatePackage(packageName: String) {
         viewModelScope.launch {
-            packageList.value?.find { it.packageName == packageName }?.let {
+            packageMap.value[packageName]?.let {
                 updateDataOf(packageName)
             }
         }
@@ -129,31 +346,23 @@ class MainViewModel(
 
     private suspend fun updateDataOf(packageName: String) =
         withContext(Dispatchers.IO) {
-            refreshing.value++;
-            invalidateCacheForPackage(packageName)
-            val appPackage = packageList.value?.find { it.packageName == packageName }
             try {
+                OABX.beginBusy("updateDataOf")
+
+                invalidateCacheForPackage(packageName)
+                val appPackage = packageMap.value[packageName]
                 appPackage?.apply {
-                    if (pref_usePackageCacheOnUpdate.value) {
-                        val new = Package.get(packageName) {
-                            Package(appContext, packageName, getAppBackupRoot())
-                        }
-                        new.ensureBackupList()
-                        new.refreshFromPackageManager(context)
-                        new.refreshStorageStats(context)
-                        if (!isSpecial) db.appInfoDao.update(new.packageInfo as AppInfo)
-                        db.backupDao.updateList(new)
-                    } else {
-                        val new = Package(appContext, packageName, getAppBackupRoot())
-                        new.refreshFromPackageManager(context)
-                        if (!isSpecial) db.appInfoDao.update(new.packageInfo as AppInfo)
-                        db.backupDao.updateList(new)
-                    }
+                    val new = Package(appContext, packageName)
+                    new.refreshFromPackageManager(OABX.context)
+                    if (!isSpecial) db.appInfoDao.update(new.packageInfo as AppInfo)
+                    //new.refreshBackupList()     //TODO hg42 ??? who calls this? take it from backupsMap?
                 }
             } catch (e: AssertionError) {
                 Timber.w(e.message ?: "")
+                null
+            } finally {
+                OABX.endBusy("updateDataOf")
             }
-            refreshing.value--;
         }
 
     fun updateExtras(appExtras: AppExtras) {
@@ -164,12 +373,7 @@ class MainViewModel(
 
     private suspend fun updateExtrasWith(appExtras: AppExtras) {
         withContext(Dispatchers.IO) {
-            val oldExtras = db.appExtrasDao.all.find { it.packageName == appExtras.packageName }
-            if (oldExtras != null) {
-                appExtras.id = oldExtras.id
-                db.appExtrasDao.update(appExtras)
-            } else
-                db.appExtrasDao.insert(appExtras)
+            db.appExtrasDao.replaceInsert(appExtras)
             true
         }
     }
@@ -206,7 +410,6 @@ class MainViewModel(
                     .withPackageName(packageName)
                     .build()
             )
-            packageList.value?.removeIf { it.packageName == packageName }
         }
     }
 
@@ -221,7 +424,7 @@ class MainViewModel(
     //    )
     //}
 
-    fun updateBlocklist(newList: Set<String>) {
+    fun setBlocklist(newList: Set<String>) {
         viewModelScope.launch {
             insertIntoBlocklistDB(newList)
         }
@@ -230,12 +433,11 @@ class MainViewModel(
     private suspend fun insertIntoBlocklistDB(newList: Set<String>) =
         withContext(Dispatchers.IO) {
             db.blocklistDao.updateList(PACKAGES_LIST_GLOBAL_ID, newList)
-            packageList.value?.removeIf { newList.contains(it.packageName) }
         }
 
     class Factory(
         private val database: ODatabase,
-        private val application: Application
+        private val application: Application,
     ) : ViewModelProvider.Factory {
         @Suppress("unchecked_cast")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {

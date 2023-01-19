@@ -2,8 +2,8 @@
 <resources>
     <string name="backup">Cadangkan</string>
     <string name="restore">Mengembalikan</string>
-    <string name="backupConfirmation">Cadangkan?</string>
-    <string name="restoreConfirmation">Mengembalikan?</string>
+    <string name="backupConfirmation">Cadangkan\?</string>
+    <string name="restoreConfirmation">Mengembalikan\?</string>
     <string name="handleApk">APK</string>
     <string name="handleData">Data</string>
     <string name="handleBoth">Kedua</string>
@@ -35,8 +35,8 @@
     <string name="sortByLabel">Sortir menurut label</string>
     <string name="sortByPackageName">Sortir menurut nama paket</string>
     <string name="sort">Sortir dan saring</string>
-    <string name="uninstallDialogMessage">Copot pemasangan aplikasi ini?</string>
-    <string name="deleteBackupDialogMessage">Hapus file cadangan?</string>
+    <string name="uninstallDialogMessage">Copot pemasangan aplikasi ini\?</string>
+    <string name="deleteBackupDialogMessage">Hapus file cadangan\?</string>
     <string name="dialogOK">Baik</string>
     <string name="dialogCancel">Membatalkan</string>
     <string name="dialogYes">Iya</string>
@@ -93,8 +93,6 @@
     <string name="prefs_password">Kata sandi enkripsi</string>
     <string name="prefs_externaldata">Cadangkan data eksternal</string>
     <string name="prefs_deviceprotecteddata">Cadangkan data yang dilindungi perangkat</string>
-    <string name="prefs_deviceprotecteddata_summary">Mencadangkan dan mengembalikan data yang ditempatkan di data/user_de</string>
-    <string name="prefs_externaldata_summary">Mencadangkan dan mengembalikan data yang ditempatkan pada penyimpanan eksternal (mis. /Storage/emulated/0/Android/data/)</string>
     <string name="prefs_password_summary">Setel ke kosong untuk menonaktifkan enkripsi</string>
     <string name="prefs_encryption_summary">Aktifkan untuk mengenkripsi cadangan data</string>
     <string name="prefs_excludecache_summary">Bersihkan cache aplikasi sebelum melakukan mencadangkan data</string>
@@ -183,7 +181,7 @@
     <string name="welcome_to_oabx">Selamat datang di Neo Backup!</string>
     <string name="storage_access">Akses Penyimpanan</string>
     <string name="sort_and_filter">Urutkan &amp; Saring</string>
-    <string name="enable_encryption_message">Tidak aman menyimpan data Anda di perangkat Anda yang tidak dienkripsi. Untuk keamanan data Anda, aktifkan enkripsi dan setel kata sandi.</string>
+    <string name="enable_encryption_message">Tidak aman untuk menyimpan data anda di perangkat anda yang tidak dienkripsi. Untuk keamanan data anda, aktifkan enkripsi dan setel kata sandi.</string>
     <string name="enable_encryption_title">Enkripsi data</string>
     <string name="help_appTypeHint">* Ikon jenis aplikasi akan berwarna abu-abu jika aplikasi dicopot dan abu-abu tua jika aplikasi dinonaktifkan.</string>
     <string name="help_legend">Legenda:</string>
@@ -198,14 +196,10 @@
     <string name="prefs_stopcont_summary">Hanya ahli: Ini dapat membantu, jika aplikasi mengubah file selama pencadangan dan pencadangan gagal.</string>
     <string name="prefs_disableverification_summary">Menonaktifkan opsi pengembang ini saat memulihkan APK dan mengaktifkannya kembali setelahnya. Memecahkan kesalahan: INSTALL_FAILED_VERIFICATION_FAILURE.</string>
     <string name="prefs_disableverification">Nonaktifkan Verifikasi aplikasi melalui USB</string>
-    <string name="prefs_housekeepingmoment_summary">Mengkonfigurasi apakah revisi terlama dihapus sebelum atau setelah membuat cadangan baru untuk mengosongkan ruang penyimpanan yang digunakan oleh cadangan.</string>
-    <string name="prefs_housekeepingmoment">Waktu pembersihan revisi</string>
     <string name="prefs_numBackupRevisions_summary">Revisi terlama akan dihapus saat membuat cadangan baru jika jumlahnya terlampaui. Setel ke nol untuk menyimpan semua revisi.</string>
     <string name="prefs_numBackupRevisions">Jumlah revisi cadangan</string>
     <string name="prefs_biometriclock_summary">Amankan aplikasi dengan kunci biometrik perangkat (misalnya sidik jari, buka kunci wajah)</string>
     <string name="prefs_biometriclock">Kunci biometrik</string>
-    <string name="prefs_housekeepingmoment_before">Sebelum Pencadangan</string>
-    <string name="prefs_housekeepingmoment_after">Setelah Pencadangan</string>
     <string name="prefs_advanced">Preferensi lanjutan</string>
     <string name="radio_obbdata">Data OBB</string>
     <string name="radio_deviceprotecteddata">Data yang Dilindungi Perangkat</string>
@@ -215,7 +209,7 @@
         <item quantity="other">%d aplikasi yang diperbarui</item>
     </plurals>
     <plurals name="days_left">
-        <item quantity="other">%d hari,</item>
+        <item quantity="other">%d hari</item>
     </plurals>
     <string name="app_info">Informasi-aplikasi</string>
     <string name="launch_app">Luncurkan aplikasi</string>
@@ -234,7 +228,6 @@
     <string name="prefs_restoreallpermissions_summary">Beri aplikasi yang telah dipulihkan semua izin yang diperlukan.</string>
     <string name="prefs_restoreallpermissions">Pulihkan dengan semua izin</string>
     <string name="prefs_allowdowngrade">Perbolehkan downgrading</string>
-    <string name="prefs_obbdata_summary">Cadangkan dan pulihkan berkas obb aplikasi yang ditempatkan di penyimpanan eksternal (e.g. /storage/emulated/0/Android/obb/)</string>
     <string name="prefs_obbdata">Cadangkan berkas obb</string>
     <string name="forceKillMessage">Apakah anda yakin untuk memaksa penghentian aplikasi\?</string>
     <string name="sched_name">Nama :</string>
@@ -290,7 +283,6 @@
     <string name="help_changelog">Daftar perubahan</string>
     <string name="sortBackupDate">Tanggal Pencadangan</string>
     <string name="error_pmDataIncompleteException_dataRestoreFailed">Data aplikasi belum dipulihkan.</string>
-    <string name="prefs_mediadata_summary">Cadangkan dan pulihkan berkas aplikasi yang ditempatkan di penyimpanan eksternal (e.g. /storage/emulated/0/Android/media/)</string>
     <string name="prefs_compression_level">Tingkat Kompresi</string>
     <string name="prefs_compression_level_summary">Kualitas yang rendah terkompresi lebih cepat tetapi menghasilkan berkas yang lebih besar. Kualitas yang tinggi terkompresi lebih baik tetapi membutuhkan lebih banyak waktu.</string>
     <string name="error_datachanged">Data aplikasi telah diubah secara aktif saat melakukan pencadangan. Coba matikan prosesnya sebelum melakukan pencadangan</string>

@@ -6,7 +6,7 @@ import com.machiav3lli.backup.handler.LogsHandler
 import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.handler.ShellHandler.Companion.quote
 import com.machiav3lli.backup.handler.ShellHandler.Companion.runAsRoot
-import com.machiav3lli.backup.handler.ShellHandler.FileInfo.FileType
+import com.machiav3lli.backup.handler.ShellHandler.FileType
 import com.machiav3lli.backup.handler.ShellHandler.ShellCommandFailedException
 import com.machiav3lli.backup.items.RootFile
 import com.machiav3lli.backup.items.StorageFile
@@ -18,11 +18,9 @@ import timber.log.Timber
 import java.io.File
 import java.io.IOException
 
-const val binaryMimeType = "application/octet-stream"
-
 @Throws(BackupLocationInAccessibleException::class, StorageLocationNotConfiguredException::class)
-fun Context.getBackupDir(): StorageFile =
-    StorageFile.fromUri(this, getBackupDirUri(this))
+fun Context.getBackupRoot(): StorageFile =
+    StorageFile.fromUri(getBackupDirUri(this))
 
 @Throws(IOException::class)
 fun suRecursiveCopyFilesToDocument(
@@ -36,15 +34,14 @@ fun suRecursiveCopyFilesToDocument(
                 .buildUpon()
                 .appendEncodedPath(File(file.filePath).parent)
                 .build()
-            val parentFile = StorageFile.fromUri(context, parentUri)
+            val parentFile = StorageFile.fromUri(parentUri)
             when (file.fileType) {
-                FileType.REGULAR_FILE ->
-                    suCopyFileToDocument(file, parentFile)
+                FileType.REGULAR_FILE -> suCopyFileToDocument(file, parentFile)
                 FileType.DIRECTORY -> parentFile.createDirectory(file.filename)
                 else -> Timber.e("SAF does not support ${file.fileType} for ${file.filePath}")
             }
         } catch (e: Throwable) {
-            LogsHandler.logException(e)
+            LogsHandler.logException(e, backTrace = true)
         }
     }
 }
@@ -62,7 +59,7 @@ fun suRecursiveCopyFilesToDocument(
 fun suCopyFileToDocument(sourcePath: String, targetDir: StorageFile) {
     val sourceFile = RootFile(sourcePath)
     sourceFile.inputStream().use { inputStream ->
-        targetDir.createFile(binaryMimeType, sourceFile.name).let { newFile ->
+        targetDir.createFile(sourceFile.name).let { newFile ->
             newFile.outputStream().use { outputStream ->
                 IOUtils.copy(inputStream, outputStream)
             }
@@ -75,7 +72,7 @@ fun suCopyFileToDocument(
     sourceFileInfo: ShellHandler.FileInfo,
     targetDir: StorageFile
 ) {
-    targetDir.createFile(binaryMimeType, sourceFileInfo.filename).let { newFile ->
+    targetDir.createFile(sourceFileInfo.filename).let { newFile ->
         newFile.outputStream()!!.use { outputStream ->
             ShellHandler.quirkLibsuReadFileWorkaround(sourceFileInfo, outputStream)
         }

@@ -7,19 +7,24 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.text.Html
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.machiav3lli.backup.BuildConfig
 import com.machiav3lli.backup.OABX
-import com.machiav3lli.backup.preferences.pref_maxRetriesPerPackage
 import com.machiav3lli.backup.R
 import com.machiav3lli.backup.activities.MainActivityX
 import com.machiav3lli.backup.classAddress
+import com.machiav3lli.backup.preferences.pref_maxRetriesPerPackage
 import com.machiav3lli.backup.services.CommandReceiver
 import com.machiav3lli.backup.tasks.AppActionWork
 import com.machiav3lli.backup.tasks.FinishWork
+import com.machiav3lli.backup.utils.TraceUtils.traceBold
 import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.*
@@ -106,17 +111,15 @@ class WorkHandler(appContext: Context) {
 
             Thread.sleep(delay)
 
-            OABX.main?.runOnUiThread {
-                OABX.main?.hideProgress()
-            }
+            OABX.setProgress()
 
             Timber.d("%%%%% ALL DONE")
             OABX.wakelock(false) // now everything is done
 
             OABX.service?.let {
-                Timber.w("%%%%% ------------------------------------------ service stopping...\\")
+                traceBold { "%%%%% ------------------------------------------ service stopping...\\" }
                 it.stopSelf()
-                Timber.w("%%%%% ------------------------------------------ service stopped.../")
+                traceBold { "%%%%% ------------------------------------------ service stopped.../" }
             }
         }.start()
     }
@@ -128,13 +131,13 @@ class WorkHandler(appContext: Context) {
         batchesStarted++
         if (batchesStarted == 1)     // first batch in a series
             beginBatches()
-        Timber.d("%%%%% $batchName begin, $batchesStarted batches, thread ${Thread.currentThread().id}")
+        Timber.d("%%%%% $batchName begin, ${batchesStarted} batches, thread ${Thread.currentThread().id}")
         batchesKnown.put(batchName, BatchState())
     }
 
     fun endBatch(batchName: String) {
         batchesStarted--
-        Timber.d("%%%%% $batchName end, $batchesStarted batches, thread ${Thread.currentThread().id}")
+        Timber.d("%%%%% $batchName end, ${batchesStarted} batches, thread ${Thread.currentThread().id}")
         OABX.wakelock(false)
     }
 
@@ -258,7 +261,8 @@ class WorkHandler(appContext: Context) {
         )
 
         val batchesKnown = mutableMapOf<String, BatchState>()
-        var batchesStarted = -1
+        var batchesStarted by mutableStateOf(-1)
+        var packagesState = mutableStateMapOf<String, String>()
 
         var lockProgress = object {}
 
@@ -332,25 +336,31 @@ class WorkHandler(appContext: Context) {
                         WorkInfo.State.SUCCEEDED -> {
                             succeeded++
                             workFinished++
+                            packageName?.let { packagesState.put(it, "OK ") }
                         }
                         WorkInfo.State.FAILED -> {
                             failed++
                             workFinished++
+                            packageName?.let { packagesState.put(it, "BAD") }
                         }
                         WorkInfo.State.CANCELLED -> {
                             canceled++
                             workFinished++
+                            packageName?.let { packagesState.put(it, "STP") }
                         }
                         WorkInfo.State.ENQUEUED -> {
                             queued++
                             workEnqueued++
+                            packageName?.let { packagesState.put(it, "...") }
                         }
                         WorkInfo.State.BLOCKED -> {
                             queued++
                             workBlocked++
+                            packageName?.let { packagesState.put(it, "...") }
                         }
                         WorkInfo.State.RUNNING -> {
                             workRunning++
+                            packageName?.let { packagesState.put(it, operation ?: "...") }
                             when (operation) {
                                 "..." -> queued++
                                 else -> {
@@ -449,7 +459,7 @@ class WorkHandler(appContext: Context) {
                         )
                             .setGroup(BuildConfig.APPLICATION_ID)
                             .setSortKey("1-$batchName")
-                            .setSmallIcon(R.drawable.ic_app)
+                            .setSmallIcon(R.drawable.ic_launcher_foreground)
                             .setContentTitle(title)
                             .setContentText(Html.fromHtml(shortText, htmlFlags))
                             .setStyle(
@@ -528,16 +538,10 @@ class WorkHandler(appContext: Context) {
 
             if (allRemaining > 0) {
                 Timber.d("%%%%% ALL finished=$allProcessed <-- remain=$allRemaining <-- total=$allCount")
-                OABX.main?.runOnUiThread {
-                    OABX.main?.updateProgress(
-                        allProcessed,
-                        allCount
-                    )
-                }
+                OABX.setProgress(allProcessed, allCount)
             } else {
-                OABX.main?.runOnUiThread {
-                    OABX.main?.hideProgress()
-                }
+                packagesState.clear()
+                OABX.setProgress()
                 if (OABX.work.justFinishedAll()) {
                     Timber.d("%%%%% ALL $batchesStarted batches, thread ${Thread.currentThread().id}")
                     OABX.work.endBatches()

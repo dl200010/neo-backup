@@ -27,7 +27,7 @@
     <string name="showOnlyUser">仅用户应用</string>
     <string name="showNotBackedup">未备份的应用</string>
     <string name="showNotInstalled">未安装的应用</string>
-    <string name="showNewAndUpdated">未备份和已更新的应用</string>
+    <string name="showNewAndUpdated">未备份和新版应用</string>
     <string name="showOldBackups">旧备份</string>
     <string name="showSplitAPKs">拆分的APKs</string>
     <string name="showOnlyApkBackedUp">仅备份了 APK 的应用</string>
@@ -93,8 +93,6 @@
     <string name="prefs_password">加密密码</string>
     <string name="prefs_externaldata">备份外部数据</string>
     <string name="prefs_deviceprotecteddata">备份受设备保护的数据</string>
-    <string name="prefs_deviceprotecteddata_summary">备份或还原 /data/user_de 中的数据</string>
-    <string name="prefs_externaldata_summary">备份或还原应用程序在外部存储（例如 /storage/emulated/0/Android/data/）上的数据</string>
     <string name="prefs_password_summary">密码为空则不会加密</string>
     <string name="prefs_encryption_summary">启用以加密备份数据</string>
     <string name="prefs_excludecache_summary">数据备份时排除应用程序的缓存</string>
@@ -122,7 +120,7 @@
     <string name="spec_wifiAccessPoints">无线接入点数据</string>
     <!-- filebrowser_createDirectoryError: an error occured while trying to create the directory. format: string + " " + directory name -->
     <string name="error_creating_notification_channel">无法创建通知</string>
-    <string name="error_updating_schedule_mode">更新定时任务 %2$d 的 %1$s 出错</string>
+    <string name="error_updating_schedule_mode">更新计划任务 %2$d 的 %1$s 出错</string>
     <string name="permission_not_granted">需要访问外部存储的权限</string>
     <string name="restart_dialog">这个应用似乎需要重启</string>
     <string name="filter_options">筛选条件：</string>
@@ -155,7 +153,7 @@
     <string name="ignore_battery_optimization_message">备份有时会意外停止。为避免这种情况，请关闭电池优化</string>
     <string name="ignore_battery_optimization_not_supported">此设备不支持忽略电池优化！</string>
     <string name="failed_unzipping">解压数据时出错，请检查加密密码是否正确！</string>
-    <string name="split_apks">拆分的APKs：</string>
+    <string name="split_apks">拆分的 APK</string>
     <string name="backup_filters">备份筛选：</string>
     <string name="grant_usage_access_title">允许查看使用情况</string>
     <string name="grant_usage_access_message">这用于获取有关应用程序文件大小的相关信息</string>
@@ -168,6 +166,7 @@
     <string name="intro_permission_storage">本应用程序使用存储的读/写权限来访问外部存储，从而获得备份其他应用的外部数据的权限。</string>
     <string name="intro_welcome_message">Neo Backup（原名OAndBackupX）是著名的备份程序OAndBackup的fork分叉，其目的是使OAndBackup能在202X年使用，并成为Neo应用套件的一部分。目前，该应用程序已经完全重写，接下来将会使它变得更强大，并添加一些已长期计划的功能。它可以适用于任何设备的备份/还原数据。
 \n因此，我们随时欢迎所有类型的对本项目的贡献。
+\n
 \n现在谈谈我们的应用程序的功能：
 \n• 它需要root权限，用于备份应用程序本体和它们的数据。
 \n• 支持单个程序的备份和还原，也支持批量备份和还原。
@@ -192,7 +191,7 @@
     <string name="prefs_unset">取消</string>
     <string name="intro_permission_storage_location">该应用程序需要一个备份位置来存储备份。 该应用程序可能需要数GB的存储空间才能进行完整备份。 使用基于网络的存储位置时，请注意这一点。</string>
     <string name="help_appTypeHint">* 如果应用程序已卸载，则该应用程序的图标将为灰色；如果停用该应用程序，则该图标将为深灰色。</string>
-    <string name="radio_updated">已更新的应用</string>
+    <string name="radio_updated">新版应用</string>
     <string name="help_legend">图例:</string>
     <string name="msg_appkill_warning">所选的应用程序将收到停止运行的信号，它们在任务完成后将恢复运行。请在任务完成后检查已处理的应用程序(并避免在任务尚在进行时就启动它们)。</string>
     <string name="prefs_numBackupRevisions_summary">创建新备份时，如果已有的备份数量超过了允许的最大值，则将自动删除最老的备份。将其设置为0以保留所有备份。</string>
@@ -200,10 +199,6 @@
     <string name="prefs_stopcont_summary">仅供专家使用: 如果应用程序在备份过程中更改文件，且备份失败，这可能会有所帮助。</string>
     <string name="prefs_stopcont">在备份或还原之前强制停止应用程序进程</string>
     <string name="prefs_advanced">高级设置</string>
-    <string name="prefs_housekeepingmoment_summary">在创建新备份之前或之后删除最早的备份以释放所使用的磁盘空间。</string>
-    <string name="prefs_housekeepingmoment">自动清理备份的时间</string>
-    <string name="prefs_housekeepingmoment_before">备份前</string>
-    <string name="prefs_housekeepingmoment_after">备份后</string>
     <string name="radio_obbdata">OBB 数据</string>
     <string name="radio_deviceprotecteddata">受保护的设备数据</string>
     <string name="radio_externaldata">外部数据</string>
@@ -213,17 +208,16 @@
     <string name="prefs_disableverification_summary">还原APKs时会禁用这一开发者选项，在之后便会重新启用。用以解决错误：INSTALL_FAILED_VERIFICATION_FAILURE。</string>
     <string name="prefs_disableverification">禁用通过USB验证应用</string>
     <plurals name="days_left">
-        <item quantity="other">%d 天,</item>
+        <item quantity="other">%d 天</item>
     </plurals>
     <string name="help_issues">已知问题</string>
-    <string name="prefs_obbdata_summary">备份或还原应用程序在外部存储中的obb数据文件（例如 /storage/emulated/0/Android/obb/）</string>
     <string name="prefs_obbdata">备份 obb 文件</string>
     <string name="stats_apps">应用程序</string>
     <string name="stats_backups">备份</string>
     <string name="stats_updated">已更新</string>
     <string name="radio_launchable">可启动的应用</string>
     <string name="prefs_allowdowngrade">允许降级还原</string>
-    <string name="prefs_allowdowngrade_summary">允许还原的应用程序版本比已安装应用程序的版本更旧。</string>
+    <string name="prefs_allowdowngrade_summary">允许还原到比已安装版本要老的版本（仅适用于可调试版本）。</string>
     <string name="prefs_restoreallpermissions">全权限还原</string>
     <string name="prefs_restoreallpermissions_summary">还原应用程序时授予应用所需的全部权限。</string>
     <string name="help_faq">常见问题</string>
@@ -250,7 +244,7 @@
     <string name="filtered_list">筛选的列表</string>
     <string name="dialog_import">导入</string>
     <string name="dialog_export">导出</string>
-    <string name="schedule_failed">运行定时任务失败</string>
+    <string name="schedule_failed">运行计划任务失败</string>
     <string name="shell_initproblem">无法启动外部shell程序。缺少 toybox/busybox 或禁用了此应用程序的 root 权限。</string>
     <string name="no_file_manager_message">没有文件管理器来管理 SAF。也许你已经禁用了内置的文件管理器。请恢复或重新启用它。</string>
     <string name="no_file_manager_title">无 SAF 管理器</string>
@@ -260,8 +254,8 @@
         <item quantity="other">每 %d 天</item>
     </plurals>
     <string name="logs_share_failed">日志文件未找到</string>
-    <string name="sched_imported">成功导入了任务</string>
-    <string name="sched_exported">成功导出了任务</string>
+    <string name="sched_imported">成功导入了计划任务</string>
+    <string name="sched_exported">成功导出了计划任务</string>
     <string name="error_datachanged">在尝试执行备份时，应用程序的数据已被更改。 请尝试在备份之前结束它的进程以防止更改</string>
     <string name="write_apps_list_all">已导出所有应用程序的列表文件</string>
     <string name="write_apps_list_filtered">已导出已筛选的应用程序列表文件</string>
@@ -294,7 +288,6 @@
     <string name="title_tags">标签：</string>
     <string name="title_note">备注：</string>
     <string name="sortBackupDate">备份日期</string>
-    <string name="prefs_mediadata_summary">备份或还原应用程序在外部存储设备上的媒体文件（例如 /storage/emulated/0/Android/media/)</string>
     <string name="prefs_mediadata">备份媒体文件</string>
     <string name="radio_mediadata">媒体数据</string>
     <string name="help_changelog">更新日志</string>
@@ -312,7 +305,7 @@
     <string name="grant_calllogs_message">要能备份或还原你的通话记录，这是必要的权限。</string>
     <string name="contacts_permission_title">联系人权限</string>
     <string name="intro_permission_contacts">本应用需要这个权限才能将联系人与短信/彩信相匹配。</string>
-    <string name="schedule">计划</string>
+    <string name="schedule">计划任务</string>
     <string name="finished">已完成</string>
     <string name="batch">批量</string>
     <string name="smsmms_permission_title">短信/彩信权限</string>
@@ -351,6 +344,27 @@
     <string name="prefs_user_short">个性化</string>
     <string name="prefs_service_short">偏好</string>
     <string name="prefs_advanced_short">高级</string>
-    <string name="dialog_export_schedules">导出我的计划</string>
+    <string name="dialog_export_schedules">导出我的计划任务</string>
     <string name="prefs_tools_short">工具</string>
+    <string name="prefs_multilineinfochips_summary">允许应用列表中的内容跨行显示。</string>
+    <string name="prefs_multilineinfochips">多行显示</string>
+    <string name="prefs_squeezenavtext">缩进显示导航项的文本</string>
+    <string name="prefs_nobackupdata_summary">备份标记为无需备份的文件</string>
+    <string name="prefs_tools_terminal">终端命令</string>
+    <string name="prefs_squeezenavtext_summary">允许调整导航栏的文本大小以适应宽度。</string>
+    <string name="prefs_nobackupdata">备份 no_backup 文件</string>
+    <string name="prefs_deviceprotecteddata_summary">备份 /data/user_de 中的数据</string>
+    <string name="prefs_obbdata_summary">备份在外部存储中的应用程序的obb数据文件（例如 /storage/emulated/0/Android/obb/）</string>
+    <string name="prefs_deviceprotecteddata_rst">还原设备保护存储区的数据</string>
+    <string name="prefs_deviceprotecteddata_rst_summary">还原在 /data/user_de 的数据</string>
+    <string name="prefs_externaldata_rst">恢复外部数据</string>
+    <string name="prefs_externaldata_rst_summary">还原应用程序在外部存储（如 /storage/emulated/0/Android/data/）上的数据</string>
+    <string name="prefs_obbdata_rst">还原 obb 文件</string>
+    <string name="prefs_nobackupdata_rst">还原 no_backup 文件</string>
+    <string name="prefs_nobackupdata_rst_summary">还原标记为无需备份的文件</string>
+    <string name="prefs_mediadata_summary">备份应用程序在外部存储上的媒体文件（例如 /storage/emulated/0/Android/media/）</string>
+    <string name="prefs_obbdata_rst_summary">还原应用程序在外部存储上的obb文件（如 /storage/emulated/0/Android/obb/）</string>
+    <string name="prefs_mediadata_rst">还原媒体文件</string>
+    <string name="prefs_mediadata_rst_summary">还原应用程序在外部存储上的媒体文件（如 /storage/emulated/0/Android/media/）</string>
+    <string name="prefs_externaldata_summary">备份应用程序在外部存储（例如 /storage/emulated/0/Android/data/）上的数据</string>
 </resources>

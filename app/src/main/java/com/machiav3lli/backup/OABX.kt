@@ -24,84 +24,166 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.os.PowerManager
-import android.util.LruCache
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
 import com.google.android.material.color.DynamicColors
 import com.google.android.material.color.DynamicColorsOptions
 import com.machiav3lli.backup.activities.MainActivityX
+import com.machiav3lli.backup.handler.LogsHandler
 import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.handler.WorkHandler
-import com.machiav3lli.backup.items.Package
 import com.machiav3lli.backup.preferences.pref_cancelOnStart
-import com.machiav3lli.backup.preferences.pref_maxCrashLines
 import com.machiav3lli.backup.services.PackageUnInstalledReceiver
 import com.machiav3lli.backup.services.ScheduleService
-import com.machiav3lli.backup.utils.getDefaultSharedPreferences
-import com.machiav3lli.backup.utils.getPrivateSharedPrefs
+import com.machiav3lli.backup.ui.item.BooleanPref
+import com.machiav3lli.backup.ui.item.IntPref
+import com.machiav3lli.backup.utils.TraceUtils
+import com.machiav3lli.backup.utils.TraceUtils.beginNanoTimer
+import com.machiav3lli.backup.utils.TraceUtils.endNanoTimer
+import com.machiav3lli.backup.utils.TraceUtils.methodName
+import com.machiav3lli.backup.utils.scheduleAlarms
 import com.machiav3lli.backup.utils.styleTheme
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.lang.ref.WeakReference
-import java.time.LocalDateTime
+import java.util.concurrent.atomic.AtomicInteger
+
+
+//---------------------------------------- developer settings - logging
+
+val pref_catchUncaughtException = BooleanPref(
+    key = "dev-log.catchUncaughtException",
+    summaryId = R.string.prefs_catchuncaughtexception_summary,
+    defaultValue = false
+)
+
+val pref_uncaughtExceptionsJumpToPreferences = BooleanPref(
+    key = "dev-log.uncaughtExceptionsJumpToPreferences",
+    summary = "in case of unexpected crashes juimp to preferences (prevent loops if a preference causes this)",
+    defaultValue = false,
+    enableIf = { pref_catchUncaughtException.value }
+)
+
+val pref_logToSystemLogcat = BooleanPref(
+    key = "dev-log.logToSystemLogcat",
+    summary = "log to Android logcat, otherwise only internal",
+    defaultValue = false
+)
+
+val pref_autoLogExceptions = BooleanPref(
+    key = "dev-log.autoLogExceptions",
+    summary = "create a log for each exception (think about increasing maxLogCount)",
+    defaultValue = false
+)
+
+val pref_maxLogCount = IntPref(
+    key = "dev-log.maxLogCount",
+    summary = "maximum count of log entries",
+    entries = ((1..9 step 1) + (10..100 step 10)).toList(),
+    defaultValue = 20
+)
+
+val pref_maxLogLines = IntPref(
+    key = "dev-log.maxLogLines",
+    summary = "maximum lines in the log (logcat or internal)",
+    entries = ((10..90 step 10) + (100..450 step 50) + (500..5000 step 500)).toList(),
+    defaultValue = 50
+)
+
+//---------------------------------------- developer settings - tracing
+
+val pref_trace = BooleanPref(
+    key = "dev-trace.trace",
+    summary = "global switch for all traceXXX options",
+    defaultValue = BuildConfig.DEBUG
+)
+
+val traceSection = TraceUtils.TracePref(
+    name = "Section",
+    summary = "trace important sections (backup, schedule, etc.)",
+    default = true
+)
+
+val traceSchedule = TraceUtils.TracePrefBold(
+    name = "Schedule",
+    summary = "trace schedules",
+    default = true
+)
+
+val traceFlows = TraceUtils.TracePrefBold(
+    name = "Flows",
+    summary = "trace Kotlin Flows (reactive data streams)",
+    default = true
+)
+
+val tracePrefs = TraceUtils.TracePref(
+    name = "Prefs",
+    summary = "trace preferences",
+    default = true
+)
+
+val traceBusy = TraceUtils.TracePrefBold(
+    name = "Busy",
+    default = true,
+    summary = "trace beginBusy/endBusy (busy indicator)"
+)
+
+val traceTiming = TraceUtils.TracePrefBold(
+    name = "Timing",
+    default = true,
+    summary = "show code segment timers"
+)
+
+val traceBackups = TraceUtils.TracePref(
+    name = "Backups",
+    summary = "trace backups",
+    default = true
+)
+
+val traceBackupsScan = TraceUtils.TracePref(
+    name = "BackupsScan",
+    summary = "trace scanning of backup directory for properties files",
+    default = false
+)
+
+val traceBackupProps = TraceUtils.TracePref(
+    name = "BackupProps",
+    summary = "trace backup properties (json)",
+    default = false
+)
+
+val traceCompose = TraceUtils.TracePref(
+    name = "Compose",
+    summary = "trace recomposition of UI elements",
+    default = false
+)
+
+val traceDebug = TraceUtils.TracePref(
+    name = "Debug",
+    summary = "trace for debugging purposes (for devs)",
+    default = false
+)
+
+var initializedPrefs = true
+
 
 class OABX : Application() {
-
-    // packages are an external resource, so handle them as a singleton
-    var packageCache = mutableMapOf<String, Package>()
-    var cache: LruCache<String, MutableList<Package>> =
-        LruCache(10)    //TODO hg42 not caching 4000 lists? right?
 
     var work: WorkHandler? = null
 
     // TODO Add database here
-    init {
-        Timber.plant(object : Timber.DebugTree() {
-
-            override fun log(
-                priority: Int, tag: String?, message: String, t: Throwable?
-            ) {
-                super.log(priority, "$tag", message, t)
-
-                val prio =
-                        when (priority) {
-                            android.util.Log.VERBOSE -> "V"
-                            android.util.Log.ASSERT -> "A"
-                            android.util.Log.DEBUG -> "D"
-                            android.util.Log.ERROR -> "E"
-                            android.util.Log.INFO -> "I"
-                            android.util.Log.WARN -> "W"
-                            else                  -> "?"
-                        }
-                val date = LocalDateTime.now()
-                lastLogMessages.add("$date $prio $tag : $message")
-                try {
-                    while (lastLogMessages.size > pref_maxCrashLines.value)
-                        lastLogMessages.removeAt(0)
-                } catch(e: Throwable) {
-                    // ignore
-                }
-            }
-
-            override fun createStackElementTag(element: StackTraceElement): String {
-                return "${
-                    element.methodName
-                }@${
-                    element.lineNumber
-                }:${
-                    super.createStackElementTag(element)
-                }"
-            }
-        })
-    }
 
     // TODO Add BroadcastReceiver for (UN)INSTALL_PACKAGE intents
+
     override fun onCreate() {
+
         super.onCreate()
+
         DynamicColors.applyToActivitiesIfAvailable(
             this,
             DynamicColorsOptions.Builder()
@@ -111,7 +193,8 @@ class OABX : Application() {
         appRef = WeakReference(this)
 
         initShellHandler()
-        registerReceiver(
+
+        val result = registerReceiver(
             PackageUnInstalledReceiver(),
             IntentFilter().apply {
                 addAction(Intent.ACTION_PACKAGE_ADDED)
@@ -120,6 +203,7 @@ class OABX : Application() {
                 addDataScheme("package")
             }
         )
+        Timber.d("registerReceiver: PackageUnInstalledReceiver = $result")
 
         work = WorkHandler(context)
         if (pref_cancelOnStart.value)
@@ -128,9 +212,11 @@ class OABX : Application() {
 
         MainScope().launch {
             delay(1000)
-            addInfoText("[click to hide/show permanently]")
-            addInfoText("")
+            addInfoText("--> click title to keep infobox open")
+            addInfoText("--> long press title for dev tools")
         }
+
+        scheduleAlarms()
     }
 
     override fun onTerminate() {
@@ -142,6 +228,89 @@ class OABX : Application() {
     companion object {
 
         val lastLogMessages = mutableListOf<String>()
+        var lastErrorPackage = ""
+        var lastErrorCommand = ""
+        var logSections = mutableMapOf<String, Int>().withDefault { 0 }     //TODO hg42 use AtomicInteger? but map is synchronized anyways
+
+        init  {
+
+            initializedPrefs = false
+
+            Timber.plant(object : Timber.DebugTree() {
+
+                override fun log(
+                    priority: Int, tag: String?, message: String, t: Throwable?,
+                ) {
+                    val traceToLogcat = if (initializedPrefs) pref_logToSystemLogcat.value else true
+                    val maxLogLines = if (initializedPrefs) pref_maxLogLines.value else 200
+                    if (traceToLogcat)
+                        super.log(priority, "$tag", message, t)
+
+                    val prio =
+                        when (priority) {
+                            android.util.Log.VERBOSE -> "V"
+                            android.util.Log.ASSERT  -> "A"
+                            android.util.Log.DEBUG   -> "D"
+                            android.util.Log.ERROR   -> "E"
+                            android.util.Log.INFO    -> "I"
+                            android.util.Log.WARN    -> "W"
+                            else                     -> "?"
+                        }
+                    val now = System.currentTimeMillis()
+                    val date = ISO_DATE_TIME_FORMAT.format(now)
+                    try {
+                        synchronized(OABX.lastLogMessages) {
+                            OABX.lastLogMessages.add("$date $prio $tag : $message")
+                            while (OABX.lastLogMessages.size > maxLogLines)
+                                OABX.lastLogMessages.removeAt(0)
+                        }
+                    } catch (e: Throwable) {
+                        // ignore
+                        OABX.lastLogMessages.clear()
+                        OABX.lastLogMessages.add("$date E LOG : while adding or limiting log lines")
+                        OABX.lastLogMessages.add("$date E LOG : ${
+                            LogsHandler.message(
+                                e,
+                                backTrace = true
+                            )
+                        }")
+                    }
+                }
+
+                override fun createStackElementTag(element: StackTraceElement): String {
+                    if (element.methodName.startsWith("trace"))
+                        return "NeoBackup>"
+                    else
+                        return "NeoBackup>${
+                            super.createStackElementTag(element)
+                        }:${
+                            element.lineNumber
+                        }::${
+                            element.methodName
+                        }"
+                }
+            })
+        }
+
+        fun beginLogSection(section: String) {
+            var count = 0
+            synchronized(logSections) {
+                count = logSections.getValue(section)
+                logSections[section] = count + 1
+                //if (count == 0 && xxx)  logMessages.clear()           //TODO hg42
+            }
+            traceSection { "*** ${"|---".repeat(count)}\\ $section" }
+        }
+
+        fun endLogSection(section: String) {
+            var count = 0
+            synchronized(logSections) {
+                count = logSections.getValue(section)
+                logSections[section] = count - 1
+            }
+            traceSection { "*** ${"|---".repeat(count-1)}/ $section" }
+            //if (count == 0 && xxx)  ->Log                             //TODO hg42
+        }
 
         // app should always be created
         var appRef: WeakReference<OABX> = WeakReference(null)
@@ -176,6 +345,8 @@ class OABX : Application() {
             set(mainActivity) {
                 mainRef = WeakReference(mainActivity)
             }
+        var mainSaved: MainActivityX? = null    // just to see if activity changed
+        var viewModelSaved: ViewModel? = null
 
         var appsSuspendedChecked = false
 
@@ -191,38 +362,12 @@ class OABX : Application() {
             }
         }
 
-        val context: Context get() = app.applicationContext
+        var fakeContext: Context? = null
+        val context: Context get() = fakeContext ?: app.applicationContext
+
         val work: WorkHandler get() = app.work!!
 
         fun getString(resId: Int) = context.getString(resId)
-
-        fun prefFlag(name: String, default: Boolean) = context.getDefaultSharedPreferences()
-            .getBoolean(name, default)
-
-        fun setPrefFlag(name: String, value: Boolean) = context.getDefaultSharedPreferences()
-            .edit()
-            .putBoolean(name, value).apply()
-
-        fun prefString(name: String, default: String) = context.getDefaultSharedPreferences()
-            .getString(name, default) ?: default
-
-        fun setPrefString(name: String, value: String) = context.getDefaultSharedPreferences()
-            .edit()
-            .putString(name, value).apply()
-
-        fun prefPrivateString(name: String, default: String) = context.getPrivateSharedPrefs()
-            .getString(name, default) ?: default
-
-        fun setPrefPrivateString(name: String, value: String) = context.getPrivateSharedPrefs()
-            .edit()
-            .putString(name, value).apply()
-
-        fun prefInt(name: String, default: Int) = context.getDefaultSharedPreferences()
-            .getInt(name, default)
-
-        fun setPrefInt(name: String, value: Int) = context.getDefaultSharedPreferences()
-            .edit()
-            .putInt(name, value).apply()
 
         var infoLines = mutableStateListOf<String>()
 
@@ -239,7 +384,7 @@ class OABX : Application() {
                 infoLines.drop(1)
         }
 
-        fun getInfoText(n: Int, fill: String? = null): String {
+        fun getInfoText(n: Int = nInfoLines, fill: String? = null): String {
             val lines = infoLines.takeLast(n).toMutableList()
             if (fill != null)
                 while (lines.size < n)
@@ -249,7 +394,7 @@ class OABX : Application() {
 
         // if any background work is to be done
         private var theWakeLock: PowerManager.WakeLock? = null
-        private var wakeLockNested: Int = 0
+        private var wakeLockNested: Int = 0                         //TODO hg42 use AtomicInteger
         private const val wakeLockTag = "OABX:Application"
 
         // count the nesting levels
@@ -276,6 +421,38 @@ class OABX : Application() {
 
         fun minSDK(sdk: Int): Boolean {
             return Build.VERSION.SDK_INT >= sdk
+        }
+
+        val progress = mutableStateOf(Pair(false, 0f))
+
+        fun setProgress(now: Int = 0, max: Int = 0) {
+            if (max > now)  // not ">=", because max can be zero
+                progress.value = Pair(true, 1f * now / max)
+            else
+                progress.value = Pair(false, 1f)
+        }
+
+        var _busy = AtomicInteger(0)
+        val busy = mutableStateOf(0)
+
+        val isBusy : Boolean get() = (busy.value > 0)
+
+        fun beginBusy(name: String? = null) {
+            traceBusy {
+                val label = name ?: methodName(1)
+                "*** ${"|---".repeat(_busy.get())}\\ busy $label"
+            }
+            busy.value = _busy.accumulateAndGet(+1, Int::plus)
+            beginNanoTimer("busy.$name")
+        }
+
+        fun endBusy(name: String? = null) {
+            val time = endNanoTimer("busy.$name")
+            busy.value = _busy.accumulateAndGet(-1, Int::plus)
+            traceBusy {
+                val label = name ?: methodName(1)
+                "*** ${"|---".repeat(_busy.get())}/ busy $label ${"%.3f".format(time/1E9)} s"
+            }
         }
     }
 }

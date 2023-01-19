@@ -19,6 +19,7 @@ package com.machiav3lli.backup.handler
 
 import android.content.Context
 import com.machiav3lli.backup.EXPORTS_FOLDER_NAME
+import com.machiav3lli.backup.EXPORTS_FOLDER_NAME_ALT
 import com.machiav3lli.backup.EXPORTS_INSTANCE
 import com.machiav3lli.backup.R
 import com.machiav3lli.backup.activities.PrefsActivityX
@@ -28,7 +29,7 @@ import com.machiav3lli.backup.handler.LogsHandler.Companion.logErrors
 import com.machiav3lli.backup.handler.LogsHandler.Companion.unhandledException
 import com.machiav3lli.backup.items.StorageFile
 import com.machiav3lli.backup.items.StorageFile.Companion.invalidateCache
-import com.machiav3lli.backup.utils.getBackupDir
+import com.machiav3lli.backup.utils.getBackupRoot
 import timber.log.Timber
 import java.io.BufferedOutputStream
 import java.io.IOException
@@ -38,8 +39,15 @@ class ExportsHandler(var context: Context) {
     private var exportsDirectory: StorageFile?
 
     init {
-        val backupRootFolder = context.getBackupDir()
-        exportsDirectory = backupRootFolder.ensureDirectory(EXPORTS_FOLDER_NAME)
+        val backupRoot = context.getBackupRoot()
+        exportsDirectory = backupRoot.ensureDirectory(EXPORTS_FOLDER_NAME)
+        backupRoot.findFile(EXPORTS_FOLDER_NAME_ALT)?.let { oldFolder ->
+            oldFolder.listFiles().forEach {
+                exportsDirectory?.createFile(it.name!!)
+                    ?.writeText(it.readText())
+            }
+            oldFolder.deleteRecursive()
+        }
     }
 
     @Throws(IOException::class)
@@ -49,7 +57,7 @@ class ExportsHandler(var context: Context) {
         val scheds = dataSource.all
         scheds.forEach {
             val fileName = String.format(EXPORTS_INSTANCE, it.name)
-            exportsDirectory?.createFile("application/octet-stream", fileName)?.let { exportFile ->
+            exportsDirectory?.createFile(fileName)?.let { exportFile ->
                 BufferedOutputStream(exportFile.outputStream())
                     .use { exportOut ->
                         exportOut.write(
@@ -71,15 +79,16 @@ class ExportsHandler(var context: Context) {
         invalidateCache { it.contains(EXPORTS_FOLDER_NAME) }
         exportsDirectory?.listFiles()?.forEach {
             if (it.isFile) try {
-                exports.add(Pair(Schedule(it), it))
+                val schedule = Schedule.Builder(it).build()
+                exports.add(Pair(schedule, it))
             } catch (e: NullPointerException) {
                 val message = "(Null) Incomplete schedule or wrong structure found in ${it}."
                 Timber.w(message)
-                logErrors(context, message)
+                logErrors(message)
             } catch (e: Throwable) {
                 val message = "(catchall) Incomplete schedule or wrong structure found in ${it}."
                 unhandledException(e, it)
-                logErrors(context, message)
+                logErrors(message)
             }
         }
         return exports

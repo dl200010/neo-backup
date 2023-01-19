@@ -1,5 +1,8 @@
 package com.machiav3lli.backup.ui.compose.icons.phosphor
 
+
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathFillType.Companion.NonZero
 import androidx.compose.ui.graphics.SolidColor
@@ -8,6 +11,7 @@ import androidx.compose.ui.graphics.StrokeJoin.Companion.Miter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.ImageVector.Builder
 import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.machiav3lli.backup.ui.compose.icons.Phosphor
 
@@ -18,8 +22,8 @@ val Phosphor.ArchiveTray: ImageVector
         }
         _archive_tray = Builder(
             name = "Archive-tray",
-            defaultWidth = 32.0.dp,
-            defaultHeight = 32.0.dp,
+            defaultWidth = 24.0.dp,
+            defaultHeight = 24.0.dp,
             viewportWidth = 256.0f,
             viewportHeight = 256.0f,
         ).apply {
@@ -101,3 +105,14 @@ val Phosphor.ArchiveTray: ImageVector
     }
 
 private var _archive_tray: ImageVector? = null
+
+
+
+@Preview
+@Composable
+fun ArchiveTrayPreview() {
+    Image(
+        Phosphor.ArchiveTray,
+        null
+    )
+}

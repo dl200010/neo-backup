@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -100,7 +99,6 @@ fun TagItem(
             Icon(
                 imageVector = icon,
                 contentDescription = stringResource(id = R.string.dialogCancel),
-                modifier = Modifier.size(24.dp)
             )
         },
         onClick = {

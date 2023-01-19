@@ -29,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.machiav3lli.backup.BUTTON_SIZE_MEDIUM
 import com.machiav3lli.backup.ui.compose.item.PrefIcon
 import com.machiav3lli.backup.ui.item.Pref
 
@@ -63,26 +64,30 @@ fun PrefsGroup(
         modifier = modifier,
         heading = heading
     ) {
-        prefs.forEachIndexed { index, item ->
-            PrefsBuilder(
-                item,
-                onPrefDialog,
-                index,
-                size,
-            )
-            if (index < size - 1) Spacer(modifier = Modifier.height(4.dp))
+        if (prefs.size > 0) {
+            prefs.forEachIndexed { index, item ->
+                PrefsBuilder(
+                    item,
+                    onPrefDialog,
+                    index,
+                    size,
+                )
+                if (index < size - 1)
+                    Spacer(modifier = Modifier.height(4.dp))
+            }
         }
     }
 }
 
 @Composable
 fun PrefsGroupHeading(
-    heading: String? = null
+    heading: String? = null,
+    modifier: Modifier = Modifier
 ) = if (heading != null) {
     Column(
         verticalArrangement = Arrangement.Center,
-        modifier = Modifier
-            .height(48.dp)
+        modifier = modifier
+            .height(BUTTON_SIZE_MEDIUM)
             .padding(horizontal = 32.dp)
             .fillMaxWidth(),
     ) {

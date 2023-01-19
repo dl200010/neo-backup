@@ -58,7 +58,7 @@ fun getStats(appsList: List<Package>): Triple<Int, Int, Int> {
     return Triple(appsList.size, backupsNumber, updatedNumber)
 }
 
-fun PackageManager.getInstalledPackagesWithPermissions() =
+fun PackageManager.getInstalledPackageInfosWithPermissions() =
     getInstalledPackages(0).map { getPackageInfo(it.packageName, PackageManager.GET_PERMISSIONS) }
 
 fun List<AppExtras>.get(packageName: String) =
@@ -90,21 +90,21 @@ fun Package.infoChips(): List<InfoChipItem> = listOfNotNull(
     ),
     InfoChipItem(
         flag = CHIP_SIZE_APP,
-        text = stringResource(id = R.string.app_size) + Formatter.formatFileSize(
+        text = stringResource(id = R.string.app_size) + " " + Formatter.formatFileSize(
             LocalContext.current,
             storageStats?.appBytes ?: 0
         ),
     ),
     InfoChipItem(
         flag = CHIP_SIZE_DATA,
-        text = stringResource(id = R.string.data_size) + Formatter.formatFileSize(
+        text = stringResource(id = R.string.data_size) + " " + Formatter.formatFileSize(
             LocalContext.current,
             storageStats?.dataBytes ?: 0
         ),
     ),
     InfoChipItem(
         flag = CHIP_SIZE_CACHE,
-        text = stringResource(id = R.string.cache_size) + Formatter.formatFileSize(
+        text = stringResource(id = R.string.cache_size) + " " + Formatter.formatFileSize(
             LocalContext.current,
             storageStats?.cacheBytes ?: 0
         ),
@@ -115,16 +115,4 @@ fun Package.infoChips(): List<InfoChipItem> = listOfNotNull(
     ) else null
 )
 
-fun NavDestination.destinationToItem(): NavItem? = listOf(
-    NavItem.UserPrefs,
-    NavItem.ServicePrefs,
-    NavItem.AdvancedPrefs,
-    NavItem.ToolsPrefs,
-    NavItem.Home,
-    NavItem.Backup,
-    NavItem.Restore,
-    NavItem.Scheduler,
-    NavItem.Settings,
-    NavItem.Exports,
-    NavItem.Logs,
-).find { this.route == it.destination }
+fun NavDestination.destinationToItem() = NavItem.navItems[this.route]

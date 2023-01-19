@@ -42,35 +42,36 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.machiav3lli.backup.BuildConfig
 import com.machiav3lli.backup.OABX
-import com.machiav3lli.backup.preferences.pref_appTheme
-import com.machiav3lli.backup.preferences.pref_appAccentColor
-import com.machiav3lli.backup.preferences.pref_appSecondaryColor
-import com.machiav3lli.backup.preferences.pref_allowDowngrade
-import com.machiav3lli.backup.preferences.pref_backupDeviceProtectedData
-import com.machiav3lli.backup.preferences.pref_disableVerification
-import com.machiav3lli.backup.preferences.pref_backupExternalData
-import com.machiav3lli.backup.preferences.pref_backupMediaData
-import com.machiav3lli.backup.preferences.pref_backupObbData
-import com.machiav3lli.backup.preferences.pref_pauseApps
-import com.machiav3lli.backup.preferences.pref_giveAllPermissions
-import com.machiav3lli.backup.preferences.pref_biometricLock
-import com.machiav3lli.backup.preferences.pref_compressionLevel
-import com.machiav3lli.backup.preferences.pref_enableSpecialBackups
-import com.machiav3lli.backup.preferences.pref_encryption
-import com.machiav3lli.backup.preferences.pref_languages
-import com.machiav3lli.backup.preferences.pref_password
-import com.machiav3lli.backup.preferences.pref_rememberFiltering
-import com.machiav3lli.backup.preferences.pref_deviceLock
-import com.machiav3lli.backup.preferences.pref_pathBackupFolder
-import com.machiav3lli.backup.preferences.persist_ignoreBatteryOptimization
-import com.machiav3lli.backup.preferences.persist_salt
-import com.machiav3lli.backup.PREFS_SHARED_PRIVATE
 import com.machiav3lli.backup.PREFS_LANGUAGES_DEFAULT
-import com.machiav3lli.backup.preferences.persist_sortFilter
+import com.machiav3lli.backup.PREFS_SHARED_PRIVATE
 import com.machiav3lli.backup.R
 import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.items.SortFilterModel
-import com.machiav3lli.backup.items.StorageFile
+import com.machiav3lli.backup.preferences.persist_ignoreBatteryOptimization
+import com.machiav3lli.backup.preferences.persist_salt
+import com.machiav3lli.backup.preferences.persist_sortFilter
+import com.machiav3lli.backup.preferences.pref_allowDowngrade
+import com.machiav3lli.backup.preferences.pref_appAccentColor
+import com.machiav3lli.backup.preferences.pref_appSecondaryColor
+import com.machiav3lli.backup.preferences.pref_appTheme
+import com.machiav3lli.backup.preferences.pref_backupDeviceProtectedData
+import com.machiav3lli.backup.preferences.pref_backupExternalData
+import com.machiav3lli.backup.preferences.pref_backupMediaData
+import com.machiav3lli.backup.preferences.pref_backupObbData
+import com.machiav3lli.backup.preferences.pref_biometricLock
+import com.machiav3lli.backup.preferences.pref_compressionLevel
+import com.machiav3lli.backup.preferences.pref_deviceLock
+import com.machiav3lli.backup.preferences.pref_disableVerification
+import com.machiav3lli.backup.preferences.pref_enableSpecialBackups
+import com.machiav3lli.backup.preferences.pref_encryption
+import com.machiav3lli.backup.preferences.pref_giveAllPermissions
+import com.machiav3lli.backup.preferences.pref_languages
+import com.machiav3lli.backup.preferences.pref_password
+import com.machiav3lli.backup.preferences.pref_pathBackupFolder
+import com.machiav3lli.backup.preferences.pref_restoreDeviceProtectedData
+import com.machiav3lli.backup.preferences.pref_restoreExternalData
+import com.machiav3lli.backup.preferences.pref_restoreMediaData
+import com.machiav3lli.backup.preferences.pref_restoreObbData
 import com.topjohnwu.superuser.Shell
 import java.nio.charset.StandardCharsets
 import java.util.*
@@ -102,11 +103,13 @@ fun Context.getCryptoSalt(): ByteArray {
     } else FALLBACK_SALT
 }
 
-fun Context.isEncryptionEnabled(): Boolean = pref_encryption.value && getEncryptionPassword().isNotEmpty()
+fun Context.isEncryptionEnabled(): Boolean =
+    pref_encryption.value && getEncryptionPassword().isNotEmpty()
 
 fun Context.getEncryptionPassword(): String = pref_password.value
 
-fun Context.isCompressionEnabled(): Boolean = getCompressionLevel() > 0 // && compression algorithm != null
+fun Context.isCompressionEnabled(): Boolean =
+    getCompressionLevel() > 0 // && compression algorithm != null
 
 fun Context.getCompressionLevel() = pref_compressionLevel.value
 
@@ -142,7 +145,7 @@ fun Context.setBackupDir(value: Uri): String {
     val fullUri = DocumentsContract
         .buildDocumentUriUsingTree(value, DocumentsContract.getTreeDocumentId(value))
     pref_pathBackupFolder.value = fullUri.toString()
-    OABX.main?.needRefresh = true       // post refreshing view
+    OABX.main?.refreshPackages()
     return fullUri.toString()
     //FileUtils.invalidateBackupLocation()
 }
@@ -154,9 +157,10 @@ val Context.isStorageDirSetAndOk: Boolean
             if (storageDirPath.isEmpty()) {
                 return false
             }
-            val storageDir = StorageFile.fromUri(this, Uri.parse(storageDirPath))
-            storageDir.exists()
-        } catch (e: StorageLocationNotConfiguredException) {
+            //val storageDir = StorageFile.fromUri(this, Uri.parse(storageDirPath))
+            //storageDir.exists()
+            getBackupRoot().exists()  //TODO kind of similar, but throws an exception "root not accessible" in some cases
+        } catch (e: Throwable) {
             false
         }
     }
@@ -419,7 +423,7 @@ val Context.checkUsageStatsPermission: Boolean
 
 fun Context.checkBatteryOptimization(powerManager: PowerManager)
         : Boolean = persist_ignoreBatteryOptimization.value
-                        || powerManager.isIgnoringBatteryOptimizations(packageName)
+        || powerManager.isIgnoringBatteryOptimizations(packageName)
 
 
 val Context.isBackupDeviceProtectedData: Boolean
@@ -434,8 +438,17 @@ val Context.isBackupObbData: Boolean
 val Context.isBackupMediaData: Boolean
     get() = pref_backupMediaData.value
 
-val Context.isPauseApps: Boolean
-    get() = pref_pauseApps.value
+val Context.isRestoreDeviceProtectedData: Boolean
+    get() = pref_restoreDeviceProtectedData.value
+
+val Context.isRestoreExternalData: Boolean
+    get() = pref_restoreExternalData.value
+
+val Context.isRestoreObbData: Boolean
+    get() = pref_restoreObbData.value
+
+val Context.isRestoreMediaData: Boolean
+    get() = pref_restoreMediaData.value
 
 val Context.isDisableVerification: Boolean
     get() = pref_disableVerification.value
@@ -455,32 +468,42 @@ var Context.sortFilterModel: SortFilterModel
             else SortFilterModel()
         return sortFilterModel
     }
-    set(value) { persist_sortFilter.value = value.toString() }
-
-val Context.isRememberFiltering: Boolean
-    get() = pref_rememberFiltering.value
+    set(value) {
+        persist_sortFilter.value = value.toString()
+        OABX.main?.viewModel?.modelSortFilter?.value = value   //setSortFilter(value)
+    }
 
 class StorageLocationNotConfiguredException : Exception("Storage Location has not been configured")
 
 var styleTheme: Int
     get() = pref_appTheme.value
-    set(value) { pref_appTheme.value = value }
+    set(value) {
+        pref_appTheme.value = value
+    }
 
 var stylePrimary: Int
     get() = pref_appAccentColor.value
-    set(value) { pref_appAccentColor.value = value }
+    set(value) {
+        pref_appAccentColor.value = value
+    }
 
 var styleSecondary: Int
     get() = pref_appSecondaryColor.value
-    set(value) { pref_appSecondaryColor.value = value }
+    set(value) {
+        pref_appSecondaryColor.value = value
+    }
 
 var Context.language: String
     get() = pref_languages.value
-    set(value) { pref_languages.value = value }
+    set(value) {
+        pref_languages.value = value
+    }
 
 var Context.specialBackupsEnabled: Boolean
     get() = pref_enableSpecialBackups.value
-    set(value) { pref_enableSpecialBackups.value = value }
+    set(value) {
+        pref_enableSpecialBackups.value = value
+    }
 
 fun Context.getLocaleOfCode(localeCode: String): Locale = when {
     localeCode.isEmpty() -> resources.configuration.locales[0]

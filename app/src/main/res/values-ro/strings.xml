@@ -7,8 +7,6 @@
     <string name="intro_permission_usageaccess">Aplicația are nevoie de această permisiune pentru a putea verifica statisticile și dimensiunile datelor și cache-ului aplicațiilor.</string>
     <string name="sort_options">Sortează după:</string>
     <string name="prefs_numBackupRevisions_summary">Cea mai veche revizie va fi ștearsă la crearea unui nou backup dacă numărul este depășit. Setează-l la zero pentru a păstra toate reviziile.</string>
-    <string name="prefs_externaldata_summary">Fă backupuri și restaurează datele care sunt plasate în spațiul de stocare extern (de exemplu, /storage/emulated/0/Android/data/)</string>
-    <string name="prefs_obbdata_summary">Fă backupuri și restaurează fișierele obb ale aplicațiilor, care sunt plasate în spațiul de stocare extern (de exemplu, /storage/emulated/0/Android/obb/)</string>
     <string name="restoreConfirmation">Restaurezi\?</string>
     <string name="help_issues">Probleme cunoscute</string>
     <string name="batchDeleteNothingToDelete">Niciun backup de șters</string>
@@ -45,8 +43,6 @@
     <string name="batchDeleteBackupsDeleted">Backupuri șterse:</string>
     <string name="prefs_rememberfiltering">Ține minte sortarea și filtrele</string>
     <string name="prefs_tools">Instrumente</string>
-    <string name="prefs_mediadata_summary">Fă backupuri și restaurează fișierele media ale aplicațiilor, care sunt plasate în spațiul de stocare extern (de exemplu, /storage/emulated/0/Android/media/)</string>
-    <string name="prefs_deviceprotecteddata_summary">Fă backupuri și restaurează datele care sunt plasate în data/user_de</string>
     <string name="prefs_numBackupRevisions">Număr de revizii al backupurilor</string>
     <string name="prefs_enablespecial">Activează backupurile speciale</string>
     <string name="prefs_copyselfapk_summary">Plasează o copie a OAndBackupX la nivelul superior al folderului pentru backupuri</string>
@@ -193,26 +189,22 @@
         <item quantity="other">la fiecare %d de zile</item>
     </plurals>
     <plurals name="days_left">
-        <item quantity="one">%d zi,</item>
-        <item quantity="few">%d zile,</item>
-        <item quantity="other">%d de zile,</item>
+        <item quantity="one">%d zi</item>
+        <item quantity="few">%d zile</item>
+        <item quantity="other">%d de zile</item>
     </plurals>
-    <string name="prefs_housekeepingmoment_after">După backup</string>
     <string name="disablePackage">Dezactivează aplicația</string>
     <string name="prefs_mediadata">Fă backup fișierelor media</string>
     <string name="prefs_obbdata">Fă backup fișierelor obb</string>
     <string name="prefs_compression_level">Nivel de comprimare</string>
-    <string name="prefs_housekeepingmoment">Momentul ștergerii reviziilor</string>
-    <string name="prefs_housekeepingmoment_summary">Configurează dacă cea mai veche revizie este ștearsă înainte sau după crearea unui nou backup pentru a elibera spațiul pe disc folosit de backup.</string>
     <string name="prefs_disableverification">Dezactivează Verificați aplicațiile prin USB</string>
     <string name="prefs_disableverification_summary">Dezactivează această opțiune pentru dezvoltatori în timpul restaurării APK-urilor și o reactivează ulterior. Rezolvă eroarea: INSTALL_FAILED_VERIFICATION_FAILURE.</string>
     <string name="sched_timeLeft">Timp rămas:</string>
     <string name="prefs_deviceprotecteddata">Fă backup datelor protejate ale dispozitivului</string>
     <string name="prefs_compression_level_summary">O valoare mai mică comprimă mai repede, însă are ca rezultat fișiere mai mari. O valoare mai mare comprimă mai bine, însă necesită mai mult timp.</string>
-    <string name="prefs_housekeepingmoment_before">Înainte de backup</string>
     <string name="prefs_allowdowngrade">Permite revenirea la versiuni anterioare</string>
     <string name="prefs_enablespecial_summary">Necesită încă testare intensivă, încearcă cunoscând pericolul că poate provoca bootloopuri. Feedbackul este mereu binevenit.</string>
-    <string name="prefs_allowdowngrade_summary">Permite restaurarea unor versiuni mai vechi a aplicațiilor instalate.</string>
+    <string name="prefs_allowdowngrade_summary">Permite restaurarea unor versiuni mai vechi a aplicațiilor instalate (se aplică numai versiunilor depanabile).</string>
     <string name="disablePackageTitle">Dezactivează aplicația pentru utilizatori</string>
     <string name="prefs_schedulesexportimport_summary">Exportă sau importă lista de planificări pe care le-ai creat.</string>
     <string name="copyOwnApkSuccess">APK-ul aplicației a fost copiat în directorul pentru backupuri</string>
@@ -274,4 +266,14 @@
     <string name="prefs_installerpackagename">Numele pachetului installerului:</string>
     <string name="prefs_sessionIinstaller">Folosește installerul sesiunii</string>
     <string name="prefs_sessionIinstaller_summary">Folosește installerul sesiunii în locul installerului de bază. Mai lent, însă evită problemele cu Android 13+</string>
+    <string name="prefs_squeezenavtext_summary">Permite redimensionarea textului de sub elementele din bara de navigare pentru a se potrivi lățimii disponibile.</string>
+    <string name="prefs_service_short">Serviciu</string>
+    <string name="prefs_advanced_short">Avansate</string>
+    <string name="prefs_tools_short">Instrumente</string>
+    <string name="home">Pagină de start</string>
+    <string name="prefs_multilineinfochips">Cipuri informative pe mai multe linii</string>
+    <string name="prefs_multilineinfochips_summary">Permite cipuri informative în secțiunea aplicației să se întindă pe mai multe rânduri.</string>
+    <string name="prefs_squeezenavtext">Strânge textul elementului de navigare</string>
+    <string name="prefs_nobackupdata_summary">Fă backup fișierelor din datele care sunt etichetate ca nefiind destinate backupurilor</string>
+    <string name="prefs_nobackupdata">Fă backup fișierelor no_backup</string>
 </resources>

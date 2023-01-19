@@ -9,15 +9,16 @@ import com.machiav3lli.backup.ACTION_RESCHEDULE
 import com.machiav3lli.backup.ACTION_SCHEDULE
 import com.machiav3lli.backup.OABX
 import com.machiav3lli.backup.dbs.ODatabase
+import com.machiav3lli.backup.traceSchedule
 import com.machiav3lli.backup.utils.scheduleAlarm
 import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.*
 
 class CommandReceiver : //TODO hg42 how to maintain security?
-                        //TODO machiav3lli by making the receiver only internally accessible (not exported)
-                        //TODO hg42 but it's one of the purposes to be remotely controllable from other apps like Tasker
-                        //TODO hg42 no big prob for now: cancel, starting or changing schedule isn't very critical
+//TODO machiav3lli by making the receiver only internally accessible (not exported)
+//TODO hg42 but it's one of the purposes to be remotely controllable from other apps like Tasker
+//TODO hg42 no big prob for now: cancel, starting or changing schedule isn't very critical
     BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent == null) return
@@ -53,15 +54,18 @@ class CommandReceiver : //TODO hg42 how to maintain security?
                     val setTime = time ?: SimpleDateFormat("HH:mm", Locale.getDefault())
                         .format(now + 120)
                     OABX.addInfoText("$command $name $time -> $setTime")
-                    Timber.d("################################################### command intent schedule -------------> name=$name time=$time -> $setTime")
+                    Timber.d("################################################### command intent reschedule -------------> name=$name time=$time -> $setTime")
                     Thread {
                         val scheduleDao = ODatabase.getInstance(context).scheduleDao
                         scheduleDao.getSchedule(name)?.let { schedule ->
                             val (hour, minute) = setTime.split(":").map { it.toInt() }
-                            schedule.timeHour = hour
-                            schedule.timeMinute = minute
-                            scheduleDao.update(schedule)
-                            scheduleAlarm(context, schedule.id, true)
+                            val newSched = schedule.copy(
+                                timeHour = hour,
+                                timeMinute = minute,
+                            )
+                            scheduleDao.update(newSched)
+                            traceSchedule { "command receiver -> re-schedule"}
+                            scheduleAlarm(context, newSched.id, true)
                         }
                     }.start()
                 }

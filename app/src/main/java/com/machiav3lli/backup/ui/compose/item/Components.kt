@@ -6,15 +6,23 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.expandIn
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.shrinkOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -23,7 +31,11 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,13 +49,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.SelectableChipColors
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,17 +65,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import coil.ImageLoader
 import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
+import coil.compose.rememberAsyncImagePainter
+import coil.imageLoader
 import coil.request.ImageRequest
+import coil.size.Size
+import com.machiav3lli.backup.ICON_SIZE_LARGE
+import com.machiav3lli.backup.ICON_SIZE_MEDIUM
+import com.machiav3lli.backup.ICON_SIZE_SMALL
 import com.machiav3lli.backup.MAIN_FILTER_SPECIAL
 import com.machiav3lli.backup.MAIN_FILTER_SYSTEM
 import com.machiav3lli.backup.MAIN_FILTER_USER
@@ -79,6 +104,10 @@ import com.machiav3lli.backup.SPECIAL_FILTER_OLD
 import com.machiav3lli.backup.dbs.entity.Backup
 import com.machiav3lli.backup.dbs.entity.Schedule
 import com.machiav3lli.backup.items.Package
+import com.machiav3lli.backup.preferences.pref_altPackageIcon
+import com.machiav3lli.backup.preferences.pref_hideBackupLabels
+import com.machiav3lli.backup.preferences.pref_iconCrossFade
+import com.machiav3lli.backup.traceDebug
 import com.machiav3lli.backup.ui.compose.icons.Phosphor
 import com.machiav3lli.backup.ui.compose.icons.phosphor.ArrowSquareOut
 import com.machiav3lli.backup.ui.compose.icons.phosphor.AsteriskSimple
@@ -107,64 +136,172 @@ import com.machiav3lli.backup.ui.compose.theme.ColorSystem
 import com.machiav3lli.backup.ui.compose.theme.ColorUpdated
 import com.machiav3lli.backup.ui.compose.theme.ColorUser
 import com.machiav3lli.backup.ui.compose.theme.LocalShapes
+import com.machiav3lli.backup.utils.TraceUtils.beginNanoTimer
+import com.machiav3lli.backup.utils.TraceUtils.endNanoTimer
 import com.machiav3lli.backup.utils.brighter
+import com.machiav3lli.backup.utils.darker
+import kotlinx.coroutines.delay
 
 @Composable
 fun ButtonIcon(
     icon: ImageVector,
     @StringRes textId: Int,
-    tint: Color? = null
+    tint: Color? = null,
 ) {
+    beginNanoTimer("btnIcon")
     Icon(
         imageVector = icon,
         contentDescription = stringResource(id = textId),
-        modifier = Modifier.size(24.dp),
         tint = tint ?: LocalContentColor.current
     )
+    endNanoTimer("btnIcon")
 }
 
 @Composable
 fun PrefIcon(
     icon: ImageVector,
     text: String,
-    tint: Color? = null
+    tint: Color? = null,
 ) {
     Icon(
         imageVector = icon,
         contentDescription = text,
-        modifier = Modifier.size(32.dp),
+        modifier = Modifier.size(ICON_SIZE_MEDIUM),   //TODO BUTTON_ICON_SIZE?
         tint = tint ?: MaterialTheme.colorScheme.onBackground
     )
 }
 
 @Composable
 fun PackageIcon(
+    modifier: Modifier = Modifier,
     item: Package?,
-    imageData: Any
+    model: ImageRequest,
+    imageLoader: ImageLoader = LocalContext.current.imageLoader,
 ) {
+    beginNanoTimer("pkgIcon.AI")
     AsyncImage(
-        modifier = Modifier
-            .size(48.dp)
+        modifier = modifier
+            .size(ICON_SIZE_LARGE)
             .clip(RoundedCornerShape(LocalShapes.current.medium)),
-        model = ImageRequest.Builder(LocalContext.current)
-            .crossfade(true)
-            .data(imageData)
-            .build(),
+        model = model,
         contentDescription = null,
-        contentScale = ContentScale.Crop,
-        error = placeholderIconPainter(item),
-        placeholder = placeholderIconPainter(item)
+        contentScale = ContentScale.Fit,
+        error = placeholderIconPainter(item, imageLoader),
+        placeholder = placeholderIconPainter(item, imageLoader)
     )
+    endNanoTimer("pkgIcon.AI")
 }
 
+@Composable
+fun PackageIcon(
+    modifier: Modifier = Modifier,
+    item: Package?,
+    imageData: Any,
+    imageLoader: ImageLoader = LocalContext.current.imageLoader,
+) {
+    if (pref_altPackageIcon.value) {
+        beginNanoTimer("pkgIcon.rCAIP")
+        Image(
+            modifier = modifier
+                .size(ICON_SIZE_LARGE)
+                .clip(RoundedCornerShape(LocalShapes.current.medium)),
+            painter = cachedAsyncImagePainter(
+                model = imageData,
+                imageLoader = imageLoader,
+                altPainter = placeholderIconPainter(item, imageLoader)
+            ),
+            contentDescription = null,
+            contentScale = ContentScale.Crop
+        )
+        endNanoTimer("pkgIcon.rCAIP")
+    } else {
+        beginNanoTimer("pkgIcon.AIrq")
+        AsyncImage(
+            modifier = modifier
+                .size(ICON_SIZE_LARGE)
+                .clip(RoundedCornerShape(LocalShapes.current.medium)),
+            model = ImageRequest.Builder(LocalContext.current)
+                .crossfade(pref_iconCrossFade.value)
+                .data(imageData)
+                .size(Size.ORIGINAL)
+                .build(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            error = placeholderIconPainter(item, imageLoader),
+            placeholder = placeholderIconPainter(item, imageLoader)
+        )
+        endNanoTimer("pkgIcon.AIrq")
+    }
+}
+
+private var painterCache = mutableMapOf<Any, Painter>()         //TODO hg42 move somewhere else
+
+fun clearIconCache() {                                  //TODO hg42 move somewhere else
+    synchronized(painterCache) {
+        painterCache.clear()
+    }
+}
+
+fun limitIconCache(pkgs: List<Package>) {
+    (painterCache.keys - pkgs.map { it.iconData }).forEach {
+        traceDebug { "icon remove $it" }
+        synchronized(painterCache) {
+            painterCache.remove(it)
+        }
+    }
+}
+
+fun sizeOfIconCache() = painterCache.size               //TODO hg42 move somewhere else
 
 @Composable
-fun placeholderIconPainter(item: Package?) = painterResource(
+fun cachedAsyncImagePainter(
+    model: Any,
+    imageLoader: ImageLoader = LocalContext.current.imageLoader,
+    altPainter: Painter? = null,
+): Painter {
+    beginNanoTimer("rmbrCachedAIP")
+    var painter = synchronized(painterCache) { painterCache.get(model) }
+    if (painter == null) {
+        beginNanoTimer("rmbrAIP")
+        val rememberedPainter =
+            rememberAsyncImagePainter(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(model)
+                    .size(Size.ORIGINAL)
+                    .build(),
+                imageLoader = imageLoader,
+                onState = {
+                    if (it !is AsyncImagePainter.State.Loading)
+                        it.painter?.let {
+                            synchronized(painterCache) { painterCache.put(model, it) }
+                        } //?: run {
+                    //    altPainter?.let { synchronized(painterCache) { painterCache.put(model, it) } }
+                    //}
+                }
+            )
+        endNanoTimer("rmbrAIP")
+        if (rememberedPainter.state is AsyncImagePainter.State.Success) {
+            //synchronized(painterCache) { painterCache.put(model, rememberedPainter) }
+            painter = rememberedPainter
+        } else {
+            painter = altPainter ?: rememberedPainter
+        }
+    }
+    endNanoTimer("rmbrCachedAIP")
+    return painter
+}
+
+@Composable
+fun placeholderIconPainter(
+    item: Package?,
+    imageLoader: ImageLoader = LocalContext.current.imageLoader,
+) = cachedAsyncImagePainter(
     when {
         item?.isSpecial == true -> R.drawable.ic_placeholder_special
-        item?.isSystem == true -> R.drawable.ic_placeholder_system
-        else -> R.drawable.ic_placeholder_user
-    }
+        item?.isSystem == true  -> R.drawable.ic_placeholder_system
+        else                    -> R.drawable.ic_placeholder_user
+    },
+    imageLoader = imageLoader,
 )
 
 @Composable
@@ -174,7 +311,7 @@ fun ActionButton(
     positive: Boolean = true,
     iconOnSide: Boolean = false,
     icon: ImageVector? = null,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     TextButton(
         modifier = modifier,
@@ -193,7 +330,6 @@ fun ActionButton(
         if (icon != null) {
             if (iconOnSide) Spacer(modifier = Modifier.weight(1f))
             Icon(
-                modifier = Modifier.size(24.dp),
                 imageVector = icon,
                 contentDescription = text
             )
@@ -211,7 +347,7 @@ fun ElevatedActionButton(
     enabled: Boolean = true,
     colored: Boolean = true,
     withText: Boolean = text.isNotEmpty(),
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     ElevatedButton(
         modifier = modifier,
@@ -219,12 +355,12 @@ fun ElevatedActionButton(
             contentColor = when {
                 !colored -> MaterialTheme.colorScheme.onSurface
                 positive -> MaterialTheme.colorScheme.onPrimaryContainer
-                else -> MaterialTheme.colorScheme.onTertiaryContainer
+                else     -> MaterialTheme.colorScheme.onTertiaryContainer
             },
             containerColor = when {
                 !colored -> MaterialTheme.colorScheme.surface
                 positive -> MaterialTheme.colorScheme.primaryContainer
-                else -> MaterialTheme.colorScheme.tertiaryContainer
+                else     -> MaterialTheme.colorScheme.tertiaryContainer
             }
         ),
         enabled = enabled,
@@ -232,7 +368,6 @@ fun ElevatedActionButton(
     ) {
         if (icon != null) {
             Icon(
-                modifier = Modifier.size(24.dp),
                 imageVector = icon,
                 contentDescription = text
             )
@@ -241,7 +376,7 @@ fun ElevatedActionButton(
             Text(
                 modifier = when {
                     fullWidth -> Modifier.weight(1f)
-                    else -> Modifier.padding(start = 8.dp)
+                    else      -> Modifier.padding(start = 8.dp)
                 },
                 text = text,
                 textAlign = TextAlign.Center,
@@ -258,7 +393,7 @@ fun TopBarButton(
         .size(52.dp),
     icon: ImageVector,
     description: String = "",
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     ElevatedButton(
         modifier = modifier,
@@ -275,54 +410,112 @@ fun TopBarButton(
 }
 
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CardButton(
     modifier: Modifier = Modifier,
     icon: ImageVector,
     tint: Color,
     description: String,
-    enabled: Boolean = true,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
-    ElevatedButton(
-        modifier = modifier.padding(4.dp),
-        colors = ButtonDefaults.elevatedButtonColors(
-            containerColor = tint.brighter(0.2f),
-            contentColor = MaterialTheme.colorScheme.background
-        ),
-        contentPadding = PaddingValues(12.dp),
+    val showTooltip = remember { mutableStateOf(false) }
+
+    Surface(
+        modifier = modifier
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = { showTooltip.value = true }
+            ),
+        color = tint.let {
+            if (isSystemInDarkTheme()) it.brighter(0.2f)
+            else it.darker(0.2f)
+        },
+        contentColor = MaterialTheme.colorScheme.background,
         shape = MaterialTheme.shapes.medium,
-        enabled = enabled,
-        onClick = { onClick() }
     ) {
-        Icon(imageVector = icon, contentDescription = description)
-        /*Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
+        Column(
+            modifier = modifier.padding(PaddingValues(12.dp)),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceAround
+        ) {
+            Icon(imageVector = icon, contentDescription = description)
+            /*Text(
+                modifier = modifier.weight(1f),
                 text = description,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-        }*/
+                textAlign = TextAlign.Center,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.titleSmall
+            )*/
+        }
+
+        if (showTooltip.value) {
+            Tooltip(description, showTooltip)
+        }
+    }
+
+}
+
+@Composable
+fun Tooltip(
+    text: String,
+    openPopup: MutableState<Boolean>,
+) {
+    Popup(
+        alignment = Alignment.TopCenter,
+        offset = IntOffset(0, 100),
+    ) {
+        LaunchedEffect(key1 = Unit) {
+            delay(3000)
+            openPopup.value = false
+        }
+
+        Box {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .widthIn(max = 120.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = MaterialTheme.shapes.medium
+                    )
+            ) {
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = text,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+            }
+        }
     }
 }
 
 @Composable
 fun RoundButton(
-    modifier: Modifier = Modifier
-        .padding(4.dp)
-        .size(52.dp),
+    modifier: Modifier = Modifier,
+    size: Dp = ICON_SIZE_SMALL,
     icon: ImageVector,
+    tint: Color = MaterialTheme.colorScheme.onBackground,
     description: String = "",
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     IconButton(
         modifier = modifier,
-        onClick = { onClick() }
+        onClick = onClick
     ) {
-        Icon(imageVector = icon, contentDescription = description)
+        Icon(
+            modifier = Modifier.size(size),
+            imageVector = icon,
+            tint = tint,
+            contentDescription = description
+        )
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun StateChip(
     modifier: Modifier = Modifier,
@@ -330,24 +523,31 @@ fun StateChip(
     text: String,
     color: Color,
     checked: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
-    OutlinedButton(
-        modifier = modifier.defaultMinSize(minWidth = 1.dp, minHeight = 1.dp),
-        contentPadding = PaddingValues(8.dp),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = if (checked) MaterialTheme.colorScheme.onSurface else color,
-            containerColor = if (checked) color else Color.Transparent
-        ),
+    val openPopup = remember { mutableStateOf(false) }
+
+    Surface(
+        modifier = modifier
+            .defaultMinSize(minWidth = 1.dp, minHeight = 1.dp)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = { openPopup.value = true }
+            ),
+        contentColor = if (checked) MaterialTheme.colorScheme.onSurface else color,
+        color = if (checked) color else Color.Transparent,
         shape = RoundedCornerShape(LocalShapes.current.medium),
         border = BorderStroke(1.dp, color),
-        onClick = onClick,
     ) {
         Icon(
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.padding(8.dp),
             imageVector = icon,
             contentDescription = text
         )
+
+        if (openPopup.value) {
+            Tooltip(text, openPopup)
+        }
     }
 }
 
@@ -358,9 +558,9 @@ fun CheckChip(
     textId: Int,
     checkedTextId: Int,
     modifier: Modifier = Modifier,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
 ) {
-    val (checked, check) = remember { mutableStateOf(checked) }
+    val (checked, check) = remember(checked) { mutableStateOf(checked) }   //TODO hg42 should probably be removed like for MultiChips
 
     FilterChip(
         modifier = modifier.padding(vertical = 8.dp, horizontal = 4.dp),
@@ -370,7 +570,7 @@ fun CheckChip(
             selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
             iconColor = MaterialTheme.colorScheme.onBackground,
             selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            containerColor = MaterialTheme.colorScheme.background,
+            containerColor = Color.Transparent,
             selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
         ),
         leadingIcon = {
@@ -390,6 +590,76 @@ fun CheckChip(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+fun ActionChip(
+    modifier: Modifier = Modifier,
+    @StringRes textId: Int,
+    icon: ImageVector,
+    positive: Boolean,
+    onClick: () -> Unit = {},
+) {
+    AssistChip(
+        modifier = modifier,
+        label = {
+            Text(text = stringResource(id = textId))
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = stringResource(id = textId)
+            )
+        },
+        shape = MaterialTheme.shapes.large,
+        colors = AssistChipDefaults.assistChipColors(
+            containerColor = if (positive) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.tertiaryContainer,
+            labelColor = if (positive) MaterialTheme.colorScheme.onPrimaryContainer
+            else MaterialTheme.colorScheme.onTertiaryContainer,
+            leadingIconContentColor = if (positive) MaterialTheme.colorScheme.onPrimaryContainer
+            else MaterialTheme.colorScheme.onTertiaryContainer,
+        ),
+        border = null,
+        onClick = onClick
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ActionChip(
+    modifier: Modifier = Modifier,
+    text: String = "",
+    icon: ImageVector? = null,
+    positive: Boolean,
+    onClick: () -> Unit = {},
+) {
+    AssistChip(
+        modifier = modifier,
+        label = {
+            Text(text = text)
+        },
+        leadingIcon = {
+            icon?.let {
+                Icon(
+                    imageVector = it,
+                    contentDescription = text
+                )
+            }
+        },
+        shape = MaterialTheme.shapes.large,
+        colors = AssistChipDefaults.assistChipColors(
+            containerColor = if (positive) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.tertiaryContainer,
+            labelColor = if (positive) MaterialTheme.colorScheme.onPrimaryContainer
+            else MaterialTheme.colorScheme.onTertiaryContainer,
+            leadingIconContentColor = if (positive) MaterialTheme.colorScheme.onPrimaryContainer
+            else MaterialTheme.colorScheme.onTertiaryContainer,
+        ),
+        border = null,
+        onClick = onClick
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun SwitchChip(
     firstTextId: Int,
     firstIcon: ImageVector,
@@ -397,26 +667,23 @@ fun SwitchChip(
     secondIcon: ImageVector,
     firstSelected: Boolean = true,
     colors: SelectableChipColors = FilterChipDefaults.filterChipColors(
+        containerColor = Color.Transparent,
+        selectedContainerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(4.dp),
         labelColor = MaterialTheme.colorScheme.onSurface,
         selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
         iconColor = MaterialTheme.colorScheme.onSurface,
         selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        containerColor = MaterialTheme.colorScheme.surface,
-        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
     ),
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
 ) {
     Row(
         modifier = Modifier
-            .background(
-                MaterialTheme.colorScheme.surface,
-                MaterialTheme.shapes.small
-            )
+            .border(1.dp, MaterialTheme.colorScheme.onPrimaryContainer, MaterialTheme.shapes.medium)
             .padding(horizontal = 6.dp)
             .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val (firstSelected, selectFirst) = remember { mutableStateOf(firstSelected) }
+        val (firstSelected, selectFirst) = remember { mutableStateOf(firstSelected) }   //TODO hg42 should probably be removed like for MultiChips
 
         FilterChip(
             modifier = Modifier.weight(1f),
@@ -442,7 +709,9 @@ fun SwitchChip(
                     Text(
                         text = stringResource(id = firstTextId),
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        fontWeight = if (firstSelected) FontWeight.Black
+                        else FontWeight.Normal
                     )
                 }
             }
@@ -468,7 +737,9 @@ fun SwitchChip(
                     Text(
                         text = stringResource(id = secondTextId),
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        fontWeight = if (!firstSelected) FontWeight.Black
+                        else FontWeight.Normal
                     )
                 }
             },
@@ -484,7 +755,7 @@ fun SelectableRow(
     modifier: Modifier = Modifier,
     title: String,
     selectedState: MutableState<Boolean>,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Row(
         modifier = modifier
@@ -515,7 +786,7 @@ fun SelectableRow(
 fun CheckableRow(
     title: String,
     checkedState: MutableState<Boolean>,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -548,7 +819,7 @@ fun StatefulAnimatedVisibility(
     enterNegative: EnterTransition,
     exitNegative: ExitTransition,
     expandedView: @Composable (AnimatedVisibilityScope.() -> Unit),
-    collapsedView: @Composable (AnimatedVisibilityScope.() -> Unit)
+    collapsedView: @Composable (AnimatedVisibilityScope.() -> Unit),
 ) {
     AnimatedVisibility(
         visible = !currentState,
@@ -568,7 +839,7 @@ fun StatefulAnimatedVisibility(
 fun HorizontalExpandingVisibility(
     expanded: Boolean = false,
     expandedView: @Composable (AnimatedVisibilityScope.() -> Unit),
-    collapsedView: @Composable (AnimatedVisibilityScope.() -> Unit)
+    collapsedView: @Composable (AnimatedVisibilityScope.() -> Unit),
 ) = StatefulAnimatedVisibility(
     currentState = expanded,
     enterPositive = expandHorizontally(expandFrom = Alignment.End),
@@ -583,7 +854,7 @@ fun HorizontalExpandingVisibility(
 fun VerticalFadingVisibility(
     expanded: Boolean = false,
     expandedView: @Composable (AnimatedVisibilityScope.() -> Unit),
-    collapsedView: @Composable (AnimatedVisibilityScope.() -> Unit)
+    collapsedView: @Composable (AnimatedVisibilityScope.() -> Unit),
 ) = StatefulAnimatedVisibility(
     currentState = expanded,
     enterPositive = fadeIn() + expandVertically(expandFrom = Alignment.Bottom),
@@ -595,70 +866,93 @@ fun VerticalFadingVisibility(
 )
 
 @Composable
+fun ExpandingFadingVisibility(
+    expanded: Boolean = false,
+    expandedView: @Composable (AnimatedVisibilityScope.() -> Unit),
+    collapsedView: @Composable (AnimatedVisibilityScope.() -> Unit),
+) = StatefulAnimatedVisibility(
+    currentState = expanded,
+    enterPositive = fadeIn() + expandIn(),
+    exitPositive = fadeOut() + shrinkOut(),
+    enterNegative = fadeIn() + expandIn(),
+    exitNegative = fadeOut() + shrinkOut(),
+    collapsedView = collapsedView,
+    expandedView = expandedView
+)
+
+@Composable
 fun PackageLabels(
-    item: Package
+    item: Package,
 ) {
-    AnimatedVisibility(visible = item.isUpdated) {
-        ButtonIcon(
-            Phosphor.CircleWavyWarning, R.string.radio_updated,
-            tint = ColorUpdated
-        )
+    beginNanoTimer("pkgLabels")
+
+    if (!pref_hideBackupLabels.value && item.hasBackups) {
+
+        if (item.isUpdated) {
+            ButtonIcon(
+                Phosphor.CircleWavyWarning, R.string.radio_updated,
+                tint = ColorUpdated
+            )
+        }
+        if (item.hasMediaData) {
+            ButtonIcon(
+                Phosphor.PlayCircle, R.string.radio_mediadata,
+                tint = ColorMedia
+            )
+        }
+        if (item.hasObbData) {
+            ButtonIcon(
+                Phosphor.GameController, R.string.radio_obbdata,
+                tint = ColorOBB
+            )
+        }
+        if (item.hasExternalData) {
+            ButtonIcon(
+                Phosphor.FloppyDisk, R.string.radio_externaldata,
+                tint = ColorExtDATA
+            )
+        }
+        if (item.hasDevicesProtectedData) {
+            ButtonIcon(
+                Phosphor.ShieldCheckered, R.string.radio_deviceprotecteddata,
+                tint = ColorDeData
+            )
+        }
+        if (item.hasAppData) {
+            ButtonIcon(
+                Phosphor.HardDrives, R.string.radio_data,
+                tint = ColorData
+            )
+        }
+        if (item.hasApk) {
+            ButtonIcon(
+                Phosphor.DiamondsFour, R.string.radio_apk,
+                tint = ColorAPK
+            )
+        }
     }
-    AnimatedVisibility(visible = item.hasMediaData) {
-        ButtonIcon(
-            Phosphor.PlayCircle, R.string.radio_mediadata,
-            tint = ColorMedia
-        )
-    }
-    AnimatedVisibility(visible = item.hasObbData) {
-        ButtonIcon(
-            Phosphor.GameController, R.string.radio_obbdata,
-            tint = ColorOBB
-        )
-    }
-    AnimatedVisibility(visible = item.hasExternalData) {
-        ButtonIcon(
-            Phosphor.FloppyDisk, R.string.radio_externaldata,
-            tint = ColorExtDATA
-        )
-    }
-    AnimatedVisibility(visible = item.hasDevicesProtectedData) {
-        ButtonIcon(
-            Phosphor.ShieldCheckered, R.string.radio_deviceprotecteddata,
-            tint = ColorDeData
-        )
-    }
-    AnimatedVisibility(visible = item.hasAppData) {
-        ButtonIcon(
-            Phosphor.HardDrives, R.string.radio_data,
-            tint = ColorData
-        )
-    }
-    AnimatedVisibility(visible = item.hasApk) {
-        ButtonIcon(
-            Phosphor.DiamondsFour, R.string.radio_apk,
-            tint = ColorAPK
-        )
-    }
+
     ButtonIcon(
         when {
             item.isSpecial -> Phosphor.AsteriskSimple
-            item.isSystem -> Phosphor.Spinner
-            else -> Phosphor.User
+            item.isSystem  -> Phosphor.Spinner
+            else           -> Phosphor.User
         },
         R.string.app_s_type_title,
         tint = when {
             item.isDisabled -> ColorDisabled
-            item.isSpecial -> ColorSpecial
-            item.isSystem -> ColorSystem
-            else -> ColorUser
+            item.isSpecial  -> ColorSpecial
+            item.isSystem   -> ColorSystem
+            else            -> ColorUser
         }
     )
+
+    endNanoTimer("pkgLabels")
 }
 
 @Composable
 fun BackupLabels(
-    item: Backup
+    item: Backup,
 ) {
     AnimatedVisibility(visible = item.hasMediaData) {
         ButtonIcon(
@@ -742,7 +1036,7 @@ fun ScheduleTypes(item: Schedule) {
 
 @Composable
 fun ScheduleFilters(
-    item: Schedule
+    item: Schedule,
 ) {
     AnimatedVisibility(visible = item.filter and MAIN_FILTER_SYSTEM == MAIN_FILTER_SYSTEM) {
         ButtonIcon(
@@ -765,17 +1059,17 @@ fun ScheduleFilters(
     AnimatedVisibility(visible = item.specialFilter != SPECIAL_FILTER_ALL) {
         ButtonIcon(
             when (item.specialFilter) {
-                SPECIAL_FILTER_DISABLED -> Phosphor.ProhibitInset
+                SPECIAL_FILTER_DISABLED   -> Phosphor.ProhibitInset
                 SPECIAL_FILTER_LAUNCHABLE -> Phosphor.ArrowSquareOut
-                SPECIAL_FILTER_OLD -> Phosphor.Clock
-                else -> Phosphor.CircleWavyWarning
+                SPECIAL_FILTER_OLD        -> Phosphor.Clock
+                else                      -> Phosphor.CircleWavyWarning
             },
             R.string.app_s_type_title,
             tint = when (item.specialFilter) {
-                SPECIAL_FILTER_DISABLED -> ColorDeData
+                SPECIAL_FILTER_DISABLED   -> ColorDeData
                 SPECIAL_FILTER_LAUNCHABLE -> ColorOBB
-                SPECIAL_FILTER_OLD -> ColorExodus
-                else -> ColorUpdated
+                SPECIAL_FILTER_OLD        -> ColorExodus
+                else                      -> ColorUpdated
             }
         )
     }
@@ -784,7 +1078,7 @@ fun ScheduleFilters(
 @Composable
 fun TitleText(
     textId: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) = Text(
     text = stringResource(id = textId),
     style = MaterialTheme.typography.titleMedium,
@@ -796,7 +1090,7 @@ fun TitleText(
 fun DoubleVerticalText(
     upperText: String,
     bottomText: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier,
@@ -822,7 +1116,7 @@ fun CardSubRow(
     icon: ImageVector,
     iconColor: Color = MaterialTheme.colorScheme.onBackground,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
 ) {
     Card(
         modifier = modifier,
@@ -840,7 +1134,8 @@ fun CardSubRow(
             Icon(imageVector = icon, contentDescription = text, tint = iconColor)
             Text(
                 text = text,
-                maxLines = 1,
+                maxLines = 2,
+                style = MaterialTheme.typography.bodyMedium,
                 overflow = TextOverflow.Ellipsis
             )
         }

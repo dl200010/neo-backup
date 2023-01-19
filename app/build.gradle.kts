@@ -21,15 +21,22 @@ plugins {
     id("com.android.application")
     kotlin("android")
     kotlin("kapt")
-    kotlin("plugin.serialization").version("1.7.10")
+    kotlin("plugin.serialization").version("1.7.20")
 }
-val vKotlin = "1.7.10"
-val vComposeCompiler = "1.3.1"
-val vCompose = "1.3.0-beta03"
-val vRoom = "2.5.0-alpha03"
-val vNavigation = "2.5.2"
-val vAccompanist = "0.26.4-beta"
-val vLibsu = "3.2.1"
+
+val vKotlin = "1.7.20"
+val vComposeCompiler = "1.3.2"
+
+val vCompose = "1.3.1"
+val vRoom = "2.5.0-beta02"
+val vNavigation = "2.5.3"
+val vAccompanist = "0.28.0"
+val vLibsu = "5.0.4"
+//val vIconics = "5.3.4"
+
+val vJunitJupiter = "5.9.1"
+val vAndroidxTest = "1.4.0"
+val vAndroidxTestExt = "1.1.4"
 
 android {
     namespace = "com.machiav3lli.backup"
@@ -39,8 +46,8 @@ android {
         applicationId = "com.machiav3lli.backup"
         minSdk = 26
         targetSdk = 32
-        versionCode = 8200
-        versionName = "8.2.0"
+        versionCode = 8208
+        versionName = "8.2.5"
         buildConfigField("int", "MAJOR", "8")
         buildConfigField("int", "MINOR", "2")
 
@@ -66,28 +73,22 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            versionNameSuffix = "-alpha01"
+            //versionNameSuffix = "-alpha01"
             isMinifyEnabled = true
-            manifestPlaceholders["appIcon"] = "@mipmap/ic_launcher"
-            manifestPlaceholders["appIconRound"] = "@mipmap/ic_launcher_round"
         }
         named("debug") {
             applicationIdSuffix = ".debug"
-            versionNameSuffix = "-alpha01"
+            //versionNameSuffix = "-alpha01"
             isMinifyEnabled = false
-            manifestPlaceholders["appIcon"] = "@mipmap/ic_launcher_vv"
-            manifestPlaceholders["appIconRound"] = "@mipmap/ic_launcher_round_vv"
         }
         create("neo") {
             applicationIdSuffix = ".neo"
-            versionNameSuffix = "-alpha01"
+            //versionNameSuffix = "-alpha01"
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            manifestPlaceholders["appIcon"] = "@mipmap/ic_launcher_vv"
-            manifestPlaceholders["appIconRound"] = "@mipmap/ic_launcher_round_vv"
         }
     }
     buildFeatures {
@@ -122,19 +123,19 @@ android {
 
 dependencies {
     //implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$vKotlin")
-    implementation(kotlin("stdlib"))
-    implementation(kotlin("reflect"))
+    implementation(kotlin("stdlib", vKotlin))
+    implementation(kotlin("reflect", vKotlin))
 
     // Libs
     implementation("androidx.room:room-runtime:$vRoom")
     implementation("androidx.room:room-ktx:$vRoom")
     kapt("androidx.room:room-compiler:$vRoom")
-    implementation("androidx.work:work-runtime-ktx:2.8.0-alpha04")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.0")
+    implementation("androidx.work:work-runtime-ktx:2.8.0-rc01")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.5.1")
-    implementation("androidx.security:security-crypto-ktx:1.1.0-alpha03")
+    implementation("androidx.security:security-crypto-ktx:1.1.0-alpha04")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
-    implementation("org.apache.commons:commons-compress:1.21")
+    implementation("org.apache.commons:commons-compress:1.22")
     implementation("commons-io:commons-io:2.11.0")      // attention, there is an old 2003 version, that looks like newer
     implementation("com.jakewharton.timber:timber:5.0.1")
     implementation("com.github.topjohnwu.libsu:core:$vLibsu")
@@ -144,12 +145,8 @@ dependencies {
     //implementation("com.github.tony19:named-regexp:0.2.6") // regex named groups
 
     // UI
-    implementation("androidx.fragment:fragment-ktx:1.5.3")
-    implementation("com.google.android.material:material:1.8.0-alpha01")
+    implementation("com.google.android.material:material:1.8.0-alpha03")
     implementation("androidx.preference:preference-ktx:1.2.0")
-    implementation("androidx.navigation:navigation-fragment-ktx:$vNavigation")
-    implementation("androidx.navigation:navigation-ui-ktx:$vNavigation")
-    implementation("io.coil-kt:coil-compose:2.2.1")
 
     // Compose
     implementation("androidx.compose.runtime:runtime:$vCompose")
@@ -158,18 +155,26 @@ dependencies {
     implementation("androidx.compose.foundation:foundation:$vCompose")
     implementation("androidx.compose.runtime:runtime-livedata:$vCompose")
     implementation("androidx.navigation:navigation-compose:$vNavigation")
-    implementation("com.google.android.material:compose-theme-adapter-3:1.0.19")
-    implementation("androidx.compose.material3:material3:1.0.0-beta03")
+    implementation("io.coil-kt:coil-compose:2.2.2")
+    implementation("androidx.compose.material3:material3:1.0.1")
     implementation("com.google.accompanist:accompanist-flowlayout:$vAccompanist")
     implementation("com.google.accompanist:accompanist-systemuicontroller:$vAccompanist")
     implementation("com.google.accompanist:accompanist-navigation-animation:$vAccompanist")
+    implementation("com.google.accompanist:accompanist-pager:$vAccompanist")
 
     // Testing
-    implementation("androidx.test.ext:junit-ktx:1.1.3")
-    androidTestImplementation("org.junit.jupiter:junit-jupiter:5.9.1")
-    val androidxTest = "1.4.0"
-    implementation("androidx.test:rules:$androidxTest")
-    androidTestImplementation("androidx.test:runner:$androidxTest")
+    androidTestImplementation("org.junit.jupiter:junit-jupiter:$vJunitJupiter")
+    androidTestImplementation("androidx.test:runner:$vAndroidxTest")
+    implementation("androidx.test:rules:$vAndroidxTest")
+    implementation("androidx.test.ext:junit-ktx:$vAndroidxTestExt")
+
+    // compose testing
+    //androidTestImplementation("androidx.ui:ui-test:$vCompose")
+    // Test rules and transitive dependencies:
+    androidTestImplementation("androidx.compose.ui:ui-test:$vCompose")
+    //androidTestImplementation("androidx.compose.ui:ui-test-junit4:$vCompose")
+    // Needed for createComposeRule, but not createAndroidComposeRule:
+    debugImplementation("androidx.compose.ui:ui-test-manifest:$vCompose")
 }
 
 // using a task as a preBuild dependency instead of a function that takes some time insures that it runs
