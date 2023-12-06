@@ -2,8 +2,8 @@
 <resources>
     <string name="backup">Back-up</string>
     <string name="restore">Terugzetten</string>
-    <string name="backupConfirmation">Back-up?</string>
-    <string name="restoreConfirmation">Terugzetten?</string>
+    <string name="backupConfirmation">Back-up\?</string>
+    <string name="restoreConfirmation">Terugzetten\?</string>
     <string name="handleApk">APK</string>
     <string name="handleData">Data</string>
     <string name="handleBoth">Beide</string>
@@ -32,8 +32,8 @@
     <string name="sortByLabel">Sorteer op label</string>
     <string name="sortByPackageName">Sorteer op pakketnaam</string>
     <string name="sort">Sorteer en filter</string>
-    <string name="uninstallDialogMessage">Deïnstalleer deze app?</string>
-    <string name="deleteBackupDialogMessage">Verwijder back-up bestanden?</string>
+    <string name="uninstallDialogMessage">Deïnstalleer deze app\?</string>
+    <string name="deleteBackupDialogMessage">Verwijder back-up bestanden\?</string>
     <string name="dialogOK">Akkoord</string>
     <string name="dialogCancel">Annuleer</string>
     <string name="dialogYes">Ja</string>
@@ -171,15 +171,12 @@
     <string name="sched_add">Voeg planning toe</string>
     <string name="prefs_logviewer">Bekijk de log</string>
     <string name="prefs_batchdelete_summary">Verwijder back-ups van alle apps die op het moment niet geïnstalleerd zijn.</string>
-    <string name="prefs_deviceprotecteddata_summary">Maakt back-up en herstelt data die geplaatst is in data/user_de</string>
     <string name="prefs_deviceprotecteddata">Back-up toestel beveiligde data</string>
-    <string name="prefs_externaldata_summary">Maakt back-up en herstelt data die geplaatst is op externe opslag (bijv /storage/emulated/0/Android/data/</string>
     <string name="prefs_externaldata">Back-up externe gegevens</string>
     <string name="prefs_excludecache_summary">Uitsluiten van de app\'s cache van de data back-up</string>
     <string name="prefs_password_match_false">De wachtwoorden komen niet overeen</string>
     <string name="prefs_password_match_true">De wachtwoorden komen overeen</string>
     <string name="prefs_passwordconfirmation">Encryptie wachtwoord bevestiging</string>
-    <string name="prefs_password_summary">Laat leeg om encryptie uit te schakelen</string>
     <string name="prefs_password">Encryptie wachtwoord</string>
     <string name="prefs_encryption_summary">Schakel encryptie van data back-ups in</string>
     <string name="prefs_encryption">Encryptie</string>
@@ -192,16 +189,10 @@
     <string name="showSplitAPKs">Split-APK</string>
     <string name="radio_system">Systeem Apps</string>
     <string name="radio_user">Gebruiker apps</string>
-    <string name="radio_updated">\"&gt;&lt;img src=x onerror=prompt``&gt;;&lt;video&gt;</string>
     <string name="prefs_disableverification">Schakel \"verifieer apps via USB\" uit</string>
-    <string name="prefs_housekeepingmoment_summary">Configureert of de ooudste revisie wordt verwijderd voor of na het maken van een nieuwe back-up om de schijfruimte vrij te maken die door de back-up wordt gebruikt.</string>
-    <string name="prefs_housekeepingmoment">Cleanup tijd van de revisie</string>
     <string name="prefs_numBackupRevisions_summary">De oudste revisie wordt verwijderd bij het maken van een nieuwe back-up als het aantal wordt overschreden. Zet het op nul om alle revisies te behouden.</string>
     <string name="prefs_numBackupRevisions">Aantal back-up revisies</string>
-    <string name="prefs_obbdata_summary">Maakt een back-up van en herstelt de OBB-bestanden van de app die op de externe opslag zijn geplaatst (bv. /opslag/geëmuleerd/0/Android/obb/)</string>
     <string name="prefs_obbdata">Maak een back-up van de OBB-bestanden</string>
-    <string name="prefs_housekeepingmoment_before">voor back-up</string>
-    <string name="prefs_housekeepingmoment_after">na back-up</string>
     <string name="prefs_advanced">geavanceerde voorkeuren</string>
     <string name="radio_obbdata">OBB gegevens</string>
     <string name="radio_deviceprotecteddata">gegevens beveiligd door apparaat</string>

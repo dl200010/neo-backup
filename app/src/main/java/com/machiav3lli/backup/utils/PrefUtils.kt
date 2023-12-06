@@ -17,30 +17,50 @@
  */
 package com.machiav3lli.backup.utils
 
-import android.Manifest
-import android.app.Activity
-import android.app.AppOpsManager
 import android.app.KeyguardManager
-import android.content.*
-import android.content.pm.PackageManager
+import android.content.Context
+import android.content.SharedPreferences
 import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.os.PowerManager
-import android.os.Process
 import android.provider.DocumentsContract
-import android.provider.Settings
-import androidx.activity.result.ActivityResultLauncher
 import androidx.biometric.BiometricManager
-import androidx.core.app.ActivityCompat
 import androidx.preference.PreferenceManager
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import com.machiav3lli.backup.*
-import com.machiav3lli.backup.handler.ShellHandler
+import com.machiav3lli.backup.BuildConfig
+import com.machiav3lli.backup.OABX
+import com.machiav3lli.backup.PREFS_LANGUAGES_SYSTEM
+import com.machiav3lli.backup.PREFS_SHARED_PRIVATE
+import com.machiav3lli.backup.R
 import com.machiav3lli.backup.items.SortFilterModel
-import com.machiav3lli.backup.items.StorageFile
-import com.topjohnwu.superuser.Shell
+import com.machiav3lli.backup.preferences.persist_salt
+import com.machiav3lli.backup.preferences.persist_sortFilter
+import com.machiav3lli.backup.preferences.persist_specialFilters
+import com.machiav3lli.backup.preferences.pref_allowDowngrade
+import com.machiav3lli.backup.preferences.pref_appAccentColor
+import com.machiav3lli.backup.preferences.pref_appSecondaryColor
+import com.machiav3lli.backup.preferences.pref_appTheme
+import com.machiav3lli.backup.preferences.pref_backupDeviceProtectedData
+import com.machiav3lli.backup.preferences.pref_backupExternalData
+import com.machiav3lli.backup.preferences.pref_backupMediaData
+import com.machiav3lli.backup.preferences.pref_backupObbData
+import com.machiav3lli.backup.preferences.pref_biometricLock
+import com.machiav3lli.backup.preferences.pref_compressionLevel
+import com.machiav3lli.backup.preferences.pref_deviceLock
+import com.machiav3lli.backup.preferences.pref_disableVerification
+import com.machiav3lli.backup.preferences.pref_enableSpecialBackups
+import com.machiav3lli.backup.preferences.pref_encryption
+import com.machiav3lli.backup.preferences.pref_giveAllPermissions
+import com.machiav3lli.backup.preferences.pref_languages
+import com.machiav3lli.backup.preferences.pref_password
+import com.machiav3lli.backup.preferences.pref_pathBackupFolder
+import com.machiav3lli.backup.preferences.pref_restoreDeviceProtectedData
+import com.machiav3lli.backup.preferences.pref_restoreExternalData
+import com.machiav3lli.backup.preferences.pref_restoreMediaData
+import com.machiav3lli.backup.preferences.pref_restoreObbData
+import com.machiav3lli.backup.utils.FileUtils.invalidateBackupLocation
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.nio.charset.StandardCharsets
 import java.util.*
 
@@ -64,43 +84,29 @@ fun Context.getPrivateSharedPrefs(): SharedPreferences {
     )
 }
 
-fun Context.getCryptoSalt(): ByteArray {
-    val userSalt = getDefaultSharedPreferences().getString(PREFS_SALT, "")
-        ?: ""
+fun getCryptoSalt(): ByteArray {
+    val userSalt = persist_salt.value
     return if (userSalt.isNotEmpty()) {
         userSalt.toByteArray(StandardCharsets.UTF_8)
     } else FALLBACK_SALT
 }
 
-fun Context.isEncryptionEnabled(): Boolean =
-    getPrivateSharedPrefs().getString(PREFS_PASSWORD, "")?.isNotEmpty()
-        ?: false
+fun isEncryptionEnabled(): Boolean =
+    pref_encryption.value && getEncryptionPassword().isNotEmpty()
 
-fun Context.getEncryptionPassword(): String =
-    getPrivateSharedPrefs().getString(PREFS_PASSWORD, "")
-        ?: ""
+fun getEncryptionPassword(): String = pref_password.value
 
-fun Context.setEncryptionPassword(value: String) =
-    getPrivateSharedPrefs().edit().putString(PREFS_PASSWORD, value).commit()
+fun isCompressionEnabled(): Boolean =
+    getCompressionLevel() > 0 // && compression algorithm != null
 
-fun Context.getEncryptionPasswordConfirmation(): String =
-    getPrivateSharedPrefs().getString(PREFS_PASSWORD_CONFIRMATION, "")
-        ?: ""
+fun getCompressionLevel() = pref_compressionLevel.value
 
-fun Context.setEncryptionPasswordConfirmation(value: String) =
-    getPrivateSharedPrefs().edit().putString(PREFS_PASSWORD_CONFIRMATION, value).commit()
-
-fun Context.getCompressionLevel() =
-    getDefaultSharedPreferences().getInt(PREFS_COMPRESSION_LEVEL, 5)
-
-fun Context.isDeviceLockEnabled(): Boolean =
-    getDefaultSharedPreferences().getBoolean(PREFS_DEVICELOCK, false)
+fun isDeviceLockEnabled(): Boolean = pref_deviceLock.value
 
 fun Context.isDeviceLockAvailable(): Boolean =
     (getSystemService(KeyguardManager::class.java) as KeyguardManager).isDeviceSecure
 
-fun Context.isBiometricLockEnabled(): Boolean =
-    getDefaultSharedPreferences().getBoolean(PREFS_BIOMETRICLOCK, false)
+fun isBiometricLockEnabled(): Boolean = pref_biometricLock.value
 
 fun Context.isBiometricLockAvailable(): Boolean =
     BiometricManager.from(this).canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK) ==
@@ -113,113 +119,26 @@ fun Context.isBiometricLockAvailable(): Boolean =
  * @return user configured location
  * @throws StorageLocationNotConfiguredException if the value is not set
  */
-val Context.backupDirConfigured: String
+val backupDirConfigured: String
     @Throws(StorageLocationNotConfiguredException::class)
     get() {
-        val location = getDefaultSharedPreferences().getString(PREFS_PATH_BACKUP_DIRECTORY, "")
-            ?: ""
+        val location = pref_pathBackupFolder.value
         if (location.isEmpty()) {
             throw StorageLocationNotConfiguredException()
         }
         return location
     }
 
-fun Context.setBackupDir(value: Uri) {
+fun setBackupDir(value: Uri): String {
     val fullUri = DocumentsContract
         .buildDocumentUriUsingTree(value, DocumentsContract.getTreeDocumentId(value))
-    getDefaultSharedPreferences().edit()
-        .putString(PREFS_PATH_BACKUP_DIRECTORY, fullUri.toString()).apply()
-    FileUtils.invalidateBackupLocation()
-}
-
-val Context.isStorageDirSetAndOk: Boolean
-    get() {
-        return try {
-            val storageDirPath = backupDirConfigured
-            if (storageDirPath.isEmpty()) {
-                return false
-            }
-            val storageDir = StorageFile.fromUri(this, Uri.parse(storageDirPath))
-            storageDir.exists()
-        } catch (e: StorageLocationNotConfiguredException) {
-            false
-        }
+    pref_pathBackupFolder.value = fullUri.toString()
+    //if (OABX.main != null) OABX.main?.refreshPackages()
+    //else
+    CoroutineScope(Dispatchers.IO).launch {
+        invalidateBackupLocation()
     }
-
-fun Activity.requireStorageLocation(activityResultLauncher: ActivityResultLauncher<Intent>) {
-    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-        .addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-        .addFlags(Intent.FLAG_GRANT_PREFIX_URI_PERMISSION)
-    try {
-        activityResultLauncher.launch(intent)
-    } catch (e: ActivityNotFoundException) {
-        showWarning(
-            getString(R.string.no_file_manager_title),
-            getString(R.string.no_file_manager_message)
-        ) { _: DialogInterface?, _: Int ->
-            finishAffinity()
-        }
-    }
-}
-
-val Context.hasStoragePermissions: Boolean
-    get() = when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ->
-            Environment.isExternalStorageManager()
-        else ->
-            checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) ==
-                    PackageManager.PERMISSION_GRANTED
-    }
-
-fun Activity.getStoragePermission() {
-    when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
-            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-            intent.data = Uri.parse("package:$packageName")
-            startActivity(intent)
-        }
-        else -> {
-            requireWriteStoragePermission()
-            requireReadStoragePermission()
-        }
-    }
-}
-
-fun Activity.checkRootAccess(): Boolean {
-    val isRooted = Shell.getShell().isRoot
-    if (!isRooted) {
-        showFatalUiWarning(getString(R.string.noSu))
-        return false
-    }
-    try {
-        ShellHandler.runAsRoot("id")
-    } catch (e: ShellHandler.ShellCommandFailedException) {
-        showFatalUiWarning(getString(R.string.noSu))
-        return false
-    }
-    return true
-}
-
-private fun Activity.requireReadStoragePermission() {
-    if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) !=
-        PackageManager.PERMISSION_GRANTED
-    )
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), READ_PERMISSION
-        )
-}
-
-private fun Activity.requireWriteStoragePermission() {
-    if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
-        PackageManager.PERMISSION_GRANTED
-    )
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), WRITE_PERMISSION
-        )
+    return fullUri.toString()
 }
 
 val Context.canAccessExternalStorage: Boolean
@@ -228,262 +147,113 @@ val Context.canAccessExternalStorage: Boolean
         return externalStorage?.let { it.canRead() && it.canWrite() } ?: false
     }
 
-fun Activity.requireSMSMMSPermission() {
-    val smsmmsPermissionList = arrayOf(
-        Manifest.permission.READ_SMS,
-        Manifest.permission.SEND_SMS,
-        Manifest.permission.RECEIVE_SMS,
-        Manifest.permission.RECEIVE_MMS,
-        Manifest.permission.RECEIVE_WAP_PUSH
-    )
-    if (
-        checkSelfPermission(Manifest.permission.READ_SMS) !=
-        PackageManager.PERMISSION_GRANTED ||
-        checkSelfPermission(Manifest.permission.SEND_SMS) !=
-        PackageManager.PERMISSION_GRANTED ||
-        checkSelfPermission(Manifest.permission.RECEIVE_SMS) !=
-        PackageManager.PERMISSION_GRANTED ||
-        checkSelfPermission(Manifest.permission.RECEIVE_MMS) !=
-        PackageManager.PERMISSION_GRANTED ||
-        checkSelfPermission(Manifest.permission.RECEIVE_WAP_PUSH) !=
-        PackageManager.PERMISSION_GRANTED
-    )
-        ActivityCompat.requestPermissions(this, smsmmsPermissionList, SMS_PERMISSION)
-}
+val isBackupDeviceProtectedData: Boolean
+    get() = pref_backupDeviceProtectedData.value
 
-val Context.checkSMSMMSPermission: Boolean
+val isBackupExternalData: Boolean
+    get() = pref_backupExternalData.value
+
+val isBackupObbData: Boolean
+    get() = pref_backupObbData.value
+
+val isBackupMediaData: Boolean
+    get() = pref_backupMediaData.value
+
+val isRestoreDeviceProtectedData: Boolean
+    get() = pref_restoreDeviceProtectedData.value
+
+val isRestoreExternalData: Boolean
+    get() = pref_restoreExternalData.value
+
+val isRestoreObbData: Boolean
+    get() = pref_restoreObbData.value
+
+val isRestoreMediaData: Boolean
+    get() = pref_restoreMediaData.value
+
+val isDisableVerification: Boolean
+    get() = pref_disableVerification.value
+
+val isRestoreAllPermissions: Boolean
+    get() = pref_giveAllPermissions.value
+
+val isAllowDowngrade: Boolean
+    get() = pref_allowDowngrade.value
+
+var sortFilterModel: SortFilterModel
     get() {
-        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            return true
-        }
-        if (!specialBackupsEnabled) {
-            return true
-        }
-        val appOps = (getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager)
-        val mode = when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ->
-                appOps.unsafeCheckOpNoThrow(
-                    AppOpsManager.OPSTR_READ_SMS,
-                    Process.myUid(),
-                    packageName
-                )
-            // Done this way because on (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q)
-            // it always says that the permission is granted even though it is not
-            else -> AppOpsManager.MODE_DEFAULT
-        }
-        return if (mode == AppOpsManager.MODE_DEFAULT) {
-            (checkCallingOrSelfPermission(Manifest.permission.READ_SMS) ==
-                    PackageManager.PERMISSION_GRANTED &&
-                    checkCallingOrSelfPermission(Manifest.permission.SEND_SMS) ==
-                    PackageManager.PERMISSION_GRANTED &&
-                    checkCallingOrSelfPermission(Manifest.permission.RECEIVE_SMS) ==
-                    PackageManager.PERMISSION_GRANTED &&
-                    checkCallingOrSelfPermission(Manifest.permission.RECEIVE_MMS) ==
-                    PackageManager.PERMISSION_GRANTED &&
-                    checkCallingOrSelfPermission(Manifest.permission.RECEIVE_WAP_PUSH) ==
-                    PackageManager.PERMISSION_GRANTED)
-        } else {
-            mode == AppOpsManager.MODE_ALLOWED
-        }
-    }
-
-fun Activity.requireCallLogsPermission() {
-    val callLogPermissionList = arrayOf(
-        Manifest.permission.READ_CALL_LOG,
-        Manifest.permission.WRITE_CALL_LOG
-    )
-    if (
-        checkSelfPermission(Manifest.permission.READ_CALL_LOG) !=
-        PackageManager.PERMISSION_GRANTED ||
-        checkSelfPermission(Manifest.permission.WRITE_CALL_LOG) !=
-        PackageManager.PERMISSION_GRANTED
-    )
-        ActivityCompat.requestPermissions(this, callLogPermissionList, CALLLOGS_PERMISSION)
-}
-
-val Context.checkCallLogsPermission: Boolean
-    get() {
-        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            return true
-        }
-        if (!specialBackupsEnabled) {
-            return true
-        }
-        val appOps = (getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager)
-        val mode = when {
-            Build.VERSION.SDK_INT > Build.VERSION_CODES.Q ->
-                appOps.unsafeCheckOpNoThrow(
-                    AppOpsManager.OPSTR_READ_CALL_LOG,
-                    Process.myUid(),
-                    packageName
-                )
-            // Done this way because on (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q)
-            // it always says that the permission is granted even though it is not
-            else -> AppOpsManager.MODE_DEFAULT
-        }
-        return if (mode == AppOpsManager.MODE_DEFAULT) {
-            (checkCallingOrSelfPermission(Manifest.permission.READ_CALL_LOG) ==
-                    PackageManager.PERMISSION_GRANTED &&
-                    checkCallingOrSelfPermission(Manifest.permission.WRITE_CALL_LOG) ==
-                    PackageManager.PERMISSION_GRANTED)
-        } else {
-            mode == AppOpsManager.MODE_ALLOWED
-        }
-    }
-
-fun Activity.requireContactsPermission() {
-    if (
-        checkSelfPermission(Manifest.permission.READ_CONTACTS) !=
-        PackageManager.PERMISSION_GRANTED
-    )
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.READ_CONTACTS),
-            CONTACTS_PERMISSION
+        val sortFilterPref = persist_sortFilter.value
+        val specialFiltersPref = persist_specialFilters.value
+        return SortFilterModel(
+            sortFilterPref.takeIf { it.isNotEmpty() },
+            specialFiltersPref.takeIf { it.isNotEmpty() },
         )
-}
-
-val Context.checkContactsPermission: Boolean
-    get() {
-        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            return true
-        }
-        if (!specialBackupsEnabled) {
-            return true
-        }
-        val appOps = (getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager)
-        val mode = when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ->
-                appOps.unsafeCheckOpNoThrow(
-                    AppOpsManager.OPSTR_READ_CONTACTS,
-                    Process.myUid(),
-                    packageName
-                )
-            // Done this way because on (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q)
-            // it always says that the permission is granted even though it is not
-            else -> AppOpsManager.MODE_DEFAULT
-        }
-        return if (mode == AppOpsManager.MODE_DEFAULT) {
-            checkCallingOrSelfPermission(Manifest.permission.READ_CONTACTS) ==
-                    PackageManager.PERMISSION_GRANTED
-        } else {
-            mode == AppOpsManager.MODE_ALLOWED
-        }
     }
-
-val Context.checkUsageStatsPermission: Boolean
-    get() {
-        val appOps = (getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager)
-        val mode = when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ->
-                appOps.unsafeCheckOpNoThrow(
-                    AppOpsManager.OPSTR_GET_USAGE_STATS,
-                    Process.myUid(),
-                    packageName
-                )
-            else ->
-                appOps.checkOpNoThrow(
-                    AppOpsManager.OPSTR_GET_USAGE_STATS,
-                    Process.myUid(),
-                    packageName
-                )
-        }
-        return if (mode == AppOpsManager.MODE_DEFAULT) {
-            checkCallingOrSelfPermission(Manifest.permission.PACKAGE_USAGE_STATS) ==
-                    PackageManager.PERMISSION_GRANTED
-        } else {
-            mode == AppOpsManager.MODE_ALLOWED
-        }
-    }
-
-fun Context.checkBatteryOptimization(prefs: SharedPreferences, powerManager: PowerManager)
-        : Boolean = prefs.getBoolean(PREFS_IGNORE_BATTERY_OPTIMIZATION, false)
-        || powerManager.isIgnoringBatteryOptimizations(packageName)
-
-
-val Context.isBackupDeviceProtectedData: Boolean
-    get() = getDefaultSharedPreferences().getBoolean(PREFS_DEVICEPROTECTEDDATA, true)
-
-val Context.isBackupExternalData: Boolean
-    get() = getDefaultSharedPreferences().getBoolean(PREFS_EXTERNALDATA, false)
-
-val Context.isBackupObbData: Boolean
-    get() = getDefaultSharedPreferences().getBoolean(PREFS_OBBDATA, false)
-
-val Context.isBackupMediaData: Boolean
-    get() = getDefaultSharedPreferences().getBoolean(PREFS_MEDIADATA, false)
-
-val Context.isPauseApps: Boolean
-    get() = getDefaultSharedPreferences().getBoolean(PREFS_PAUSEAPPS, true)
-
-val Context.isDisableVerification: Boolean
-    get() = getDefaultSharedPreferences().getBoolean(PREFS_DISABLEVERIFICATION, true)
-
-val Context.isRestoreAllPermissions: Boolean
-    get() = getDefaultSharedPreferences().getBoolean(PREFS_RESTOREWITHALLPERMISSIONS, false)
-
-val Context.isAllowDowngrade: Boolean
-    get() = getDefaultSharedPreferences().getBoolean(PREFS_ALLOWDOWNGRADE, false)
-
-var Context.isNeedRefresh: Boolean
-    get() = getDefaultSharedPreferences().getBoolean(NEED_REFRESH, false)
     set(value) {
-        getDefaultSharedPreferences().edit().putBoolean(NEED_REFRESH, value).apply()
+        val modelString = value.toString().split(",")
+        persist_sortFilter.value = modelString.first()
+        persist_specialFilters.value = modelString.last()
+        OABX.main?.viewModel?.modelSortFilter?.value = value   //setSortFilter(value)
     }
-
-var Context.sortFilterModel: SortFilterModel
-    get() {
-        val sortFilterModel: SortFilterModel
-        val sortFilterPref = getDefaultSharedPreferences().getString(PREFS_SORT_FILTER, "")
-        sortFilterModel =
-            if (!sortFilterPref.isNullOrEmpty()) SortFilterModel(sortFilterPref)
-            else SortFilterModel()
-        return sortFilterModel
-    }
-    set(value) =
-        getDefaultSharedPreferences().edit().putString(PREFS_SORT_FILTER, value.toString()).apply()
-
-
-var Context.sortOrder: Boolean
-    get() =
-        getDefaultSharedPreferences().getBoolean(PREFS_SORT_ORDER, false)
-    set(value) =
-        getDefaultSharedPreferences().edit().putBoolean(PREFS_SORT_ORDER, value).apply()
-
-val Context.isRememberFiltering: Boolean
-    get() = getDefaultSharedPreferences().getBoolean(PREFS_REMEMBERFILTERING, true)
 
 class StorageLocationNotConfiguredException : Exception("Storage Location has not been configured")
 
-var Context.themeStyle: String
-    get() = getDefaultSharedPreferences().getString(PREFS_THEME, "system") ?: "system"
-    set(value) = getDefaultSharedPreferences().edit().putString(PREFS_THEME, value).apply()
+var styleTheme: Int
+    get() = pref_appTheme.value
+    set(value) {
+        pref_appTheme.value = value
+    }
 
-var Context.accentStyle: String
-    get() = getDefaultSharedPreferences().getString(PREFS_ACCENT_COLOR, "accent_0") ?: "accent_0"
-    set(value) = getDefaultSharedPreferences().edit().putString(PREFS_ACCENT_COLOR, value).apply()
+var stylePrimary: Int
+    get() = pref_appAccentColor.value
+    set(value) {
+        pref_appAccentColor.value = value
+    }
 
-var Context.secondaryStyle: String
-    get() = getDefaultSharedPreferences().getString(PREFS_SECONDARY_COLOR, "secondary_0")
-        ?: "secondary_0"
-    set(value) = getDefaultSharedPreferences().edit().putString(PREFS_SECONDARY_COLOR, value)
-        .apply()
+var styleSecondary: Int
+    get() = pref_appSecondaryColor.value
+    set(value) {
+        pref_appSecondaryColor.value = value
+    }
 
-var Context.language: String
-    get() = getDefaultSharedPreferences().getString(PREFS_LANGUAGES, PREFS_LANGUAGES_DEFAULT)
-        ?: PREFS_LANGUAGES_DEFAULT
-    set(value) = getDefaultSharedPreferences().edit().putString(PREFS_LANGUAGES, value).apply()
+var language: String
+    get() = pref_languages.value
+    set(value) {
+        pref_languages.value = value
+    }
 
-var Context.specialBackupsEnabled: Boolean
-    get() = getDefaultSharedPreferences().getBoolean(PREFS_ENABLESPECIALBACKUPS, false)
-    set(value) = getDefaultSharedPreferences().edit().putBoolean(PREFS_ENABLESPECIALBACKUPS, value)
-        .apply()
+var specialBackupsEnabled: Boolean
+    get() = pref_enableSpecialBackups.value
+    set(value) {
+        pref_enableSpecialBackups.value = value
+    }
 
 fun Context.getLocaleOfCode(localeCode: String): Locale = when {
-    localeCode.isEmpty() -> resources.configuration.locales[0]
+    localeCode.isEmpty()      -> resources.configuration.locales[0]
     localeCode.contains("-r") -> Locale(
         localeCode.substring(0, 2),
         localeCode.substring(4)
     )
-    else -> Locale(localeCode)
+
+    localeCode.contains("_")  -> Locale(
+        localeCode.substring(0, 2),
+        localeCode.substring(3)
+    )
+
+    else                      -> Locale(localeCode)
 }
+
+fun Context.getLanguageList() =
+    mapOf(PREFS_LANGUAGES_SYSTEM to resources.getString(R.string.prefs_language_system)) +
+            BuildConfig.DETECTED_LOCALES
+                .sorted()
+                .associateWith { translateLocale(getLocaleOfCode(it)) }
+
+private fun translateLocale(locale: Locale): String {
+    val country = locale.getDisplayCountry(locale)
+    val language = locale.getDisplayLanguage(locale)
+    return (language.replaceFirstChar { it.uppercase(Locale.getDefault()) }
+            + (if (country.isNotEmpty() && country.compareTo(language, true) != 0)
+        "($country)" else ""))
+}
+

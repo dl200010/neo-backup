@@ -17,392 +17,157 @@
  */
 package com.machiav3lli.backup.activities
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.Looper
-import android.os.Process
-import android.view.MenuItem
-import android.view.View
-import android.widget.Toast
+import android.os.PowerManager
+import androidx.activity.SystemBarStyle
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.fragment.NavHostFragment
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Observer
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
+import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
-import com.machiav3lli.backup.*
-import com.machiav3lli.backup.OABX.Companion.appsSuspendedChecked
-import com.machiav3lli.backup.databinding.ActivityMainXBinding
-import com.machiav3lli.backup.dbs.AppExtras
-import com.machiav3lli.backup.dbs.AppExtrasDatabase
-import com.machiav3lli.backup.dbs.BlocklistDatabase
-import com.machiav3lli.backup.fragments.ProgressViewController
-import com.machiav3lli.backup.fragments.RefreshViewController
+import com.machiav3lli.backup.ALT_MODE_APK
+import com.machiav3lli.backup.ALT_MODE_BOTH
+import com.machiav3lli.backup.ALT_MODE_DATA
+import com.machiav3lli.backup.OABX
+import com.machiav3lli.backup.OABX.Companion.addInfoLogText
+import com.machiav3lli.backup.OABX.Companion.startup
+import com.machiav3lli.backup.R
+import com.machiav3lli.backup.dialogs.BaseDialog
+import com.machiav3lli.backup.dialogs.GlobalBlockListDialogUI
 import com.machiav3lli.backup.handler.LogsHandler
-import com.machiav3lli.backup.handler.ShellHandler.Companion.runAsRoot
-import com.machiav3lli.backup.items.SortFilterModel
-import com.machiav3lli.backup.items.StorageFile
-import com.machiav3lli.backup.services.CommandReceiver
+import com.machiav3lli.backup.handler.WorkHandler
+import com.machiav3lli.backup.handler.findBackups
+import com.machiav3lli.backup.handler.updateAppTables
+import com.machiav3lli.backup.pages.RootMissing
+import com.machiav3lli.backup.pages.SplashPage
+import com.machiav3lli.backup.pref_catchUncaughtException
+import com.machiav3lli.backup.pref_uncaughtExceptionsJumpToPreferences
+import com.machiav3lli.backup.preferences.persist_beenWelcomed
+import com.machiav3lli.backup.preferences.persist_skippedEncryptionCounter
+import com.machiav3lli.backup.preferences.pref_appTheme
 import com.machiav3lli.backup.tasks.AppActionWork
-import com.machiav3lli.backup.utils.*
+import com.machiav3lli.backup.ui.compose.ObservedEffect
+import com.machiav3lli.backup.ui.compose.theme.AppTheme
+import com.machiav3lli.backup.ui.navigation.MainNavHost
+import com.machiav3lli.backup.ui.navigation.NavItem
+import com.machiav3lli.backup.ui.navigation.clearBackStack
+import com.machiav3lli.backup.ui.navigation.safeNavigate
+import com.machiav3lli.backup.utils.FileUtils.invalidateBackupLocation
+import com.machiav3lli.backup.utils.TraceUtils.classAndId
+import com.machiav3lli.backup.utils.TraceUtils.traceBold
+import com.machiav3lli.backup.utils.allPermissionsGranted
+import com.machiav3lli.backup.utils.altModeToMode
+import com.machiav3lli.backup.utils.checkRootAccess
+import com.machiav3lli.backup.utils.isBiometricLockAvailable
+import com.machiav3lli.backup.utils.isBiometricLockEnabled
+import com.machiav3lli.backup.utils.isDeviceLockEnabled
+import com.machiav3lli.backup.utils.isEncryptionEnabled
+import com.machiav3lli.backup.viewmodels.BatchViewModel
+import com.machiav3lli.backup.viewmodels.ExportsViewModel
+import com.machiav3lli.backup.viewmodels.LogViewModel
 import com.machiav3lli.backup.viewmodels.MainViewModel
+import com.machiav3lli.backup.viewmodels.SchedulerViewModel
 import com.topjohnwu.superuser.Shell
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.lang.ref.WeakReference
 import kotlin.system.exitProcess
-
 
 class MainActivityX : BaseActivity() {
 
-    companion object {
+    private val mScope: CoroutineScope = MainScope()
+    private lateinit var navController: NavHostController
+    private lateinit var powerManager: PowerManager
 
-        var activityRef: WeakReference<MainActivityX> = WeakReference(null)
-        var activity: MainActivityX?
-            get() {
-                return activityRef.get()
-            }
-            set(activity) {
-                activityRef = WeakReference(activity)
-            }
-
-        var statusNotificationId = 0
-
-        class Counters(
-            var workCount: Int = 0,
-            var workEnqueued: Int = 0,
-            var workBlocked: Int = 0,
-            var workRunning: Int = 0,
-            var workFinished: Int = 0,
-            var workAttempts: Int = 0,
-            var workRetries: Int = 0,
-
-            var running: Int = 0,
-            var queued: Int = 0,
-            var shortText: String = "",
-            var bigText: String = "",
-            var retries: Int = 0,
-            var maxRetries: Int = 0,
-            var succeeded: Int = 0,
-            var failed: Int = 0,
-            var canceled: Int = 0
-        )
-
-        class PersistentCounters(
-            var startTime: Long = 0L,
-        )
-
-        val batchPersist = mutableMapOf<String, PersistentCounters>()
-
-        fun showRunningStatus(manager: WorkManager? = null, work: MutableList<WorkInfo>? = null) {
-
-            if (manager == null || work == null)
-                return
-
-            val batches = mutableMapOf<String, Counters>()
-
-            if (statusNotificationId == 0)
-                statusNotificationId = System.currentTimeMillis().toInt()
-
-            val appContext = OABX.context
-            val workInfos = manager.getWorkInfosByTag(
-                AppActionWork::class.qualifiedName!!
-            ).get()
-
-            Thread {
-                workInfos.forEach { info ->
-                    var data = info.progress
-                    if (data.getString("batchName").isNullOrEmpty())
-                        data = info.outputData
-                    var batchName = data.getString("batchName")
-                    val packageName = data.getString("packageName")
-                    val packageLabel = data.getString("packageLabel")
-                    val backupBoolean = data.getBoolean("backupBoolean", true)
-                    val operation = data.getString("operation")
-                    val failures = data.getInt("failures", -1)
-
-                    val maxRetries = OABX.prefInt(PREFS_MAXRETRIES, 3)
-
-                    //Timber.d("%%%%% $batchName $packageName $operation $backupBoolean ${info.state} fail=$failures max=$maxRetries")
-
-                    if (batchName.isNullOrEmpty()) {
-                        info.tags.forEach {
-                            val parts = it.toString().split(':', limit = 2)
-                            if (parts.size > 1) {
-                                val (key, value) = parts
-                                when (key) {
-                                    "name" -> {
-                                        batchName = value
-                                        //Timber.d("%%%%% name from tag -> $batchName")
-                                        return@forEach
-                                    }
-                                    else -> {}
-                                }
-                            }
-                        }
-                    }
-                    if (batchName.isNullOrEmpty()) {
-                        Timber.d("????????????????????????????????????????? empty batch name, canceling")
-                        batchName = when (info.state) {
-                            WorkInfo.State.CANCELLED ->
-                                "CANCELLED"
-                            WorkInfo.State.ENQUEUED ->
-                                "ENQUEUED"
-                            else -> {
-                                "UNDEF"
-                            }
-                        }
-                        Timber.d("?????????????????????????? name from state -> $batchName (to be canceled)")
-                        manager.cancelWorkById(info.id)
-                    }
-
-                    //Timber.d("===== $batchName $packageName $operation $backupBoolean ${info.state} fail=$failures max=$maxRetries")
-
-                    batches.getOrPut(batchName!!) { Counters() }.run {
-
-                        val persist: PersistentCounters = batchPersist.getOrPut(batchName!!) { PersistentCounters() }
-
-                        if (persist.startTime == 0L) {
-                            persist.startTime = System.currentTimeMillis()
-                            Timber.w("---------------------------------------------> set startTime ${persist.startTime}")
-                        }
-
-                        workCount++
-                        workAttempts = info.runAttemptCount
-                        if (info.runAttemptCount > 1)
-                            workRetries++
-                        if (failures > 1) {
-                            retries++
-                            if (failures > maxRetries)
-                                this.maxRetries++
-                        }
-
-                        when (info.state) {
-                            WorkInfo.State.SUCCEEDED -> {
-                                succeeded++
-                                workFinished++
-                            }
-                            WorkInfo.State.FAILED -> {
-                                failed++
-                                workFinished++
-                            }
-                            WorkInfo.State.CANCELLED -> {
-                                canceled++
-                                workFinished++
-                            }
-                            WorkInfo.State.ENQUEUED -> {
-                                queued++
-                                workEnqueued++
-                            }
-                            WorkInfo.State.BLOCKED -> {
-                                queued++
-                                workBlocked++
-                            }
-                            WorkInfo.State.RUNNING -> {
-                                workRunning++
-                                when (operation) {
-                                    "..." -> queued++
-                                    else -> {
-                                        running++
-                                        if (!packageName.isNullOrEmpty() and !operation.isNullOrEmpty())
-                                            bigText += "${
-                                                if (backupBoolean) "B" else "R"
-                                            }${
-                                                if (workRetries > 0) " $workRetries" else ""
-                                            } $operation : $packageName\n"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                var allProcessed = 0
-                var allRemaining = 0
-                var allCount = 0
-
-                batches.forEach { (batchName, counters) ->
-
-                    val persist: PersistentCounters = batchPersist.getOrPut(batchName) { PersistentCounters() }
-
-                    counters.run {
-                        val notificationId = batchName.hashCode()
-
-                        val processed = succeeded + failed
-                        allProcessed += processed
-                        val remaining = running + queued
-                        allRemaining += remaining
-                        allCount += workCount
-
-                        val title = batchName
-                        shortText = "✔$succeeded${if (failed > 0) "❓$failed" else ""}/$workCount"
-                        if (remaining > 0)
-                            shortText += " 🏃$running 👭${queued}"
-                        else {
-                            shortText += " ${OABX.context.getString(R.string.finished)}"
-
-                            val duration =
-                                ((System.currentTimeMillis() - persist.startTime) / 1000 + 0.5).toInt()
-                            if (duration > 0) {
-                                val min = (duration / 60).toInt()
-                                val sec = duration - min * 60
-                                bigText = "$min min $sec sec"
-                                Timber.w("=============================================> stop ${persist.startTime} + $duration = $bigText")
-                            }
-                            persist.startTime = 0L
-                        }
-                        if (canceled > 0)
-                            shortText += " 🚫$canceled"
-                        bigText = "$shortText\n$bigText"
-
-                        Timber.d("%%%%% -----------------> $title $shortText")
-
-                        if (workCount > 0) {
-                            val notificationManager = NotificationManagerCompat.from(appContext)
-                            val notificationChannel = NotificationChannel(
-                                classAddress("NotificationHandler"),
-                                classAddress("NotificationHandler"),
-                                NotificationManager.IMPORTANCE_LOW
-                            )
-                            notificationManager.createNotificationChannel(notificationChannel)
-                            val resultIntent = Intent(appContext, MainActivityX::class.java)
-                            resultIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
-                            val resultPendingIntent = PendingIntent.getActivity(
-                                appContext,
-                                0,
-                                resultIntent,
-                                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                            )
-
-                            val notificationBuilder =
-                                NotificationCompat.Builder(
-                                    appContext,
-                                    classAddress("NotificationHandler")
-                                )
-                                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                                    .setSmallIcon(R.drawable.ic_app)
-                                    .setContentTitle(title)
-                                    .setStyle(
-                                        NotificationCompat.BigTextStyle().bigText(bigText)
-                                    )
-                                    .setContentText(shortText)
-                                    .setAutoCancel(true)
-                                    .setContentIntent(resultPendingIntent)
-
-                            if (remaining > 0) {
-                                val cancelIntent =
-                                    Intent(appContext, CommandReceiver::class.java).apply {
-                                        action = "cancel"
-                                        putExtra("name", batchName)
-                                    }
-                                val cancelPendingIntent = PendingIntent.getBroadcast(
-                                    appContext,
-                                    batchName.hashCode(),
-                                    cancelIntent,
-                                    PendingIntent.FLAG_IMMUTABLE
-                                )
-                                val cancelAllIntent =
-                                    Intent(appContext, CommandReceiver::class.java).apply {
-                                        action = "cancel"
-                                        //putExtra("name", "")
-                                    }
-                                val cancelAllPendingIntent = PendingIntent.getBroadcast(
-                                    appContext,
-                                    "ALL".hashCode(),
-                                    cancelAllIntent,
-                                    PendingIntent.FLAG_IMMUTABLE
-                                )
-                                notificationBuilder
-                                    .setProgress(workCount, processed, false)
-                                    .addAction(
-                                        R.drawable.ic_close,
-                                        appContext.getString(R.string.dialogCancel),
-                                        cancelPendingIntent
-                                    )
-                                    .addAction(
-                                        R.drawable.ic_close,
-                                        "Cancel all",
-                                        cancelAllPendingIntent
-                                    )
-                            }
-
-                            val notification = notificationBuilder.build()
-                            notificationManager.notify(notificationId, notification)
-                            //activity.updateProgress(processed, workCount)
-
-                            if (remaining <= 0) {
-                                //activity.hideProgress()
-                                // don't remove notification, the result may be interesting for the user
-                                //notificationManager.cancel(statusNotificationId)
-                                //statusNotificationId = 0
-                            }
-                        }
-                    }
-                }
-                if (allRemaining > 0) {
-                    Timber.d("%%%%% $allProcessed < $allRemaining < $allCount")
-                    activity?.runOnUiThread { activity?.updateProgress(allProcessed, allCount) }
-                } else {
-                    Timber.d("%%%%% HIDE PROGRESS")
-                    activity?.runOnUiThread { activity?.hideProgress() }
-                    Timber.d("%%%%% PRUNE")
-                    OABX.work.prune()
-                }
-            }.start()
-        }
+    val viewModel by viewModels<MainViewModel> {
+        MainViewModel.Factory(OABX.db, application)
+    }
+    val backupViewModel: BatchViewModel by viewModels {
+        BatchViewModel.Factory(application)
+    }
+    val restoreViewModel: BatchViewModel by viewModels {
+        BatchViewModel.Factory(application)
+    }
+    val schedulerViewModel: SchedulerViewModel by viewModels {
+        SchedulerViewModel.Factory(OABX.db.getScheduleDao(), application)
+    }
+    val exportsViewModel: ExportsViewModel by viewModels {
+        ExportsViewModel.Factory(OABX.db.getScheduleDao(), application)
+    }
+    val logsViewModel: LogViewModel by viewModels {
+        LogViewModel.Factory(application)
     }
 
-    private lateinit var prefs: SharedPreferences
-    private lateinit var refreshViewController: RefreshViewController
-    private lateinit var progressViewController: ProgressViewController
-
-    lateinit var binding: ActivityMainXBinding
-    lateinit var viewModel: MainViewModel
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
-        val context = this
-        activity = this
-        OABX.activity = this
 
-        setCustomTheme()
+        val mainChanged = (this != OABX.mainSaved)
+        OABX.main = this
+
+        var freshStart = (savedInstanceState == null)   //TODO use some lifecycle method?
+
+        Timber.w(
+            listOf(
+                if (freshStart) "fresh start" else "",
+                if (mainChanged && (!freshStart || (OABX.mainSaved != null)))
+                    "main changed (was ${classAndId(OABX.mainSaved)})"
+                else
+                    "",
+            ).joinToString(", ")
+        )
+
         super.onCreate(savedInstanceState)
 
-        appsSuspendedChecked = false
+        Timber.d(
+            "viewModel: ${
+                classAndId(viewModel)
+            }, was ${
+                classAndId(OABX.viewModelSaved)
+            }"
+        )
 
-        if (OABX.prefFlag(PREFS_CATCHUNCAUGHT, true)) {
+        OABX.appsSuspendedChecked = false
+
+        if (pref_catchUncaughtException.value) {
             Thread.setDefaultUncaughtExceptionHandler { _, e ->
                 try {
-                    val maxCrashLines = OABX.prefInt("maxCrashLines", 100)
-                    LogsHandler.unhandledException(e)
-                    LogsHandler(context).writeToLogFile(
-                        "uncaught exception happened:\n\n" +
-                                "\n${BuildConfig.APPLICATION_ID} ${BuildConfig.VERSION_NAME}"
-                                + "\n" +
-                                runAsRoot(
-                                    "logcat -d -t $maxCrashLines --pid=${Process.myPid()}"  // -d = dump and exit
-                                ).out.joinToString("\n")
-                    )
+                    Timber.i("\n\n" + "=".repeat(60))
+                    LogsHandler.unexpectedException(e)
+                    LogsHandler.logErrors("uncaught: ${e.message}")
+                    if (pref_uncaughtExceptionsJumpToPreferences.value) {
+                        startActivity(
+                            Intent.makeRestartActivityTask(
+                                ComponentName(this, MainActivityX::class.java)
+                            )
+                        )
+                    }
                     object : Thread() {
                         override fun run() {
                             Looper.prepare()
-                            repeat(5) {
-                                Toast.makeText(
-                                    activity,
-                                    "Uncaught Exception\n${e.message}\nrestarting application...",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
                             Looper.loop()
                         }
                     }.start()
-                    Thread.sleep(5000)
-                } catch(e: Throwable) {
+                } catch (_: Throwable) {
                     // ignore
                 } finally {
                     exitProcess(2)
@@ -411,47 +176,101 @@ class MainActivityX : BaseActivity() {
         }
 
         Shell.getShell()
-        binding = ActivityMainXBinding.inflate(layoutInflater)
-        binding.lifecycleOwner = this
-        val blocklistDao = BlocklistDatabase.getInstance(this).blocklistDao
-        val appExtrasDao = AppExtrasDatabase.getInstance(this).appExtrasDao
-        prefs = getPrivateSharedPrefs()
 
-        val viewModelFactory = MainViewModel.Factory(appExtrasDao, blocklistDao, application)
-        viewModel = ViewModelProvider(this, viewModelFactory)[MainViewModel::class.java]
-        if (!isRememberFiltering) {
-            this.sortFilterModel = SortFilterModel()
-            this.sortOrder = false
+        setContent {
+            AppTheme {
+                SplashPage()
+            }
+            navController = rememberNavController()
         }
-        viewModel.blocklist.observe(this) {
-            viewModel.refreshList()
+
+        if (!checkRootAccess()) {
+            setContent {
+                AppTheme {
+                    RootMissing(this)
+                }
+            }
+            return
         }
-        viewModel.refreshNow.observe(this) {
-            if (it) refreshView()
+
+        powerManager = this.getSystemService(POWER_SERVICE) as PowerManager
+
+        setContent {
+            DisposableEffect(pref_appTheme.value) {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.auto(
+                        android.graphics.Color.TRANSPARENT,
+                        android.graphics.Color.TRANSPARENT,
+                    ),
+                    navigationBarStyle = SystemBarStyle.auto(
+                        android.graphics.Color.TRANSPARENT,
+                        android.graphics.Color.TRANSPARENT,
+                    ),
+                )
+                onDispose {}
+            }
+
+            AppTheme {
+                navController = rememberNavController()
+                val openBlocklist = remember { mutableStateOf(false) }
+
+                LaunchedEffect(viewModel) {
+                    navController.addOnDestinationChangedListener { _, destination, _ ->
+                        if (destination.route == NavItem.Main.destination && freshStart) {
+                            freshStart = false
+                            traceBold { "******************** freshStart && Main ********************" }
+                            mScope.launch(Dispatchers.IO) {
+                                runCatching { findBackups() }
+                                startup = false     // ensure backups are no more reported as empty
+                                runCatching { updateAppTables() }
+                                val time = OABX.endBusy(OABX.startupMsg)
+                                addInfoLogText("startup: ${"%.3f".format(time / 1E9)} sec")
+                            }
+                            runOnUiThread { showEncryptionDialog() }
+                        }
+                    }
+                }
+
+                Scaffold(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    contentColor = MaterialTheme.colorScheme.onBackground,
+                ) {
+                    ObservedEffect {
+                        resumeMain()
+                    }
+
+                    Box {
+                        MainNavHost(
+                            navController = navController,
+                        )
+
+                        if (openBlocklist.value) BaseDialog(openDialogCustom = openBlocklist) {
+                            GlobalBlockListDialogUI(
+                                currentBlocklist = viewModel.getBlocklist().toSet(),
+                                openDialogCustom = openBlocklist,
+                            ) { newSet ->
+                                viewModel.setBlocklist(newSet)
+                            }
+                        }
+                    }
+                }
+            }
         }
-        runOnUiThread { showEncryptionDialog() }
-        setContentView(binding.root)
 
         if (doIntent(intent))
             return
     }
 
-    override fun onStart() {
-        super.onStart()
-        setupOnClicks()
-        setupNavigation()
-    }
-
     override fun onResume() {
+        OABX.main = this
         super.onResume()
-        if (isNeedRefresh) {
-            viewModel.refreshList()
-            isNeedRefresh = false
-        }
     }
 
-    override fun onBackPressed() {
-        finishAffinity()
+    override fun onDestroy() {
+        OABX.viewModelSaved = viewModel
+        OABX.mainSaved = OABX.main
+        OABX.main = null
+        super.onDestroy()
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -462,58 +281,30 @@ class MainActivityX : BaseActivity() {
     fun doIntent(intent: Intent?): Boolean {
         if (intent == null) return false
         val command = intent.action
-        Timber.i("Command: command $command")
+        Timber.i("Main: command $command")
         when (command) {
-            null -> {
-                // ignore?
-            }
-            else -> {
-                activity?.showToast("Main: unknown command '$command'")
+            null                         -> {}
+            "android.intent.action.MAIN" -> {}
+            else                         -> {
+                addInfoLogText("Main: command '$command'")
             }
         }
         return false
     }
 
-    private fun setupNavigation() {
-        try {
-            val navHostFragment =
-                supportFragmentManager.findFragmentById(R.id.fragmentContainer) as NavHostFragment
-            val navController = navHostFragment.navController
-            binding.bottomNavigation.setOnItemSelectedListener { item: MenuItem ->
-                if (item.itemId == binding.bottomNavigation.selectedItemId) return@setOnItemSelectedListener false
-                if (binding.bottomNavigation.selectedItemId.itemIdToOrder() < item.itemId.itemIdToOrder())
-                    navController.navigateRight(item.itemId)
-                else
-                    navController.navigateLeft(item.itemId)
-                true
-            }
-        } catch (e: ClassCastException) {
-            finish()
-            startActivity(intent)
-        }
-    }
-
-    private fun setupOnClicks() {
-        binding.buttonSettings.setOnClickListener {
-            viewModel.appInfoList.value?.let { OABX.app.cache.put("appInfoList", it) }
-            startActivity(
-                Intent(applicationContext, PrefsActivity::class.java)
-            )
-        }
-    }
-
     private fun showEncryptionDialog() {
         val dontShowAgain = isEncryptionEnabled()
         if (dontShowAgain) return
-        val dontShowCounter = prefs.getInt(PREFS_SKIPPEDENCRYPTION, 0)
-        prefs.edit().putInt(PREFS_SKIPPEDENCRYPTION, dontShowCounter + 1).apply()
+        val dontShowCounter = persist_skippedEncryptionCounter.value
+        if (dontShowCounter > 30) return    // don't increment further (useless touching file)
+        persist_skippedEncryptionCounter.value = dontShowCounter + 1
         if (dontShowCounter % 10 == 0) {
             AlertDialog.Builder(this)
                 .setTitle(R.string.enable_encryption_title)
                 .setMessage(R.string.enable_encryption_message)
                 .setPositiveButton(R.string.dialog_approve) { _: DialogInterface?, _: Int ->
                     startActivity(
-                        Intent(applicationContext, PrefsActivity::class.java).putExtra(
+                        Intent(applicationContext, MainActivityX::class.java).putExtra(
                             ".toEncryption",
                             true
                         )
@@ -524,55 +315,253 @@ class MainActivityX : BaseActivity() {
     }
 
     fun updatePackage(packageName: String) {
-        StorageFile.invalidateCache()
         viewModel.updatePackage(packageName)
     }
 
-    fun updateAppExtras(appExtras: AppExtras) {
-        viewModel.updateExtras(appExtras)
-    }
-
-    fun setRefreshViewController(refreshViewController: RefreshViewController) {
-        this.refreshViewController = refreshViewController
-    }
-
-    fun refreshView() {
-        if (::refreshViewController.isInitialized) refreshViewController.refreshView()
-    }
-
-    fun setProgressViewController(progressViewController: ProgressViewController) {
-        this.progressViewController = progressViewController
-    }
-
-    fun updateProgress(progress: Int, max: Int) {
-        if (::progressViewController.isInitialized)
-            this.progressViewController.updateProgress(progress, max)
-    }
-
-    fun hideProgress() {
-        if (::progressViewController.isInitialized)
-            this.progressViewController.hideProgress()
-    }
-
-    fun showSnackBar(message: String) {
-        binding.snackbarText.apply {
-            text = message
-            visibility = View.VISIBLE
+    fun refreshPackagesAndBackups() {
+        CoroutineScope(Dispatchers.IO).launch {
+            invalidateBackupLocation()
         }
+    }
+
+    fun showSnackBar(message: String) { // TODO reimplement this?
     }
 
     fun dismissSnackBar() {
-        binding.snackbarText.visibility = View.GONE
+    }
+
+    fun moveTo(destination: String) {
+        persist_beenWelcomed.value = destination != NavItem.Welcome.destination
+        navController.navigate(destination)
     }
 
     fun whileShowingSnackBar(message: String, todo: () -> Unit) {
-        activity?.runOnUiThread {
-            activity?.showSnackBar(message)
+        runOnUiThread {
+            showSnackBar(message)
         }
         todo()
-        activity?.runOnUiThread {
-            activity?.dismissSnackBar()
+        runOnUiThread {
+            dismissSnackBar()
         }
     }
 
+    fun startBatchAction(
+        backupBoolean: Boolean,
+        selectedPackageNames: List<String?>,
+        selectedModes: List<Int>,
+    ) {
+        val now = System.currentTimeMillis()
+        val notificationId = now.toInt()
+        val batchType = getString(if (backupBoolean) R.string.backup else R.string.restore)
+        val batchName = WorkHandler.getBatchName(batchType, now)
+
+        val selectedItems = selectedPackageNames
+            .mapIndexed { i, packageName ->
+                if (packageName.isNullOrEmpty()) null
+                else Pair(packageName, selectedModes[i])
+            }
+            .filterNotNull()
+
+        var errors = ""
+        var resultsSuccess = true
+        var counter = 0
+        val worksList: MutableList<OneTimeWorkRequest> = mutableListOf()
+        OABX.work.beginBatch(batchName)
+        selectedItems.forEach { (packageName, mode) ->
+
+            val oneTimeWorkRequest =
+                AppActionWork.Request(
+                    packageName = packageName,
+                    mode = mode,
+                    backupBoolean = backupBoolean,
+                    notificationId = notificationId,
+                    batchName = batchName,
+                    immediate = true
+                )
+            worksList.add(oneTimeWorkRequest)
+
+            val oneTimeWorkLiveData = WorkManager.getInstance(OABX.context)
+                .getWorkInfoByIdLiveData(oneTimeWorkRequest.id)
+            oneTimeWorkLiveData.observeForever(
+                object : Observer<WorkInfo?> {    //TODO WECH hg42
+                    override fun onChanged(value: WorkInfo?) {
+                        when (value?.state) {
+                            WorkInfo.State.SUCCEEDED -> {
+                                counter += 1
+
+                                val (succeeded, packageLabel, error) = AppActionWork.getOutput(value)
+                                if (error.isNotEmpty()) errors =
+                                    "$errors$packageLabel: ${      //TODO hg42 add to WorkHandler
+                                        LogsHandler.handleErrorMessages(
+                                            OABX.context,
+                                            error
+                                        )
+                                    }\n"
+
+                                resultsSuccess = resultsSuccess and succeeded
+                                oneTimeWorkLiveData.removeObserver(this)
+                            }
+
+                            else                     -> {}
+                        }
+                    }
+                }
+            )
+        }
+
+        if (worksList.isNotEmpty()) {
+            WorkManager.getInstance(OABX.context)
+                .beginWith(worksList)
+                .enqueue()
+        }
+    }
+
+    fun startBatchRestoreAction(
+        selectedPackageNames: List<String>,
+        selectedApk: Map<String, Int>,
+        selectedData: Map<String, Int>,
+    ) {
+        val now = System.currentTimeMillis()
+        val notificationId = now.toInt()
+        val batchType = getString(R.string.restore)
+        val batchName = WorkHandler.getBatchName(batchType, now)
+
+        val selectedItems = buildList {
+            selectedPackageNames.forEach { pn ->
+                when {
+                    selectedApk[pn] == selectedData[pn] && selectedApk[pn] != null -> add(
+                        Triple(pn, selectedApk[pn]!!, altModeToMode(ALT_MODE_BOTH, false))
+                    )
+
+                    else                                                           -> {
+                        if ((selectedApk[pn] ?: -1) != -1) add(
+                            Triple(pn, selectedApk[pn]!!, altModeToMode(ALT_MODE_APK, false))
+                        )
+                        if ((selectedData[pn] ?: -1) != -1) add(
+                            Triple(pn, selectedData[pn]!!, altModeToMode(ALT_MODE_DATA, false))
+                        )
+                    }
+                }
+            }
+        }
+
+        var errors = ""
+        var resultsSuccess = true
+        var counter = 0
+        val worksList: MutableList<OneTimeWorkRequest> = mutableListOf()
+        OABX.work.beginBatch(batchName)
+        selectedItems.forEach { (packageName, bi, mode) ->
+            val oneTimeWorkRequest = AppActionWork.Request(
+                packageName = packageName,
+                mode = mode,
+                backupBoolean = false,
+                backupIndex = bi,
+                notificationId = notificationId,
+                batchName = batchName,
+                immediate = true,
+            )
+            worksList.add(oneTimeWorkRequest)
+
+            val oneTimeWorkLiveData = WorkManager.getInstance(OABX.context)
+                .getWorkInfoByIdLiveData(oneTimeWorkRequest.id)
+            oneTimeWorkLiveData.observeForever(
+                object : Observer<WorkInfo?> {
+                    override fun onChanged(value: WorkInfo?) {
+                        when (value?.state) {
+                            WorkInfo.State.SUCCEEDED -> {
+                                counter += 1
+
+                                val (succeeded, packageLabel, error) = AppActionWork.getOutput(value)
+                                if (error.isNotEmpty()) errors =
+                                    "$errors$packageLabel: ${
+                                        LogsHandler.handleErrorMessages(
+                                            OABX.context,
+                                            error
+                                        )
+                                    }\n"
+
+                                resultsSuccess = resultsSuccess and succeeded
+                                oneTimeWorkLiveData.removeObserver(this)
+                            }
+
+                            else                     -> {}
+                        }
+                    }
+                }
+            )
+        }
+
+        if (worksList.isNotEmpty()) {
+            WorkManager.getInstance(OABX.context)
+                .beginWith(worksList)
+                .enqueue()
+        }
+    }
+
+    fun resumeMain() {
+        when {
+            !persist_beenWelcomed.value
+                 -> if (!navController.currentDestination?.route?.equals(NavItem.Welcome.destination)!!) {
+                navController.clearBackStack()
+                navController.safeNavigate(NavItem.Welcome.destination)
+            }
+
+            allPermissionsGranted && this::navController.isInitialized
+                 -> launchMain()
+
+            else -> navController.safeNavigate(NavItem.Permissions.destination)
+        }
+    }
+
+    private fun launchMain() {
+        when {
+            isBiometricLockAvailable() && isDeviceLockEnabled() -> {
+                val currentDestination =
+                    navController.currentDestination?.route ?: NavItem.Main.destination
+                val wasInited = !listOf(
+                    NavItem.Welcome.destination,
+                    NavItem.Permissions.destination,
+                    NavItem.Lock.destination
+                ).contains(currentDestination)
+                navController.safeNavigate(NavItem.Lock.destination)
+                launchBiometricPrompt(
+                    if (wasInited) currentDestination
+                    else NavItem.Main.destination
+                )
+            }
+
+            listOf(
+                NavItem.Welcome.destination,
+                NavItem.Permissions.destination,
+                NavItem.Lock.destination
+            ).contains(navController.currentDestination?.route) -> {
+                navController.safeNavigate(NavItem.Main.destination)
+            }
+        }
+    }
+
+    private fun launchBiometricPrompt(destination: String) {
+        try {
+            val biometricPrompt = createBiometricPrompt(destination)
+            val promptInfo = BiometricPrompt.PromptInfo.Builder()
+                .setTitle(getString(R.string.prefs_biometriclock))
+                .setConfirmationRequired(true)
+                .setAllowedAuthenticators(BiometricManager.Authenticators.DEVICE_CREDENTIAL or (if (isBiometricLockEnabled()) BiometricManager.Authenticators.BIOMETRIC_WEAK else 0))
+                .build()
+            biometricPrompt.authenticate(promptInfo)
+        } catch (e: Throwable) {
+            navController.safeNavigate(destination)
+        }
+    }
+
+    private fun createBiometricPrompt(destination: String): BiometricPrompt {
+        return BiometricPrompt(this,
+            ContextCompat.getMainExecutor(this),
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    super.onAuthenticationSucceeded(result)
+                    navController.safeNavigate(destination)
+                }
+            })
+    }
 }

@@ -17,35 +17,61 @@
  */
 package com.machiav3lli.backup.viewmodels
 
-import android.app.Application
-import androidx.lifecycle.*
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.machiav3lli.backup.OABX
 import com.machiav3lli.backup.activities.MainActivityX
+import com.machiav3lli.backup.dbs.ODatabase
+import com.machiav3lli.backup.dbs.entity.AppExtras
+import com.machiav3lli.backup.dbs.entity.Backup
 import com.machiav3lli.backup.handler.LogsHandler
 import com.machiav3lli.backup.handler.ShellCommands
 import com.machiav3lli.backup.handler.showNotification
-import com.machiav3lli.backup.items.AppInfo
-import com.machiav3lli.backup.items.BackupItem
+import com.machiav3lli.backup.items.Package
+import com.machiav3lli.backup.ui.compose.MutableComposableFlow
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 class AppSheetViewModel(
-    app: AppInfo,
-    var shellCommands: ShellCommands,
-    private val appContext: Application
-) : AndroidViewModel(appContext) {
+    app: Package?,
+    private val database: ODatabase,
+    private var shellCommands: ShellCommands,
+) : AndroidViewModel(OABX.NB) {
 
-    var appInfo = MediatorLiveData<AppInfo>()
+    var thePackage = flow<Package?> { app }.stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        app
+    )
 
-    private var notificationId: Int
+    @OptIn(ExperimentalCoroutinesApi::class)
+    var appExtras = database.getAppExtrasDao().getFlow(app?.packageName).mapLatest {
+        it ?: AppExtras(app?.packageName ?: "")
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        AppExtras(app?.packageName ?: "")
+    )
 
-    val refreshNow = MutableLiveData<Boolean>()
+    val snackbarText = MutableComposableFlow(
+        "",
+        viewModelScope,
+        "snackBarText"
+    )
 
-    init {
-        appInfo.value = app
-        notificationId = System.currentTimeMillis().toInt()
-    }
+    private var notificationId: Int = System.currentTimeMillis().toInt()
+    val refreshNow = mutableStateOf(true)
+    val dismissNow = mutableStateOf(false)
 
     fun uninstallApp() {
         viewModelScope.launch {
@@ -56,38 +82,41 @@ class AppSheetViewModel(
 
     private suspend fun uninstall() {
         withContext(Dispatchers.IO) {
-            appInfo.value?.let {
-                Timber.i("uninstalling: ${appInfo.value?.packageLabel}")
+            thePackage.value?.let { mPackage ->
+                Timber.i("uninstalling: ${mPackage.packageLabel}")
                 try {
                     shellCommands.uninstall(
-                        appInfo.value?.packageName, appInfo.value?.apkPath,
-                        appInfo.value?.dataPath, appInfo.value?.isSystem == true
+                        mPackage.packageName, mPackage.apkPath,
+                        mPackage.dataPath, mPackage.isSystem
                     )
+                    if (mPackage.backupList.isEmpty()) {
+                        database.getAppInfoDao().deleteAllOf(mPackage.packageName)
+                        dismissNow.value = true
+                    }
                     showNotification(
-                        appContext,
+                        OABX.NB,
                         MainActivityX::class.java,
                         notificationId++,
-                        appInfo.value?.packageLabel,
-                        appContext.getString(com.machiav3lli.backup.R.string.uninstallSuccess),
+                        mPackage.packageLabel,
+                        OABX.NB.getString(com.machiav3lli.backup.R.string.uninstallSuccess),
                         true
                     )
-                    it.packageInfo = null
                 } catch (e: ShellCommands.ShellActionFailedException) {
                     showNotification(
-                        appContext,
+                        OABX.NB,
                         MainActivityX::class.java,
                         notificationId++,
-                        appInfo.value?.packageLabel,
-                        appContext.getString(com.machiav3lli.backup.R.string.uninstallFailure),
+                        mPackage.packageLabel,
+                        OABX.NB.getString(com.machiav3lli.backup.R.string.uninstallFailure),
                         true
                     )
-                    e.message?.let { message -> LogsHandler.logErrors(appContext, message) }
+                    e.message?.let { message -> LogsHandler.logErrors(message) }
                 }
             }
         }
     }
 
-    fun enableDisableApp(users: MutableList<String>, enable: Boolean) {
+    fun enableDisableApp(users: List<String>, enable: Boolean) {
         viewModelScope.launch {
             enableDisable(users, enable)
             refreshNow.value = true
@@ -95,30 +124,29 @@ class AppSheetViewModel(
     }
 
     @Throws(ShellCommands.ShellActionFailedException::class)
-    private suspend fun enableDisable(users: MutableList<String>, enable: Boolean) {
+    private suspend fun enableDisable(users: List<String>, enable: Boolean) {
         withContext(Dispatchers.IO) {
-            shellCommands.enableDisablePackage(appInfo.value?.packageName, users, enable)
+            shellCommands.enableDisablePackage(thePackage.value?.packageName, users, enable)
         }
     }
 
     fun getUsers(): Array<String> {
-        return shellCommands.getUsers()?.toTypedArray() ?: arrayOf()
+        return shellCommands.getUsers().toTypedArray()
     }
 
-    fun deleteBackup(backup: BackupItem) {
+    fun deleteBackup(backup: Backup) {              //TODO hg42 launchDeleteBackup ?
         viewModelScope.launch {
             delete(backup)
-            refreshNow.value = true
         }
     }
 
-    private suspend fun delete(backup: BackupItem) {
+    private suspend fun delete(backup: Backup) {
         withContext(Dispatchers.IO) {
-            appInfo.value?.let {
-                if (it.backupHistory.size > 1) {
-                    it.delete(appContext, backup)
-                } else {
-                    it.deleteAllBackups(appContext)
+            thePackage.value?.let { pkg ->
+                pkg.deleteBackup(backup)
+                if (!pkg.isInstalled && pkg.backupList.isEmpty()) {
+                    database.getAppInfoDao().deleteAllOf(pkg.packageName)
+                    dismissNow.value = true
                 }
             }
         }
@@ -127,25 +155,58 @@ class AppSheetViewModel(
     fun deleteAllBackups() {
         viewModelScope.launch {
             deleteAll()
-            refreshNow.value = true
         }
     }
 
     private suspend fun deleteAll() {
         withContext(Dispatchers.IO) {
-            appInfo.value?.deleteAllBackups(appContext)
+            thePackage.value?.let { pkg ->
+                pkg.deleteAllBackups()
+                if (!pkg.isInstalled && pkg.backupList.isEmpty()) {
+                    database.getAppInfoDao().deleteAllOf(pkg.packageName)
+                    dismissNow.value = true
+                }
+            }
+        }
+    }
+
+    fun setExtras(appExtras: AppExtras?) {
+        viewModelScope.launch {
+            replaceExtras(appExtras)
+            refreshNow.value = true
+        }
+    }
+
+    private suspend fun replaceExtras(appExtras: AppExtras?) {
+        withContext(Dispatchers.IO) {
+            if (appExtras != null)
+                database.getAppExtrasDao().replaceInsert(appExtras)
+            else
+                thePackage.value?.let { database.getAppExtrasDao().deleteByPackageName(it.packageName) }
+        }
+    }
+
+    fun rewriteBackup(backup: Backup, changedBackup: Backup) {
+        viewModelScope.launch {
+            rewriteBackupSuspendable(backup, changedBackup)
+        }
+    }
+
+    private suspend fun rewriteBackupSuspendable(backup: Backup, changedBackup: Backup) {
+        withContext(Dispatchers.IO) {
+            thePackage.value?.rewriteBackup(backup, changedBackup)
         }
     }
 
     class Factory(
-        private val app: AppInfo,
+        private val packageInfo: Package?,
+        private val database: ODatabase,
         private val shellCommands: ShellCommands,
-        private val application: Application
     ) : ViewModelProvider.Factory {
         @Suppress("unchecked_cast")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(AppSheetViewModel::class.java)) {
-                return AppSheetViewModel(app, shellCommands, application) as T
+                return AppSheetViewModel(packageInfo, database, shellCommands) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }

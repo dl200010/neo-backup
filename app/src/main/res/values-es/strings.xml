@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">OAndBackupX</string>
     <string name="backup">Respaldar</string>
     <string name="restore">Restaurar</string>
     <string name="backupConfirmation">¿Realizar respaldo\?</string>
@@ -93,18 +92,15 @@
     <string name="prefs_encryption">Cifrado</string>
     <string name="prefs_encryption_summary">Activar para cifrar los respaldos de datos</string>
     <string name="prefs_password">Contraseña de cifrado</string>
-    <string name="prefs_password_summary">Dejar en blanco para desactivar el cifrado</string>
     <string name="prefs_passwordconfirmation">Confirmación de contraseña de cifrado</string>
     <string name="prefs_password_match_true">Las contraseñas coinciden</string>
     <string name="prefs_password_match_false">Las contraseñas no coinciden</string>
     <string name="prefs_excludecache">Excluir caché de la aplicación</string>
     <string name="prefs_excludecache_summary">Excluir caché de la aplicación en el respaldo de datos</string>
     <string name="prefs_externaldata">Respaldar datos externos</string>
-    <string name="prefs_externaldata_summary">Respalda y restaura datos de la tarjeta externa ( p.ej.: /storage/emulated/0/Android/data/)</string>
     <string name="prefs_deviceprotecteddata">Repalda datos protegidos del dispositivo</string>
-    <string name="prefs_deviceprotecteddata_summary">Repalda y restaura datos situados en data/user_de</string>
     <string name="prefs_copyselfapk">Respaldar APK de esta app</string>
-    <string name="prefs_copyselfapk_summary">Sitúa copia de OAndBackupX en el lugar más alto de la carpeta de respaldos</string>
+    <string name="prefs_copyselfapk_summary">Coloca una copia de Neo Backup en el nivel superior de la carpeta de copia de seguridad</string>
     <string name="prefs_acquirewakelock">Prevenir suspensión</string>
     <string name="prefs_acquirewakelock_summary">Adquiere un wakelock mientras se ejecutan las operaciones en lote para prevenir la suspensión. Acelera la creación de respaldos y las restauraciones, pero incrementa el consumo de memoria.</string>
     <string name="prefs_enablespecial">Activar respaldos especiales</string>
@@ -169,7 +165,7 @@
     <string name="ignore_battery_optimization_message">Los respaldos podrían detenerse algunas veces. Para evitarlo, deberías desactivar la optimización de batería</string>
     <string name="ignore_battery_optimization_not_supported">Desafortunadamente, ¡este dispositivo no soporta desactivar la optimización de bateria!</string>
     <string name="failed_unzipping">Error descomprimiendo los datos, ¡revisa la contraseña de cifrado!</string>
-    <string name="split_apks">Dividir APKs:</string>
+    <string name="split_apks">Dividir los APKs</string>
     <string name="backup_filters">Filtros de respaldo:</string>
     <string name="grant_usage_access_title">Garantizar acceso al uso</string>
     <string name="grant_usage_access_message">Es esencial para obtener la información de los tamaños de los archivos de las aplicaciones</string>
@@ -181,19 +177,18 @@
     <string name="help_legend">Leyenda:</string>
     <string name="help_appTypeHint">* El icono de tipo de aplicación es gris si la aplicación está desinstalada o gris oscuro si está desactivada.</string>
     <string name="enable_encryption_title">Cifrado de datos</string>
-    <string name="enable_encryption_message">No es seguro guardar las copias de datos sin cifrar. Por su seguridad, activa el cifrado de datos e indica una contraseña.</string>
+    <string name="enable_encryption_message">No es seguro mantener sus datos en su dispositivo sin cifrar. Para la seguridad de sus datos, habilite el cifrado y establezca una contraseña.</string>
     <string name="sort_and_filter">Ordenar y filtrar</string>
     <string name="storage_access">Acceso al almacenamiento</string>
-    <string name="welcome_to_oabx">¡Bienvenido a OABX!</string>
-    <string name="intro_welcome_message">OAndBackupX es un fork del infame OAndBackup con el objetivo de traerlo al 2020 y más allá. Por ahora, la mayor parte de las funcionalidades y la interfaz de usuario han sido reescritos y algunas han sido añadidas.
-\n La aplicación aún se encuentra en fase beta y se realizan muchas modificaciones frecuentemente. Por lo tanto, lea atentamente el historial de cambios con cada nuevo lanzamiento.
-\n Todo tipo de ayuda es bienvenida, ya sea traducción, ideas, reportes de errores o programación.
+    <string name="welcome_to_oabx">¡Bienvenido a Neo Backup!</string>
+    <string name="intro_welcome_message">Neo Backup (anteriormente OAndBackupX) es un fork del famoso OAndBackup con el objetivo de llevar OAndBackup a 202X y parte de la suite de aplicaciones Neo. Por ahora la aplicación ya está completamente reescrita, lo que viene es hacerla robusta y añadir algunas características largamente planeadas que podrían facilitar el flujo de trabajo de backup/restauración con cualquier dispositivo.
+\n Por lo tanto, todos los tipos de contribución son siempre bienvenidos.
 \n
-\n Funcionalidades actuales de nuestra aplicacion:
-\n • Requiere root y le permite realizar copias de seguridad de aplicaciones individuales y sus datos.
-\n • Permite realizar copias de seguridad (respaldos) y restaurarlas tanto de aplicaciones individuales como en lote.
-\n • La restauración de aplicaciones del sistema deberían ser posible sin necesidad de reiniciar el dispositivo al acabar, aunque no recomendamos hacerlo.
-\n • La creación de respaldos se pueden programar sin límite de programaciones, y existe la posibilidad de crear listas personalizadas únicas.</string>
+\n Ahora sobre la funcionalidad de nuestra aplicación:
+\n - Requiere root y permite hacer copias de seguridad de aplicaciones individuales y sus datos.
+\n - Tanto la copia de seguridad y restauración de los programas individuales de uno en uno y la copia de seguridad por lotes y la restauración de múltiples programas son compatibles.
+\n - La restauración de las aplicaciones del sistema debería ser posible sin requerir un reinicio posterior.
+\n - Las copias de seguridad se pueden programar sin límite en el número de programaciones individuales y existe la posibilidad de crear listas personalizadas a partir de la lista de aplicaciones instaladas.</string>
     <string name="intro_permission_storage">La aplicación usa permisos de lectura/escritura del almacenamiento para poder acceder al almacenamiento externo y ofrecer la posibilidad de realizar copias de seguridad de datos externos/OBB de otras aplicaciones.</string>
     <string name="intro_permission_storage_location">La aplicación necesita una ubicación para almacenar los respaldos. La aplicación podría necesitar algunos gigabytes de almacenamiento para una copia de seguridad completa y es muy intensiva en el uso del sistema de archivos. Por favor, tenga esto en cuenta al elegir una ubicación de almacenamiento situada en la red.</string>
     <string name="intro_permission_usageaccess">La aplicación necesita este permiso para poder verificar las estadísticas y tamaños de los datos y la caché de sus aplicaciones.</string>
@@ -205,30 +200,26 @@
     <string name="delete_all_backups">Borrar todos los respaldos</string>
     <string name="prefs_stopcont_summary">Solo expertos: esto puede ayudar si la aplicación está cambiando archivos durante el respaldo y el respaldo falla.</string>
     <string name="prefs_disableverification">Desactivar la verificación de aplicaciones por USB</string>
-    <string name="prefs_housekeepingmoment_summary">Configura si la revisión más antigua es eliminada antes o después de crear un nuevo respaldo para liberar espacio de disco usado por el respaldo.</string>
-    <string name="prefs_housekeepingmoment">Tiempo para la limpieza de revisiones</string>
     <string name="prefs_numBackupRevisions_summary">La revisión más antigua será borrada tras la creación de un nuevo respaldo si el número es excedido. Déjalo en cero para mantener todas las revisiones.</string>
     <string name="prefs_numBackupRevisions">Número de revisiones del respaldo</string>
-    <string name="prefs_housekeepingmoment_before">Antes del respaldo</string>
-    <string name="prefs_housekeepingmoment_after">Después del respaldo</string>
     <string name="prefs_advanced">Preferencias avanzadas</string>
     <string name="radio_obbdata">Datos OBB</string>
     <string name="radio_deviceprotecteddata">Datos protegidos del dispositivo</string>
     <string name="radio_externaldata">Datos externos</string>
     <string name="prefs_disableverification_summary">Desactiva esta opción de desarrolladores mientras se restauran APKs y lo reactiva al acabar. Soluciona el error: INSTALL_FAILED_VERIFICATION_FAILURE.</string>
     <plurals name="days_left">
-        <item quantity="one">%d día,</item>
-        <item quantity="other">%d días,</item>
+        <item quantity="one">%d día</item>
+        <item quantity="many">%d días</item>
+        <item quantity="other">%d días</item>
     </plurals>
     <string name="help_issues">Errores conocidos</string>
-    <string name="prefs_obbdata_summary">Realiza una copia de seguridad y restaura los archivos obb de la aplicación que se colocan en el almacenamiento externo (por ejemplo, /storage/emulated/0/Android/obb/)</string>
     <string name="prefs_obbdata">Respaldar archivos obb</string>
     <string name="stats_backups">Respaldos</string>
     <string name="stats_apps">Aplicaciones</string>
     <string name="stats_updated">Actualizado</string>
     <string name="radio_launchable">Aplicaciones lanzables</string>
     <string name="prefs_allowdowngrade">Permitir volver a una versión anterior</string>
-    <string name="prefs_allowdowngrade_summary">Permitir restaurar una versión anterior a la de la aplicación instalada.</string>
+    <string name="prefs_allowdowngrade_summary">Permitir restaurar una versión anterior de la aplicación que tenga instalada (se aplica solo a las versiones depurables).</string>
     <string name="prefs_restoreallpermissions">Restaurar con todos los permisos</string>
     <string name="prefs_restoreallpermissions_summary">Dar a la aplicación restaurada todos los permisos que solicite.</string>
     <string name="help_faq">Preguntas frecuentes</string>
@@ -238,6 +229,7 @@
     <string name="exodus_report">Reporte del Éxodo</string>
     <plurals name="updated_apps">
         <item quantity="one">%d aplicación actualizada</item>
+        <item quantity="many">%d aplicaciones actualizadas</item>
         <item quantity="other">%d aplicaciones actualizadas</item>
     </plurals>
     <string name="app_info">Info-App</string>
@@ -256,6 +248,7 @@
     <string name="prefs_devicelock">Bloqueo del dispositivo</string>
     <plurals name="sched_interval_formal">
         <item quantity="one">cada día</item>
+        <item quantity="many">cada %d días</item>
         <item quantity="other">cada %d días</item>
     </plurals>
     <string name="intro_permission_storage_location_warning">No elegir el directorio principal de almacenamiento o la carpeta Downloads, crear una carpeta solo para tus respaldos. Más sobre esto en el FAQ</string>
@@ -264,7 +257,7 @@
     <string name="sortAscDesc">Ascendente-Descendente</string>
     <string name="logs_share_failed">Archivo de registro no encontrado</string>
     <string name="sched_imported">Las acciones programadas han sido importadas satisfactoriamente</string>
-    <string name="sched_exported">Las acciones programadas han sido exportadas satisfactoriamente</string>
+    <string name="sched_exported">Los horarios se exportaron con éxito</string>
     <string name="error_datachanged">Los datos de la aplicación han sido activamente cambiados mientras se hacía el respaldo. Prueba a detener su proceso antes de hacer el respaldo</string>
     <string name="dialog_import">Importar</string>
     <string name="dialog_export">Exportar</string>
@@ -288,7 +281,7 @@
     <string name="prefs_secondary_5">Rosa Flamingo</string>
     <string name="prefs_secondary_4">Naranja lava</string>
     <string name="prefs_secondary_3">Ámbar tigre</string>
-    <string name="prefs_secondary_2">Limette</string>
+    <string name="prefs_secondary_2">Lima</string>
     <string name="prefs_secondary_1">Verde azulado océano</string>
     <string name="prefs_secondary_0">Cían ártico</string>
     <string name="prefs_accent_7">Naranja albaricoque</string>
@@ -301,7 +294,6 @@
     <string name="prefs_accent_0">Rojo cometa</string>
     <string name="sortBackupDate">Fecha de respaldo</string>
     <string name="backup_all_updated">Respaldar todas las aplicaciones actualizadas</string>
-    <string name="prefs_mediadata_summary">Respalda y restaura los archivos de medios de la aplicación que estén situados en el almacenamiento externo (ej. /storage/emulated/0/Android/media/)</string>
     <string name="radio_mediadata">Datos de medios</string>
     <string name="prefs_mediadata">Respaldar archivos de medios</string>
     <string name="help_changelog">Registro de cambios</string>
@@ -314,4 +306,106 @@
     <string name="error_pmDataIncompleteException_dataRestoreFailed">Los datos de aplicación no han sido restaurados.</string>
     <string name="prefs_compression_level_summary">Un valor bajo comprime más rápido pero produce archivos grandes. Un valor grande comprime mejor pero demora más tiempo.</string>
     <string name="showDisabled">Aplicaciones deshabilitadas</string>
+    <string name="grant_calllogs_message">Esto es esencial para poder hacer una copia de seguridad/restaurar sus registros de llamadas.</string>
+    <string name="contacts_permission_title">Permisos de contactos</string>
+    <string name="grant_contacts_message">Esto es esencial para poder hacer coincidir un contacto con un SMS/MMS.</string>
+    <string name="intro_permission_smsmms">La aplicación necesita este permiso para poder hacer una copia de seguridad/restaurar sus SMS/MMS.</string>
+    <string name="intro_permission_calllogs">La aplicación necesita este permiso para poder hacer una copia de seguridad/restaurar sus registros de llamadas.</string>
+    <string name="intro_permission_contacts">La aplicación necesita este permiso para poder hacer coincidir un contacto con un SMS/MMS.</string>
+    <string name="schedule">Calendario</string>
+    <string name="finished">finalizado</string>
+    <string name="batch">Lote</string>
+    <string name="spec_calllogsjson">Registros de llamadas JSON</string>
+    <string name="smsmms_permission_title">Permisos SMS/MMS</string>
+    <string name="grant_smsmms_message">Esto es esencial para poder hacer una copia de seguridad/restaurar sus SMS/MMS.</string>
+    <string name="spec_smsmmsjson">SMS/MMS JSON</string>
+    <string name="spec_fingerprint">Huellas dactilares</string>
+    <string name="calllogs_permission_title">Permisos de registros de llamadas</string>
+    <string name="loading_list">Cargando lista…</string>
+    <string name="prefs_sessionIinstaller">Usar el instalador de sesiones</string>
+    <string name="prefs_sessionIinstaller_summary">Utilice el instalador de sesiones en lugar del instalador básico. Más lento pero evita problemas con Android 13+</string>
+    <string name="sortAppSize">Tamaño de la aplicación</string>
+    <string name="prefs_user_short">Personal</string>
+    <string name="dialogCancelAll">Cancelar todo</string>
+    <string name="sortBackupSize">Tamaño de la copia de seguridad</string>
+    <string name="prefs_installerpackagename">Nombre del paquete del instalador:</string>
+    <string name="prefs_dev_settings">Opciones de desarrollador</string>
+    <string name="prefs_dev_settings_summary">¡No lo cambies a menos que un desarrollador te lo diga!</string>
+    <string name="prefs_tools_short">Herramientas</string>
+    <string name="prefs_advanced_short">Avanzado</string>
+    <string name="prefs_service_short">Servicio</string>
+    <string name="prefs_restorepermissions_summary">Restaurar permisos que fueron otorgados a la aplicación al momento del respaldo. Tenga en cuenta que algunos permisos no pueden ser otorgados programáticamente y causar que la restauración del paquete falle completamente, en cuyo caso Neo Backup realiza la restauración del paquete sin otorgar permisos.</string>
+    <string name="prefs_restorepermissions">Restaurar permisos</string>
+    <string name="sortAsc">Ascendente</string>
+    <string name="sortDesc">Descendente</string>
+    <string name="prefs_loadingtoasts_summary">Mostrando las notificaciones del sistema mientras se carga la lista</string>
+    <string name="dismiss">Descartar</string>
+    <string name="supended_apps_cleanup">limpiar las aplicaciones suspendidas sobrantes</string>
+    <string name="prefs_loadingtoasts">Notificaciones toast al estar cargando</string>
+    <string name="add_tag">Agregar nueva etiqueta</string>
+    <string name="edit_note">Editar nota</string>
+    <string name="root_is_mandatory">Debido a que las aplicaciones están aisladas una de la otra, el acceso como superusuario es requerido para poder respaldar y restaurar los datos de aplicación.</string>
+    <string name="enabled">Activado</string>
+    <string name="see_faq">¡Vea la Lista de Preguntas Frecuentes!</string>
+    <string name="sortAppDataSize">Tamaño de los datos de la aplicación</string>
+    <string name="dialog_export_schedules">Exportar mis planes</string>
+    <string name="delete">Eliminar</string>
+    <string name="root_missing">No hay acceso de ROOT</string>
+    <string name="prefs_multilineinfochips_summary">Permitir que las fichas de información en la hoja de aplicación se extiendan por varias líneas.</string>
+    <string name="prefs_squeezenavtext">Comprimir el texto del elemento de la navegación</string>
+    <string name="prefs_squeezenavtext_summary">Permita que el texto debajo de los elementos de la barra de navegación cambie de tamaño para ajustarse al ancho disponible.</string>
+    <string name="prefs_multilineinfochips">Las fichas con información ocupan varias lineas</string>
+    <string name="prefs_nobackupdata">Copia de seguridad sin archivos</string>
+    <string name="prefs_nobackupdata_summary">Hacer una copia de seguridad de los archivos en los datos que están etiquetados para no ser respaldados</string>
+    <string name="prefs_tools_terminal">Terminal</string>
+    <string name="prefs_deviceprotecteddata_rst">Restaurar los datos protegidos por el sistema</string>
+    <string name="prefs_deviceprotecteddata_rst_summary">Restaura los datos que se encuentran en data/user_de</string>
+    <string name="prefs_externaldata_rst">Restaurar los datos externos</string>
+    <string name="prefs_externaldata_rst_summary">Restaura los datos que se encuentran en el almacenamiento externo (por ejemplo, /storage/emulated/0/Android/data/)</string>
+    <string name="prefs_obbdata_rst">Restaurar los archivos obb</string>
+    <string name="prefs_mediadata_rst">Restaura los archivos multimedia</string>
+    <string name="prefs_nobackupdata_rst">Restaurar archivos no_backup</string>
+    <string name="prefs_nobackupdata_rst_summary">Restaura los archivos de datos que están etiquetados para no ser respaldados</string>
+    <string name="prefs_deviceprotecteddata_summary">Hace una copia de seguridad de los datos que se sitúan en data/user_de</string>
+    <string name="prefs_obbdata_summary">Realiza una copia de seguridad de los archivos obb de la aplicación que se encuentra en el almacenamiento externo (por ejemplo, /storage/emulated/0/Android/obb/)</string>
+    <string name="prefs_mediadata_summary">Realiza una copia de seguridad de los archivos multimedia de la aplicación que se encuentra en el almacenamiento externo (por ejemplo, /storage/emulated/0/Android/media/)</string>
+    <string name="prefs_obbdata_rst_summary">Restaura los archivos obb de la aplicación que se encuentra en el almacenamiento externo (por ejemplo, /storage/emulated/0/Android/obb/)</string>
+    <string name="prefs_mediadata_rst_summary">Restaura los archivos multimedia de la aplicación que se encuentra en el almacenamiento externo (por ejemplo, /storage/emulated/0/Android/media/)</string>
+    <string name="prefs_externaldata_summary">Realiza una copia de seguridad de los datos que se encuentran en el almacenamiento externo (por ejemplo, /storage/emulated/0/Android/data/)</string>
+    <string name="context_menu">Menú contextual</string>
+    <string name="prefs_theme_black">Tema Oscuro</string>
+    <string name="prefs_theme_black_summary">Forzar el fondo negro al usar el tema oscuro</string>
+    <string name="post_notifications_permission_title">Envío de notificaciones</string>
+    <string name="prefs_singularbackuprestore">Restaurar una copia de seguridad única</string>
+    <string name="prefs_singularbackuprestore_summary">Utiliza un diseño alternativo de elementos para la restauración que permite elegir copias de seguridad específicas para la restauración.</string>
+    <string name="post_notifications_permission_message">A partir de Android 13 las aplicaciones requieren este permiso para poder enviar notificaciones.</string>
+    <string name="prefs_password_summary">También se utiliza para el descifrado en la restauración</string>
+    <string name="backup_revisions_limit">Límite de las copias de seguridad: %d</string>
+    <string name="clear_text">Borrar texto</string>
+    <string name="prefs_laserbackground">Mostrar láser animado en segundo plano</string>
+    <string name="prefs_laserbackground_summary">Usar luces de colores animadas como fondo cuando esté cargando/ocupado.</string>
+    <string name="filters_installed">Instalación</string>
+    <string name="filters_launchable">Ejecutable</string>
+    <string name="filters_enabled">Activado</string>
+    <string name="filters_updated">Actualizado</string>
+    <string name="filters_latest">Última copia de seguridad</string>
+    <string name="filters_app">Tipo de aplicación</string>
+    <string name="sorting_order">Orden de la clasificación</string>
+    <string name="radio_notlaunchable">Aplicaciones no ejecutables</string>
+    <string name="show_updated_apps">Aplicaciones actualizadas</string>
+    <string name="show_new_apps">Aplicaciones nuevas</string>
+    <string name="show_old_apps">Aplicaciones antiguas</string>
+    <string name="show_new_backups">Nuevas copias de seguridad</string>
+    <string name="filters_backup">Tipos de copias de seguridad</string>
+    <string name="show_enabled_apps">Aplicaciones habilitadas</string>
+    <string name="show_installed_apps">Aplicaciones instaladas</string>
+    <string name="prefs_newandupdatednotification">Mostrar notificaciones nuevas y actualizadas</string>
+    <string name="prefs_newandupdatednotification_summary">Muestra las nuevas aplicaciones del usuario junto a las aplicaciones actualizadas en la barra de notificaciones de la página de inicio.</string>
+    <string name="prefs_altnavbaritem_summary">Utiliza el diseño alternativo/antiguo de los elementos de la barra de navegación, que muestra la etiqueta de los elementos no seleccionados.</string>
+    <string name="prefs_altnavbaritem">Utilizar un elemento alternativo de la barra de navegación</string>
+    <string name="prefs_theme_dynamic_black">Negro con colores dinámicos</string>
+    <string name="prefs_theme_dynamic">Tema dinámico</string>
+    <string name="prefs_theme_dynamic_light">Claro con colores dinámicos</string>
+    <string name="prefs_theme_system_black">Temas del sistema (negro)</string>
+    <string name="prefs_theme_dynamic_dark">Oscuro con colores dinámicos</string>
 </resources>

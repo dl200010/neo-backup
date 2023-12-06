@@ -24,27 +24,30 @@ import com.machiav3lli.backup.handler.ShellHandler.Companion.runAsRoot
 import com.machiav3lli.backup.handler.ShellHandler.Companion.runAsUser
 import com.machiav3lli.backup.handler.ShellHandler.Companion.utilBoxQ
 import com.machiav3lli.backup.handler.ShellHandler.ShellCommandFailedException
-import com.machiav3lli.backup.items.AppInfo
+import com.machiav3lli.backup.items.Package
 import com.machiav3lli.backup.utils.FileUtils
 import timber.log.Timber
 import java.io.File
 
-class ShellCommands(private var users: List<String>?) {
+class ShellCommands {
     var multiuserEnabled: Boolean
+    private var users = emptyList<String>()
 
     init {
         try {
             users = getUsers()
         } catch (e: ShellActionFailedException) {
-            users = null
-            var error: String? = null
-            // instanceOf returns false for nulls, so need to check if null
-            if (e.cause is ShellCommandFailedException) {
-                error = e.cause.shellResult.err.joinToString(" ")
-            }
-            Timber.e("Could not load list of users: ${e}${if (error != null) " : $error" else ""}")
+            users = arrayListOf()
+            val error =
+                when (val cause = e.cause) {
+                    is ShellCommandFailedException ->
+                        " : ${cause.shellResult.err.joinToString(" ")}"
+
+                    else                           -> ""
+                }
+            Timber.e("Could not load list of users: ${e}$error")
         }
-        multiuserEnabled = !users.isNullOrEmpty() && users?.size ?: 1 > 1
+        multiuserEnabled = users.isNotEmpty() && users.size > 1
     }
 
     @Throws(ShellActionFailedException::class)
@@ -58,7 +61,7 @@ class ShellCommands(private var users: List<String>?) {
             } catch (e: ShellCommandFailedException) {
                 throw ShellActionFailedException(command, e.shellResult.err.joinToString("\n"), e)
             } catch (e: Throwable) {
-                LogsHandler.unhandledException(e, command)
+                LogsHandler.unexpectedException(e, command)
                 throw ShellActionFailedException(command, "unhandled exception", e)
             }
             // don't care for the result here, it likely fails due to file not found
@@ -70,7 +73,7 @@ class ShellCommands(private var users: List<String>?) {
             } catch (e: ShellCommandFailedException) {
                 Timber.d("Command '$command' failed: ${e.shellResult.err.joinToString(" ")}")
             } catch (e: Throwable) {
-                LogsHandler.unhandledException(e, command)
+                LogsHandler.unexpectedException(e, command)
             }
         } else {
             // Deleting while system app
@@ -85,21 +88,21 @@ class ShellCommands(private var users: List<String>?) {
             }
             // TODO: add logging/throw to each variable.isNullOrEmpty() test below?
             command = "mount -o remount,rw /system && ("
-            if (!sourceDir.isNullOrEmpty())    // IMPORTANT!!! otherwise removing all in parent(!) directory
+            if (!sourceDir.isNullOrEmpty())    // IMPORTANT!!! otherwise removing all in parent(!) directory     //TODO hg42 check plausible path
                 command += " ; $utilBoxQ rm -rf ${quote(sourceDir)}"
-            if (apkSubDir.isNotEmpty())          // IMPORTANT!!! otherwise removing all in parent(!) directory
+            if (!apkSubDir.isEmpty())          // IMPORTANT!!! otherwise removing all in parent(!) directory   //TODO hg42 check plausible path
                 command += " ; $utilBoxQ rm -rf ${quote("/system/app/$apkSubDir")}"
             command += ") ; mount -o remount,ro /system"
-            if (!dataDir.isNullOrEmpty())      // IMPORTANT!!! otherwise removing all in parent(!) directory
+            if (!dataDir.isNullOrEmpty())      // IMPORTANT!!! otherwise removing all in parent(!) directory    //TODO hg42 check plausible path
                 command += " ; $utilBoxQ rm -rf ${quote(dataDir)}"
-            if (!packageName.isNullOrEmpty())  // IMPORTANT!!! otherwise removing all in parent(!) directory
+            if (!packageName.isNullOrEmpty())  // IMPORTANT!!! otherwise removing all in parent(!) directory    //TODO hg42 check plausible path
                 command += " ; $utilBoxQ rm -rf ${quote("/data/app-lib/${packageName}")}/*"
             try {
                 runAsRoot(command)
             } catch (e: ShellCommandFailedException) {
                 throw ShellActionFailedException(command, e.shellResult.err.joinToString("\n"), e)
             } catch (e: Throwable) {
-                LogsHandler.unhandledException(e, command)
+                LogsHandler.unexpectedException(e, command)
                 throw ShellActionFailedException(command, "unhandled exception", e)
             }
         }
@@ -117,35 +120,45 @@ class ShellCommands(private var users: List<String>?) {
             try {
                 runAsRoot(command)
             } catch (e: ShellCommandFailedException) {
-                throw ShellActionFailedException(command, "Could not $option package $packageName", e)
+                throw ShellActionFailedException(
+                    command,
+                    "Could not $option package $packageName",
+                    e
+                )
             } catch (e: Throwable) {
-                LogsHandler.unhandledException(e, command)
-                throw ShellActionFailedException(command, "Could not $option package $packageName", e)
+                LogsHandler.unexpectedException(e, command)
+                throw ShellActionFailedException(
+                    command,
+                    "Could not $option package $packageName",
+                    e
+                )
             }
         }
     }
 
     @Throws(ShellActionFailedException::class)
-    fun getUsers(): List<String>? {
-        if (!users.isNullOrEmpty()) {
+    fun getUsers(): List<String> {
+        if (users.isNotEmpty()) {
             return users
         }
         val command = "pm list users | $utilBoxQ sed -nr 's/.*\\{([0-9]+):.*/\\1/p'"
         return try {
             val result = runAsRoot(command)
             result.out
-                    .map { obj: String -> obj.trim { it <= ' ' } }
-                    .filter { it.isNotEmpty() }
-                    .toList()
+                .map { obj: String -> obj.trim { it <= ' ' } }
+                .filter { it.isNotEmpty() }
+                .toList()
         } catch (e: ShellCommandFailedException) {
             throw ShellActionFailedException(command, "Could not fetch list of users", e)
         } catch (e: Throwable) {
-            LogsHandler.unhandledException(e, command)
+            LogsHandler.unexpectedException(e, command)
             throw ShellActionFailedException(command, "Could not fetch list of users", e)
         }
     }
 
-    class ShellActionFailedException(val command: String, message: String, cause: Throwable?) : Exception(message, cause)
+    class ShellActionFailedException(val command: String, message: String, cause: Throwable?) :
+        Exception(message, cause)
+
     companion object {
 
         // using reflection to get id of calling user since method getCallingUserId of UserHandle is hidden
@@ -174,19 +187,29 @@ class ShellCommands(private var users: List<String>?) {
                 return try {
                     val result = runAsUser(command)
                     result.out
-                            .filter { line: String -> line.contains("s") }
-                            .map { line: String -> line.substring(line.indexOf(':') + 1).trim { it <= ' ' } }
-                            .toList()
+                        .filter { line: String -> line.contains("s") }
+                        .map { line: String ->
+                            line.substring(line.indexOf(':') + 1).trim { it <= ' ' }
+                        }
+                        .toList()
                 } catch (e: ShellCommandFailedException) {
-                    throw ShellActionFailedException(command, "Could not fetch disabled packages", e)
+                    throw ShellActionFailedException(
+                        command,
+                        "Could not fetch disabled packages",
+                        e
+                    )
                 } catch (e: Throwable) {
-                    LogsHandler.unhandledException(e, command)
-                    throw ShellActionFailedException(command, "Could not fetch disabled packages", e)
+                    LogsHandler.unexpectedException(e, command)
+                    throw ShellActionFailedException(
+                        command,
+                        "Could not fetch disabled packages",
+                        e
+                    )
                 }
             }
 
         @Throws(ShellActionFailedException::class)
-        fun wipeCache(context: Context, app: AppInfo) {
+        fun wipeCache(context: Context, app: Package) {
             Timber.i("${app.packageName}: Wiping cache")
             val commands = mutableListOf<String>()
             // Normal app cache always exists
@@ -212,7 +235,10 @@ class ShellCommands(private var users: List<String>?) {
             // external cache dirs are added dynamically, the bash if-else will handle the logic
             for (myCacheDir in context.externalCacheDirs) {
                 val cacheDirName = myCacheDir.name
-                val appsCacheDir = File(File(myCacheDir.parentFile?.parentFile, app.packageName), cacheDirName).absolutePath
+                val appsCacheDir = File(
+                    File(myCacheDir.parentFile?.parentFile, app.packageName),
+                    cacheDirName
+                ).absolutePath
                 commands.add(conditionalDeleteCommand(appsCacheDir))
             }
             val command = commands.joinToString(" ; ")  // no dependency
@@ -221,7 +247,7 @@ class ShellCommands(private var users: List<String>?) {
             } catch (e: ShellCommandFailedException) {
                 throw ShellActionFailedException(command, e.shellResult.err.joinToString("\n"), e)
             } catch (e: Throwable) {
-                LogsHandler.unhandledException(e, command)
+                LogsHandler.unexpectedException(e, command)
                 throw ShellActionFailedException(command, "unhandled exception", e)
             }
         }

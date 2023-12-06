@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="backup">Cadangkan</string>
-    <string name="restore">Mengembalikan</string>
-    <string name="backupConfirmation">Cadangkan?</string>
-    <string name="restoreConfirmation">Mengembalikan?</string>
+    <string name="restore">Pulihkan</string>
+    <string name="backupConfirmation">Cadangkan\?</string>
+    <string name="restoreConfirmation">Pulihkan\?</string>
     <string name="handleApk">APK</string>
     <string name="handleData">Data</string>
-    <string name="handleBoth">Kedua</string>
+    <string name="handleBoth">Keduanya</string>
     <string name="radio_all">Semua aplikasi</string>
     <string name="radio_user">Aplikasi Pengguna</string>
     <string name="radio_system">Aplikasi Sistem</string>
@@ -15,46 +15,46 @@
     <string name="radio_data">Data</string>
     <string name="radio_special">Backup khusus</string>
     <string name="de_selectAll">Tidak/pilih semua</string>
-    <string name="refresh">Menyegarkan</string>
-    <string name="batchbackup">Batch cadangan</string>
+    <string name="refresh">Segarkan</string>
+    <string name="batchbackup">Pencadangan batch</string>
     <string name="batchrestore">Pemulihan batch</string>
     <string name="search">Cari</string>
     <string name="searchHint">Cari aplikasi</string>
     <string name="deleteBackup">Hapus cadangan</string>
     <string name="uninstall">Copot pemasangan aplikasi</string>
-    <string name="uninstallProgress">Menghapus instalasi…</string>
+    <string name="uninstallProgress">Mencopot pemasangan…</string>
     <string name="showOnlySystem">Hanya aplikasi sistem</string>
     <string name="showOnlyUser">Hanya aplikasi pengguna</string>
     <string name="showNotBackedup">Aplikasi tanpa cadangan</string>
-    <string name="showNotInstalled">Tidak menginstal aplikasi</string>
+    <string name="showNotInstalled">Aplikasi yang tidak terpasang</string>
     <string name="showNewAndUpdated">Aplikasi baru dan yang diperbarui</string>
     <string name="showOldBackups">Backup lama</string>
     <string name="showSplitAPKs">Pisahkan-APK</string>
-    <string name="showOnlyApkBackedUp">Aplikasi dengan hanya yang dicadangkan APK</string>
+    <string name="showOnlyApkBackedUp">Aplikasi dengan hanya APK yang dicadangkan</string>
     <string name="showOnlyDataBackedUp">Aplikasi dengan hanya data yang dicadangkan</string>
     <string name="sortByLabel">Sortir menurut label</string>
     <string name="sortByPackageName">Sortir menurut nama paket</string>
     <string name="sort">Sortir dan saring</string>
-    <string name="uninstallDialogMessage">Copot pemasangan aplikasi ini?</string>
-    <string name="deleteBackupDialogMessage">Hapus file cadangan?</string>
+    <string name="uninstallDialogMessage">Copot pemasangan aplikasi ini\?</string>
+    <string name="deleteBackupDialogMessage">Hapus berkas cadangan\?</string>
     <string name="dialogOK">Baik</string>
     <string name="dialogCancel">Membatalkan</string>
     <string name="dialogYes">Iya</string>
     <string name="dialogNo">Tidak</string>
     <string name="restoreDataWithoutApkError">Tidak dapat mengembalikan data tanpa mengembalikan APK, paket tidak diinstal.</string>
-    <string name="noSu">Tidak bisa mendapatkan izin pengguna super</string>
+    <string name="noSu">Tidak mendapatkan izin pengguna super</string>
     <!-- mkfileError: kesalahan terjadi saat membuat file. format: string + " " + nama file -->
     <string name="mkfileError">Tidak dapat membuat</string>
     <!-- fallbackToDefault: menunjukkan fallback ke default untuk pembuatan file tertentu. digunakan dengan cara yang sama seperti mkfileError -->
     <string name="fallbackToDefault">Kembali ke default</string>
     <string name="backupFolderError">Harap tetapkan lokasi yang benar dalam preferensi dan pastikan ada atau dapat dibuat</string>
-    <string name="shellReturnSuccess">Keberhasilan</string>
-    <string name="shellReturnError">Kesalahan</string>
+    <string name="shellReturnSuccess">Berhasil</string>
+    <string name="shellReturnError">Gagal</string>
     <string name="backupProgress">Mencadangkan…</string>
-    <string name="backupSuccess">Cadangan selesai</string>
-    <string name="backupFailure">Kesalahan pada cadangan</string>
+    <string name="backupSuccess">Pencadangan selesai</string>
+    <string name="backupFailure">Kesalahan saat mencadangkan</string>
     <string name="restoreProgress">Memulihkan…</string>
-    <string name="restoreSuccess">Pulihkan lengkap</string>
+    <string name="restoreSuccess">Pemulihan selesai</string>
     <string name="restoreFailure">Kesalahan saat memulihkan</string>
     <string name="batchSuccess">Operasi selesai</string>
     <string name="batchFailure">Lengkap dengan kesalahan</string>
@@ -93,14 +93,11 @@
     <string name="prefs_password">Kata sandi enkripsi</string>
     <string name="prefs_externaldata">Cadangkan data eksternal</string>
     <string name="prefs_deviceprotecteddata">Cadangkan data yang dilindungi perangkat</string>
-    <string name="prefs_deviceprotecteddata_summary">Mencadangkan dan mengembalikan data yang ditempatkan di data/user_de</string>
-    <string name="prefs_externaldata_summary">Mencadangkan dan mengembalikan data yang ditempatkan pada penyimpanan eksternal (mis. /Storage/emulated/0/Android/data/)</string>
-    <string name="prefs_password_summary">Setel ke kosong untuk menonaktifkan enkripsi</string>
     <string name="prefs_encryption_summary">Aktifkan untuk mengenkripsi cadangan data</string>
     <string name="prefs_excludecache_summary">Bersihkan cache aplikasi sebelum melakukan mencadangkan data</string>
     <string name="prefs_acquirewakelock_summary">Dapatkan wakelock saat operasi batch sedang berjalan untuk mencegah tidur. Mempercepat backup dan memulihkan secara signifikan tetapi akan mengkonsumsi lebih banyak daya.</string>
     <string name="prefs_oldbackups_summary">Saring cadangan yang lebih lama dari nilai dalam beberapa hari. digunakan dengan filter \'tampilkan backup lama\'.</string>
-    <string name="prefs_copyselfapk_summary">Tempatkan salinan OAndBackupX di tingkat atas folder cadangan</string>
+    <string name="prefs_copyselfapk_summary">Tempatkan salinan Neo Backup di tingkat atas folder cadangan</string>
     <string name="prefs_rememberfiltering_summary">Menyimpan metode penyortiran dan penyaringan yang dipilih. Hanya yang ditandai oleh kotak centang di menu yang dipertimbangkan.</string>
     <string name="prefs_batchdelete_summary">Hapus cadangan semua aplikasi yang saat ini tidak diinstal.</string>
     <string name="sched_title">Penjadwalan</string>
@@ -145,7 +142,7 @@
     <string name="encrypted_data_title">Data terenkripsi:</string>
     <string name="other_filters_options">Filter khusus:</string>
     <string name="deleted_backup">Menghapus cadangan</string>
-    <string name="prefs_theme_light">Cahaya</string>
+    <string name="prefs_theme_light">Terang</string>
     <string name="prefs_theme_dark">Gelap</string>
     <string name="prefs_theme_system">Tema sistem</string>
     <string name="empty_filtered_list">Daftar yang difilter kosong.</string>
@@ -174,19 +171,16 @@
     <string name="intro_permission_storage_location">Aplikasi ini membutuhkan lokasi cadangan untuk menyimpan cadangan. Aplikasi ini mungkin membutuhkan beberapa gigabyte penyimpanan untuk cadangan lengkap dan banyak mengkueri sistem file. Harap diingat ketika memilih lokasi penyimpanan berbasis jaringan.</string>
     <string name="intro_permission_usageaccess">Aplikasi ini memerlukan izin ini untuk dapat memeriksa statistik dan ukuran data dan cache aplikasi Anda.</string>
     <string name="intro_permission_storage">Aplikasi ini menggunakan izin baca/tulis penyimpanan untuk dapat mengakses penyimpanan eksternal dan memberikan kemungkinan untuk pencadangan data/obb eksternal aplikasi lain.</string>
-    <string name="intro_welcome_message">OAndBackupX adalah cabang dari OAndBackup yang terkenal dengan tujuan membawanya ke tahun 2020 dan selanjutnya. Untuk saat ini sebagian besar fungsionalitas dan UI aplikasi ditulis ulang dan beberapa ditambahkan.
-\n Aplikasi ini masih dalam tahap beta dan banyak rebasing yang sering dilakukan. Jadi, harap baca log perubahan dengan cermat pada setiap rilis baru.
-\n Semua jenis kontribusi diterima baik itu terjemahan, ide, pelaporan bug, atau pekerjaan kode.
-\n
-\n Sekarang tentang fungsionalitas Aplikasi kami:
-\n • Ini membutuhkan root dan memungkinkan Anda untuk mencadangkan aplikasi individu dan datanya.
-\n • Baik mencadangkan dan memulihkan program satu per satu dan mendukung pencadangan dan pemulihan banyak program.
-\n • Mengembalikan aplikasi sistem semestinya dapat dilakukan tanpa memerlukan reboot setelahnya, tetapi kami tetap tidak menyarankan untuk melakukannya.
-\n • Pencadangan dapat dijadwalkan tanpa batasan jumlah jadwal individu dan ada kemungkinan membuat daftar kustom yang unik.</string>
-    <string name="welcome_to_oabx">Selamat datang di OABX!</string>
+    <string name="intro_welcome_message">Neo Backup (sebelumnya OAndBackupX) adalah cabang dari OAndBackup yang terkenal dengan tujuan untuk membawa OAndBackup ke 202X dan bagian dari rangkaian Neo Applications. Untuk saat ini aplikasi sudah sepenuhnya ditulis ulang, kedatangannya akan membuatnya kuat dan menambahkan beberapa fitur yang direncanakan secara panjang yang dapat memudahkan alur kerja pencadangan/pemulihan dengan perangkat apa pun. Oleh karena itu semua jenis kontribusi selalu diterima.
+\nSekarang tentang fungsionalitas Aplikasi kami:
+\n• Ini membutuhkan root dan memungkinkan Anda untuk membuat cadangan aplikasi individual dan datanya.
+\n• Pencadangan dan pemulihan program masing-masing secara individual dan pencadangan dan pemulihan dari beberapa program didukung.
+\n• Memulihkan aplikasi sistem dapat dilakukan tanpa memerlukan reboot setelahnya.
+\n• Pencadangan dapat dijadwalkan tanpa batasan jumlah jadwal individu dan memungkinkan untuk membuat daftar khusus dari daftar aplikasi yang diinstal.</string>
+    <string name="welcome_to_oabx">Selamat datang di Neo Backup!</string>
     <string name="storage_access">Akses Penyimpanan</string>
     <string name="sort_and_filter">Urutkan &amp; Saring</string>
-    <string name="enable_encryption_message">Tidak aman menyimpan data Anda di perangkat Anda yang tidak dienkripsi. Untuk keamanan data Anda, aktifkan enkripsi dan setel kata sandi.</string>
+    <string name="enable_encryption_message">Tidak aman untuk menyimpan data anda di perangkat anda yang tidak dienkripsi. Untuk keamanan data anda, aktifkan enkripsi dan setel kata sandi.</string>
     <string name="enable_encryption_title">Enkripsi data</string>
     <string name="help_appTypeHint">* Ikon jenis aplikasi akan berwarna abu-abu jika aplikasi dicopot dan abu-abu tua jika aplikasi dinonaktifkan.</string>
     <string name="help_legend">Legenda:</string>
@@ -201,14 +195,10 @@
     <string name="prefs_stopcont_summary">Hanya ahli: Ini dapat membantu, jika aplikasi mengubah file selama pencadangan dan pencadangan gagal.</string>
     <string name="prefs_disableverification_summary">Menonaktifkan opsi pengembang ini saat memulihkan APK dan mengaktifkannya kembali setelahnya. Memecahkan kesalahan: INSTALL_FAILED_VERIFICATION_FAILURE.</string>
     <string name="prefs_disableverification">Nonaktifkan Verifikasi aplikasi melalui USB</string>
-    <string name="prefs_housekeepingmoment_summary">Mengkonfigurasi apakah revisi terlama dihapus sebelum atau setelah membuat cadangan baru untuk mengosongkan ruang penyimpanan yang digunakan oleh cadangan.</string>
-    <string name="prefs_housekeepingmoment">Waktu pembersihan revisi</string>
     <string name="prefs_numBackupRevisions_summary">Revisi terlama akan dihapus saat membuat cadangan baru jika jumlahnya terlampaui. Setel ke nol untuk menyimpan semua revisi.</string>
     <string name="prefs_numBackupRevisions">Jumlah revisi cadangan</string>
     <string name="prefs_biometriclock_summary">Amankan aplikasi dengan kunci biometrik perangkat (misalnya sidik jari, buka kunci wajah)</string>
     <string name="prefs_biometriclock">Kunci biometrik</string>
-    <string name="prefs_housekeepingmoment_before">Sebelum Pencadangan</string>
-    <string name="prefs_housekeepingmoment_after">Setelah Pencadangan</string>
     <string name="prefs_advanced">Preferensi lanjutan</string>
     <string name="radio_obbdata">Data OBB</string>
     <string name="radio_deviceprotecteddata">Data yang Dilindungi Perangkat</string>
@@ -218,7 +208,7 @@
         <item quantity="other">%d aplikasi yang diperbarui</item>
     </plurals>
     <plurals name="days_left">
-        <item quantity="other">%d hari,</item>
+        <item quantity="other">%d hari</item>
     </plurals>
     <string name="app_info">Informasi-aplikasi</string>
     <string name="launch_app">Luncurkan aplikasi</string>
@@ -237,7 +227,6 @@
     <string name="prefs_restoreallpermissions_summary">Beri aplikasi yang telah dipulihkan semua izin yang diperlukan.</string>
     <string name="prefs_restoreallpermissions">Pulihkan dengan semua izin</string>
     <string name="prefs_allowdowngrade">Perbolehkan downgrading</string>
-    <string name="prefs_obbdata_summary">Cadangkan dan pulihkan berkas obb aplikasi yang ditempatkan di penyimpanan eksternal (e.g. /storage/emulated/0/Android/obb/)</string>
     <string name="prefs_obbdata">Cadangkan berkas obb</string>
     <string name="forceKillMessage">Apakah anda yakin untuk memaksa penghentian aplikasi\?</string>
     <string name="sched_name">Nama :</string>
@@ -293,19 +282,80 @@
     <string name="help_changelog">Daftar perubahan</string>
     <string name="sortBackupDate">Tanggal Pencadangan</string>
     <string name="error_pmDataIncompleteException_dataRestoreFailed">Data aplikasi belum dipulihkan.</string>
-    <string name="prefs_mediadata_summary">Cadangkan dan pulihkan berkas aplikasi yang ditempatkan di penyimpanan eksternal (e.g. /storage/emulated/0/Android/media/)</string>
     <string name="prefs_compression_level">Tingkat Kompresi</string>
     <string name="prefs_compression_level_summary">Kualitas yang rendah terkompresi lebih cepat tetapi menghasilkan berkas yang lebih besar. Kualitas yang tinggi terkompresi lebih baik tetapi membutuhkan lebih banyak waktu.</string>
     <string name="error_datachanged">Data aplikasi telah diubah secara aktif saat melakukan pencadangan. Coba matikan prosesnya sebelum melakukan pencadangan</string>
     <string name="intro_permission_storage_location_warning">Jangan pilih direktori penyimpanan utama atau folder Unduhan, buat sebuah folder hanya untuk pencadangan Anda. Lebih lanjut di FAQ</string>
     <string name="prefs_accent_8">Labu Perano</string>
-    <string name="prefs_secondary_3">Harimau Amber</string>
-    <string name="prefs_secondary_4">Oranye Lava</string>
-    <string name="prefs_secondary_5">Flamingo Merah Muda</string>
-    <string name="prefs_secondary_7">Biru Azure</string>
+    <string name="prefs_secondary_3">Tiger Amber</string>
+    <string name="prefs_secondary_4">Lava Orange</string>
+    <string name="prefs_secondary_5">Flamingo Pink</string>
+    <string name="prefs_secondary_7">Azure Blue</string>
     <string name="prefs_secondary_8">Mint</string>
     <string name="home">Beranda</string>
     <string name="all_data">Periksa semua data</string>
     <string name="all_apk">Periksa semua APK</string>
     <string name="showDisabled">Aplikasi nonaktif</string>
+    <string name="sortAppSize">ukuran aplikasi</string>
+    <string name="sortAppDataSize">ukuran data aplikasi</string>
+    <string name="sortBackupSize">ukuran cadangan</string>
+    <string name="grant_contacts_message">Ini penting untuk dapat mencocokkan kontak dengan SMS/MMS.</string>
+    <string name="prefs_restorepermissions">Pulihkan izin</string>
+    <string name="prefs_loadingtoasts_summary">Tampilkan toast saat daftar sedang dimuat</string>
+    <string name="contacts_permission_title">izin kontak</string>
+    <string name="dialogCancelAll">batalkan semua</string>
+    <string name="grant_smsmms_message">Ini penting untuk dapat mencadangkan/mengembalikan SMS/MMS Anda.</string>
+    <string name="spec_fingerprint">Sidik jari</string>
+    <string name="calllogs_permission_title">izin log panggilan</string>
+    <string name="grant_calllogs_message">Ini penting untuk dapat mencadangkan/memulihkan Log Panggilan Anda.</string>
+    <string name="spec_smsmmsjson">SMS/MMS JSON</string>
+    <string name="spec_calllogsjson">log panggilan JSON</string>
+    <string name="smsmms_permission_title">Izin SMS/MMS</string>
+    <string name="prefs_sessionIinstaller">gunakan sesi penginstalan</string>
+    <string name="prefs_sessionIinstaller_summary">Gunakan penginstal sesi daripada penginstal dasar. Lebih lambat tetapi menghindari masalah dengan Android 13+</string>
+    <string name="prefs_installerpackagename">Nama paket penginstal:</string>
+    <string name="prefs_restorepermissions_summary">Pulihkan izin yang diberikan ke aplikasi pada saat pencadangan. Perhatikan bahwa beberapa izin tidak dapat diberikan secara terprogram sehingga menyebabkan pemulihan paket gagal secara keseluruhan, yang kemudian dicakup oleh Neo Backup untuk memulihkan paket tanpa izin.</string>
+    <string name="prefs_loadingtoasts">Memuat toast</string>
+    <string name="prefs_secondary_6">Slate</string>
+    <string name="schedule">Jadwal</string>
+    <string name="finished">Selesai</string>
+    <string name="loading_list">Memuat daftar…</string>
+    <string name="delete">Hapus</string>
+    <string name="dismiss">Membubarkan</string>
+    <string name="enabled">aktifkan</string>
+    <string name="supended_apps_cleanup">bersihkan semua sisa aplikasi yang ditunda</string>
+    <string name="root_is_mandatory">Dikarenakan aplikasi terisolasi, akses superuser wajib untuk dapat melakukan backup dan restore data mereka.</string>
+    <string name="add_tag">tambah tanda baru</string>
+    <string name="edit_note">edit catatan</string>
+    <string name="intro_permission_calllogs">aplikasi membutuhkan izin ini untuk memungkinkan anda membackup/memulihkan log panggilan.</string>
+    <string name="intro_permission_smsmms">aplikasi membutuhkan izin ini untuk memungkinkan anda membackup/memulihkan SMS/MMS.</string>
+    <string name="root_missing">ROOT hilang!</string>
+    <string name="see_faq">Lihat FAQ!</string>
+    <string name="intro_permission_contacts">aplikasi memerlukan izin ini untuk mencocokkan kontak SMS/MMS.</string>
+    <string name="batch">Kumpulan</string>
+    <string name="sortAsc">naik</string>
+    <string name="sortDesc">turun</string>
+    <string name="prefs_user_short">Pribadi</string>
+    <string name="prefs_service_short">Layanan</string>
+    <string name="prefs_advanced_short">Lanjutan</string>
+    <string name="prefs_tools_short">Peralatan</string>
+    <string name="dialog_export_schedules">Ekspor jadwal Saya</string>
+    <string name="prefs_dev_settings">Pengaturan Pengembang</string>
+    <string name="prefs_dev_settings_summary">Jangan diubah kecuali jika pengembang menyuruh Anda melakukannya!</string>
+    <string name="prefs_theme_black">Tema hitam</string>
+    <string name="prefs_multilineinfochips">Chip info multi-baris</string>
+    <string name="prefs_theme_black_summary">Mengatur latar belakang menjadi hitam pekat saat menggunakan tema gelap</string>
+    <string name="show_installed_apps">Aplikasi terpasang</string>
+    <string name="prefs_newandupdatednotification_summary">Menampilkan aplikasi pengguna baru daripada aplikasi yang diperbarui pada bilah notifikasi di halaman beranda.</string>
+    <string name="show_enabled_apps">Aplikasi aktif</string>
+    <string name="prefs_multilineinfochips_summary">Izinkan chip info di lembar aplikasi untuk menjangkau lebih dari satu baris.</string>
+    <string name="prefs_newandupdatednotification">Tampilkan notifikasi baru dan diperbarui</string>
+    <string name="prefs_singularbackuprestore">Pemulihan cadangan tunggal</string>
+    <string name="prefs_singularbackuprestore_summary">Gunakan tata letak item pemulihan alternatif yang memungkinkan pemilihan cadangan tertentu untuk dipulihkan.</string>
+    <string name="sorting_order">Urut berdasarkan</string>
+    <string name="show_updated_apps">Aplikasi yang diperbarui</string>
+    <string name="radio_notlaunchable">Aplikasi yang tidak dapat diluncurkan</string>
+    <string name="show_new_backups">Cadangan terbaru</string>
+    <string name="show_old_apps">Aplikasi lama</string>
+    <string name="show_new_apps">Aplikasi baru</string>
 </resources>

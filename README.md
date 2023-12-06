@@ -1,8 +1,15 @@
-# OAndBackupX  <img align="left" src="https://raw.githubusercontent.com/machiav3lli/OAndBackupX/master/fastlane/metadata/android/en-US/images/icon.png" width="64" />
+# Neo Backup  <img title="" src="./fastlane/metadata/android/en-US/images/icon.png" align="left" width="64">
 
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](COC.md) [![Main CI Workflow](https://github.com/machiav3lli/oandbackupx/workflows/Main%20CI%20Workflow/badge.svg?branch=master)](https://github.com/machiav3lli/oandbackupx/actions?query=workflow%3A%22Main+CI+Workflow%22)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](COC.md)
+[![GitHub repo stars](https://img.shields.io/github/stars/NeoApplications/Neo-Backup?style=flat)](https://github.com/NeoApplications/Neo-Backup/stargazers)
+[![GitHub License](https://img.shields.io/github/license/NeoApplications/Neo-Backup)](https://github.com/NeoApplications/Neo-Backup/blob/master/COPYING)
+[![GitHub All Releases](https://img.shields.io/github/downloads/NeoApplications/Neo-Backup/total.svg)](https://github.com/NeoApplications/Neo-Backup/releases/)
+[![GitHub release](https://img.shields.io/github/v/release/NeoApplications/Neo-Backup?display_name=tag)](https://github.com/NeoApplications/Neo-Backup/releases/latest)
+[![Small translation badge](https://hosted.weblate.org/widgets/neo-backup/-/svg-badge.svg)](https://hosted.weblate.org/engage/neo-backup/?utm_source=widget)
 
-OAndBackupX is a fork of the famous OAndBackup with the aim to bring OAndBackup to 202X. For now the app is already fully rewritten, coming up would be making it robust and adding some lengthily planned features which could ease the backup/restore workflow with any device. Therefore all types of contribution are always welcome.
+Neo Backup (formerly OAndBackupX) is a fork of the famous OAndBackup with the aim to bring OAndBackup to 202X and part of Neo Applications suite. For now the app is already fully rewritten, coming up would be making it robust and adding some lengthily planned features which could ease the backup/restore workflow with any device. Therefore all types of contribution are always welcome.
+
+[![Neo Applications Banner](neo_banner.png)](https://github.com/NeoApplications)
 
 Now on functionality of our App:
 
@@ -12,6 +19,8 @@ Now on functionality of our App:
 * Backups can be scheduled with no limit on the number of individual schedules and there is the possibility of creating custom lists from the list of installed apps.
 
 And here's the project's [FAQ](FAQ.md).
+
+### A Stance: I stand with Ukraine, as I stood and still stand with Yemen, Syria, Afghanistan, Myanmar, Sudan, Columbia, Somalia, Hong Kong (not China) and everywhere human beings are being oppressed by bigger states and/or local dictatorships.
 
 ## Installation
 
@@ -25,11 +34,7 @@ A combination with your favourite sync solution (e.g. Syncthing, Nextcloud...)  
 
 ## Community
 
-In those groups we discuss the development of the App and test new versions:
-
-##### On Matrix: [OAndBackupX:Matrix.ORG](https://matrix.to/#/!PiXJUneYCnkWAjekqX:matrix.org?via=matrix.org)
-
-##### On Telegram: [t.me/OAndBackupX](https://t.me/OAndBackupX)
+You can join either our [Telegram](https://t.me/neo_backup) or [Matrix](https://matrix.to/#/#neo-backup:matrix.org) groups to make suggestions, ask questions, receive news, or just chat.
 
 Our **[Code of Conduct](COC.md)** applies to the communication in the community same as for all contributers.
 
@@ -49,7 +54,7 @@ Till the version 0.9.3 there's been no structural change in how the app handles 
 
 #### [Changelog](CHANGELOG.md)  &  [Known Issues](ISSUES.md)
 
-if you have some kotlin and android knowledge and like to contribute to the project, see the following **[development document](DEVDOC.md)** to see what is still need to be done, where a help could be needed or if you'd like to take on one of the fixes.
+if you have some kotlin and android knowledge and like to contribute to the project, see our Taiga.io project **[here](https://tree.taiga.io/project/machiav3lli-neo-backup/kanban)** to see what is still needed to be done, where a help could be needed or if you'd like to fix one of the issues.
 
 The communication and each contribution in the project community should follow our **[Code of Conduct](COC.md)**.
 
@@ -78,17 +83,17 @@ All new icons in 7.0.0 based on CC0 icons found on [SVG Repo](https://www.svgrep
 
 [Jens Stein](https://github.com/jensstein) for his unbelievably valuable work on OAndBackup.
 
-[Nils](https://github.com/Tiefkuehlpizze), [Harald](https://github.com/hg42) and [Martin](https://github.com/Smojo) for their active contribution to the project.
+[Nils](https://github.com/Tiefkuehlpizze), [Martin](https://github.com/Smojo) and [DL](https://github.com/dl200010) for their active contribution to the project.
 
 [Oliver Pepperell](https://github.com/opepp) for his contribution to the new anniversary design.
 
 Open-Source libs: [FastAdapter](https://github.com/mikepenz/FastAdapter), [RootBeer](https://github.com/scottyab/rootbeer), [NumberPicker](https://github.com/ShawnLin013/NumberPicker), [Apache Commons](https://commons.apache.org).
 
-### Languages: [<img align="right" src="https://hosted.weblate.org/widgets/oandbackupx/-/287x66-white.png" alt="Übersetzungsstatus" />](https://hosted.weblate.org/engage/oandbackupx/?utm_source=widget)
+### Languages: [<img align="right" src="https://hosted.weblate.org/widgets/oandbackupx/-/287x66-white.png" alt="Übersetzungsstatus" />](https://hosted.weblate.org/engage/neo-backup/?utm_source=widget)
 
-[<img src="https://hosted.weblate.org/widgets/oandbackupx/-/multi-auto.svg" alt="Übersetzungsstatus" />](https://hosted.weblate.org/engage/oandbackupx/)
+[<img src="https://hosted.weblate.org/widgets/oandbackupx/-/multi-auto.svg" alt="Übersetzungsstatus" />](https://hosted.weblate.org/engage/neo-backup/)
 
-The Translations are now being hosted by [Weblate.org](https://hosted.weblate.org/engage/oandbackupx/).
+The Translations are now being hosted by [Weblate.org](https://hosted.weblate.org/engage/neo-backup/).
 
 Before that, translations were done analog/offline by those great people:
 
@@ -98,6 +103,8 @@ Before that, translations were done analog/offline by those great people:
 
 I, myself acknowledge the role of the donations to motivate the work on FOSS projects, but in the state of how dynamic everything around my FOSS-contributions is, I would prefer to not take donations for now (the same answer as the last years). Nevertheless this project wouldn't have the accessibility it has without translations, which you the community drive and for which Weblate provides a platform. That's why I would you suggest you to consider [donating to Weblate](https://weblate.org/donate).
 
-## Author
+Following the application on their grant for open-source projects, my Tutanota email account got promoted to premium. For that thanks to [Tutanota](https://tutanota.com) for their support!
 
-Antonios Hazim
+## Authors
+
+Antonios Hazim & Harald Gutsche

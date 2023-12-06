@@ -4,7 +4,7 @@
         <item quantity="other">%d ứng dụng đã cập nhật</item>
     </plurals>
     <plurals name="days_left">
-        <item quantity="other">%d ngày,</item>
+        <item quantity="other">%d ngày</item>
     </plurals>
     <plurals name="sched_interval_formal">
         <item quantity="other">mỗi %d ngày</item>
@@ -52,19 +52,18 @@
     <string name="intro_permission_usageaccess">Ứng dụng cần quyền này để có thể kiểm tra thống kê và kích cỡ của dữ liệu và bộ nhớ đệm của các ứng dụng.</string>
     <string name="intro_permission_storage_location">Ứng dụng này cần một vị trí sao lưu để lưu trữ các bản sao lưu. Ứng dụng có thể sẽ cần một vài gigabyte bộ nhớ cho một bản sao lưu đầy đủ và đang truy vấn hệ thống tệp rất nhiều. Vui lòng chú ý đến điều đó khi chọn các vị trí bộ nhớ dựa trên mạng.</string>
     <string name="intro_permission_storage">Ứng dụng này sử dụng quyền đọc/ghi bộ nhớ để có thể truy cập bộ nhớ ngoài và cung cấp khả năng sao lưu dữ liệu/obb ngoài của các ứng dụng khác.</string>
-    <string name="intro_welcome_message">OAndBackupX là một fork của OAndBackup tai tiếng với mục tiêu là đưa nó đến năm 2020 và xa hơn. Vào lúc này, đa số chức năng và giao diện của ứng dụng đã được viết lại và một số đã được thêm vào.
-\nỨng dụng này vẫn đang trong giai đoạn beta và rất nhiều việc đặt lại cơ sở được làm thường xuyên. Vậy nên hãy vui lòng đọc cẩn thận nhật ký thay đổi ở mỗi phiên bản mới.
-\nTất cả sự đóng góp đều được chào đón cho dù là phiên dịch, ý tưởng, báo cáo lỗi hoặc làm việc với mã.
+    <string name="intro_welcome_message">Neo Backup (trước kia là OAndBackupX) là một fork của OAndBackup nổi tiếng với mục tiêu là đưa nó đến năm 202X và là một phần của bộ ứng dụng Neo Applications. Vào lúc này, ứng dụng đã được viết lại đầy đủ, trong tương lai sẽ làm ứng dụng mạnh mẽ hơn và thêm một vài tính năng làm việc sao lưu/khôi phục dễ dàng hơn trên bất kỳ thiết bị nào.
+\nDo đó, tất cả sự đóng góp đều được chào đón.
 \n
-\nBây giờ, về chức năng của ứng dụng của chúng tôi:
+\nBây giờ, về chức năng ứng dụng của chúng tôi:
 \n• Ứng dụng yêu cầu root và cho phép bạn sao lưu từng ứng dụng riêng lẻ và dữ liệu của chúng.
 \n• Cả hai việc sao lưu và khôi phục từng chương trình một cái một lúc và sao lưu và khôi phục hàng loạt nhiều chương trình đều được hỗ trợ.
-\n• Việc khôi phục ứng dụng hệ thống có thể sẽ làm được mà không yêu cầu khởi động lại sau đó, nhưng chúng tôi vẫn không khuyên bạn làm vậy.
-\n• Các bản sao lưu có thể được lên lịch không giới hạn số lượng lịch trình riêng lẻ và có khả năng tạo các danh sách tuỳ chỉnh độc nhất.</string>
-    <string name="welcome_to_oabx">Chào mừng đến OABX!</string>
+\n• Việc khôi phục ứng dụng hệ thống có thể sẽ làm được mà không yêu cầu khởi động lại sau đó.
+\n• Các bản sao lưu có thể được lên lịch không giới hạn số lượng lịch trình riêng lẻ và có khả năng tạo các danh sách tuỳ chỉnh từ danh sách ứng dụng đã cài đặt.</string>
+    <string name="welcome_to_oabx">Chào mừng đến Neo Backup!</string>
     <string name="storage_access">Quyền truy cập bộ nhớ</string>
     <string name="sort_and_filter">Sắp xếp &amp; Lọc</string>
-    <string name="enable_encryption_message">Việc giữ cho dữ liệu của bạn trên thiết bị không được mã hoá là không an toàn. Để dữ liệu của bạn được an toàn, hãy bật mã hoá và đặt một mật khẩu.</string>
+    <string name="enable_encryption_message">Việc giữ cho dữ liệu của bạn trên thiết bị không được mã hoá là không an toàn. Vì sự an toàn dữ liệu của bạn, hãy bật mã hoá và đặt một mật khẩu.</string>
     <string name="enable_encryption_title">Mã hoá dữ liệu</string>
     <string name="help_appTypeHint">* Biểu tượng loại ứng dụng sẽ là xám nếu ứng dụng bị gỡ cài đặt và xám đậm nếu ứng dụng bị tắt.</string>
     <string name="help_legend">Chú giải:</string>
@@ -78,7 +77,7 @@
     <string name="grant_usage_access_message">Việc này là cần thiết để lấy thông tin về kích cỡ các tệp của các ứng dụng</string>
     <string name="grant_usage_access_title">Cấp quyền truy cập dữ liệu sử dụng</string>
     <string name="backup_filters">Bộ lọc sao lưu:</string>
-    <string name="split_apks">APK tách:</string>
+    <string name="split_apks">Tách rời APKs</string>
     <string name="failed_unzipping">Lỗi khi giải nén zip dữ liệu, hãy kiểm tra mật khẩu mã hoá!</string>
     <string name="ignore_battery_optimization_not_supported">Không may mắn là thiết bị này không hỗ trợ bỏ qua tối ưu hoá pin!</string>
     <string name="ignore_battery_optimization_message">Các bản sao lưu đôi khi có thể dừng. Để ngăn chặn điều này, bạn nên tắt tối ưu hoá pin</string>
@@ -140,36 +139,30 @@
     <string name="prefs_logviewer">Xem nhật ký</string>
     <string name="prefs_saveappslist_summary">Ghi danh sách ứng dụng ra một tệp txt trong thư mục sao lưu của người dùng</string>
     <string name="prefs_saveappslist">Lưu danh sách ứng dụng</string>
-    <string name="prefs_copyselfapk_summary">Đặt một bản sao của OAndBackupX trong cấp trên cùng của thư mục sao lưu</string>
+    <string name="prefs_copyselfapk_summary">Đặt một bản sao của Neo Backup trong cấp trên cùng của thư mục sao lưu</string>
     <string name="prefs_copyselfapk">Sao chép APK của ứng dụng này</string>
     <string name="prefs_batchdelete_summary">Xoá các bản sao lưu của tất cả ứng dụng hiện không được cài đặt.</string>
     <string name="prefs_batchdelete">Xoá các bản sao lưu\?</string>
     <string name="prefs_stopcont_summary">Chỉ dành cho chuyên gia: Việc này có thể giúp, nếu ứng dụng đang thay đổi các tệp trong khi sao lưu và việc sao lưu thất bại.</string>
     <string name="prefs_stopcont">Dừng-tiếp tục xử lý trước và sau các ứng dụng khi sao lưu/khôi phục</string>
     <string name="prefs_allowdowngrade">Cho phép hạ cấp</string>
-    <string name="prefs_allowdowngrade_summary">Cho phép khôi phục một phiên bản cũ hơn của ứng dụng đã cài đặt.</string>
+    <string name="prefs_allowdowngrade_summary">Cho phép khôi phục một phiên bản cũ hơn của ứng dụng đã cài đặt (chỉ áp dụng cho các phiên bản có thể vá lỗi).</string>
     <string name="prefs_restoreallpermissions">Khôi phục với tất cả quyền</string>
     <string name="prefs_restoreallpermissions_summary">Cho ứng dụng được khôi phục tất cả quyền mà nó hỏi.</string>
     <string name="prefs_disableverification_summary">Tắt tuỳ chọn cho nhà phát triển này trong khi khôi phục các tệp APK và bật lại nó sau đó. Giải quyết lỗi: INSTALL_FAILED_VERIFICATION_FAILURE.</string>
     <string name="prefs_disableverification">Tắt Xác minh các ứng dụng qua USB</string>
     <string name="prefs_acquirewakelock_summary">Nhận một wakelock trong các hoạt động hàng loạt để ngăn chặn ngủ. Tăng tốc đáng kể việc sao lưu và khôi phục, nhưng tiêu tốn nhiều năng lượng hơn.</string>
     <string name="prefs_acquirewakelock">Ngăn chặn ngủ</string>
-    <string name="prefs_housekeepingmoment_summary">Thiết lập xem phiên bản cũ nhất bị xoá trước hay sau khi tạo một bản sao lưu mới để làm trống dung lượng ổ đĩa được bản sao lưu đó sử dụng.</string>
-    <string name="prefs_housekeepingmoment">Thời gian dọn dẹp phiên bản</string>
     <string name="prefs_numBackupRevisions_summary">Phiên bản cũ nhất sẽ bị xoá khi tạo một bản sao lưu mới nếu con số này bị vượt quá. Đặt là không để giữ tất cả phiên bản.</string>
     <string name="prefs_numBackupRevisions">Số phiên bản bản sao lưu</string>
-    <string name="prefs_deviceprotecteddata_summary">Sao lưu và khôi phục dữ liệu được đặt trong data/user_de</string>
     <string name="prefs_deviceprotecteddata">Sao lưu dữ liệu được thiết bị bảo vệ</string>
-    <string name="prefs_obbdata_summary">Sao lưu và khôi phục các tệp obb của ứng dụng, chúng được đặt trong bộ nhớ ngoài (vd: /storage/emulated/0/Android/obb/)</string>
     <string name="prefs_obbdata">Sao lưu các tệp obb</string>
-    <string name="prefs_externaldata_summary">Sao lưu và khôi phục dữ liệu được đặt trong bộ nhớ ngoài (vd: /storage/emulated/0/Android/data/)</string>
     <string name="prefs_excludecache">Loại trừ bộ nhớ đệm của ứng dụng</string>
     <string name="prefs_enablespecial_summary">Vẫn cần thử nghiệm kỹ, hãy biết sự nguy hiểm rằng nó có thể gây ra treo logo. Phản hồi luôn được chào đón.</string>
     <string name="prefs_enablespecial">Bật các bản sao lưu đặc biệt</string>
     <string name="prefs_password_match_false">Các mật khẩu không trùng khớp</string>
     <string name="prefs_password_match_true">Các mật khẩu trùng khớp</string>
     <string name="prefs_passwordconfirmation">Xác nhận mật khẩu mã hoá</string>
-    <string name="prefs_password_summary">Để trống để tắt mã hoá</string>
     <string name="prefs_password">Mật khẩu mã hoá</string>
     <string name="prefs_encryption_summary">Bật để mã hoá các bản sao lưu dữ liệu</string>
     <string name="prefs_encryption">Mã hoá</string>
@@ -185,8 +178,6 @@
     <string name="prefs_language_system">Mặc định hệ thống</string>
     <string name="prefs_languages">Ngôn ngữ</string>
     <string name="prefs_theme_system">Chủ đề của hệ thống</string>
-    <string name="prefs_housekeepingmoment_before">Trước khi sao lưu</string>
-    <string name="prefs_housekeepingmoment_after">Sau khi sao lưu</string>
     <string name="prefs_theme_dark">Tối</string>
     <string name="prefs_theme_light">Sáng</string>
     <string name="prefs_theme">Chủ đề</string>
@@ -293,7 +284,6 @@
     <string name="title_note">Lưu ý:</string>
     <string name="help_changelog">Nhật ký thay đổi</string>
     <string name="prefs_mediadata">Sao lưu tệp dữ liệu phương tiện</string>
-    <string name="prefs_mediadata_summary">Sao lưu và khôi phục các tệp phương tiện của ứng dụng được đặt ở bộ nhớ ngoài (vd: /storage/emulated/0/Android/media/)</string>
     <string name="prefs_accent_8">Bí ngô</string>
     <string name="home">Trang chủ</string>
     <string name="radio_mediadata">Dữ liệu phương tiện</string>
@@ -304,4 +294,106 @@
     <string name="showDisabled">Ứng dụng bị tắt</string>
     <string name="error_pmDataIncompleteException_dataRestoreFailed">Dữ liệu ứng dụng chưa được khôi phục.</string>
     <string name="prefs_compression_level_summary">Giá trị thấp sẽ nén nhanh hơn nhưng làm tăng kích thước tệp. Giá trị cao sẽ nén tốt hơn nhưng tốn nhiều thời gian hơn.</string>
+    <string name="grant_smsmms_message">Quyền này là cần thiết để có thể sao lưu/khôi phục SMS/MMS của bạn.</string>
+    <string name="smsmms_permission_title">Quyền SMS/MMS</string>
+    <string name="contacts_permission_title">Quyền danh bạ</string>
+    <string name="intro_permission_smsmms">Ứng dụng cần quyền này để có thể sao lưu/khôi phục SMS/MMS.</string>
+    <string name="intro_permission_contacts">Ứng dụng cần quyền này để có thể nối danh bạ với SMS/MMS.</string>
+    <string name="schedule">Lịch trình</string>
+    <string name="finished">hoàn tất</string>
+    <string name="spec_smsmmsjson">JSON SMS/MMS</string>
+    <string name="spec_calllogsjson">JSON Nhật ký cuộc gọi</string>
+    <string name="calllogs_permission_title">Quyền nhật ký cuộc gọi</string>
+    <string name="grant_calllogs_message">Quyền này là cần thiết để có thể sao lưu/khôi phục nhật ký cuộc gọi của bạn.</string>
+    <string name="grant_contacts_message">Quyền này là cần thiết để có thể nối danh bạ với SMS/MMS.</string>
+    <string name="intro_permission_calllogs">Ứng dụng cần quyền này để có thể sao lưu/khôi phục nhật ký cuộc gọi.</string>
+    <string name="batch">Nhóm</string>
+    <string name="spec_fingerprint">Vân tay</string>
+    <string name="loading_list">Đang tải danh sách…</string>
+    <string name="delete">Xóa</string>
+    <string name="enabled">Đã bật</string>
+    <string name="sortDesc">Giảm dần</string>
+    <string name="prefs_loadingtoasts">Hiện Toast khi tải</string>
+    <string name="prefs_loadingtoasts_summary">Hiện Toast khi danh sách đang được tải</string>
+    <string name="prefs_restorepermissions">Khôi phục quyền</string>
+    <string name="dismiss">Bỏ qua</string>
+    <string name="prefs_restorepermissions_summary">Khôi phục các quyền đã được cấp cho ứng dụng tại thời điểm sao lưu. Lưu ý rằng một số quyền không thể được cấp theo chương trình và vậy nên sẽ làm việc khôi phục gói thất bại, lúc đó Neo Backup sẽ thực hiện khôi phục gói mà không có quyền.</string>
+    <string name="dialogCancelAll">Huỷ tất cả</string>
+    <string name="sortAsc">Tăng dần</string>
+    <string name="supended_apps_cleanup">dọn dẹp các ứng dụng không hoạt động còn sót lại</string>
+    <string name="root_missing">Không có ROOT!</string>
+    <string name="root_is_mandatory">Bởi vì các ứng dụng bị cô lập với nhau, quyền superuser là bắt buộc để có thể sao lưu và khôi phục dữ liệu của chúng.</string>
+    <string name="see_faq">Hãy xem Câu hỏi thường gặp!</string>
+    <string name="sortAppSize">Kích cỡ ứng dụng</string>
+    <string name="sortAppDataSize">Kích cỡ dữ liệu ứng dụng</string>
+    <string name="sortBackupSize">Kích cỡ bản sao lưu</string>
+    <string name="add_tag">Thêm thẻ mới</string>
+    <string name="edit_note">Sửa ghi chú</string>
+    <string name="prefs_sessionIinstaller">Sử dụng trình cài đặt phiên</string>
+    <string name="prefs_sessionIinstaller_summary">Sử dụng trình cài đặt phiên thay vì trình cài đặt cơ bản. Chậm hơn nhưng tránh được vấn đề với Android 13+</string>
+    <string name="prefs_installerpackagename">Tên gói của trình cài đặt:</string>
+    <string name="prefs_user_short">Cá nhân</string>
+    <string name="prefs_service_short">Dịch vụ</string>
+    <string name="prefs_tools_short">Công cụ</string>
+    <string name="dialog_export_schedules">Xuất lịch trình của tôi</string>
+    <string name="prefs_advanced_short">Nâng cao</string>
+    <string name="prefs_dev_settings">Cài đặt nhà phát triển</string>
+    <string name="prefs_dev_settings_summary">Đừng thay đổi trừ khi nhà phát triển bảo thế!</string>
+    <string name="prefs_multilineinfochips">Chip thông tin nhiều dòng</string>
+    <string name="prefs_squeezenavtext">Bó gọn chữ ở mục điều hướng</string>
+    <string name="prefs_multilineinfochips_summary">Cho phép chip trong nơi chứa thông tin ứng dụng hiển thị nhiều dòng.</string>
+    <string name="prefs_squeezenavtext_summary">Cho phép chữ dưới mục thanh điều hướng được thay đổi kích thước để vừa với độ rộng có sẵn.</string>
+    <string name="prefs_deviceprotecteddata_rst">Khôi phục dữ liệu được thiết bị bảo vệ</string>
+    <string name="prefs_deviceprotecteddata_rst_summary">Khôi phục dữ liệu được đặt ở data/user_de</string>
+    <string name="prefs_externaldata_rst">Khôi phục dữ liệu ngoài</string>
+    <string name="prefs_externaldata_rst_summary">Khôi phục dữ liệu được đặt ở bộ nhớ ngoài (vd: /storage/emulated/0/Android/data/)</string>
+    <string name="prefs_obbdata_rst">Khôi phục tệp obb</string>
+    <string name="prefs_obbdata_rst_summary">Khôi phục tệp obb của ứng dụng được đặt ở bộ nhớ ngoài (vd: /storage/emulated/0/Android/obb/)</string>
+    <string name="prefs_mediadata_rst">Khôi phục tệp phương tiện</string>
+    <string name="prefs_mediadata_rst_summary">Khôi phục tệp phương tiện của ứng dụng được đặt trong bộ nhớ ngoài (vd: /storage/emulated/0/Android/media/)</string>
+    <string name="prefs_nobackupdata_rst">Khôi phục tệp no_backup</string>
+    <string name="prefs_nobackupdata_rst_summary">Khôi phục tệp trong dữ liệu được gọi là không được sao lưu</string>
+    <string name="prefs_deviceprotecteddata_summary">Sao lưu dữ liệu được đặt trong data/user_de</string>
+    <string name="prefs_externaldata_summary">Sao lưu dữ liệu được đặt trong bộ nhớ ngoài (vd: /storage/emulated/0/Android/data/)</string>
+    <string name="prefs_mediadata_summary">Sao lưu các tệp phương tiện của ứng dụng được đặt ở bộ nhớ ngoài (vd: /storage/emulated/0/Android/media/)</string>
+    <string name="prefs_nobackupdata">Sao lưu các tệp no_backup</string>
+    <string name="prefs_nobackupdata_summary">Sao lưu các tệp trong dữ liệu được gọi là không được sao lưu</string>
+    <string name="prefs_obbdata_summary">Sao lưu các tệp obb của ứng dụng được đặt trong bộ nhớ ngoài (vd: /storage/emulated/0/Android/obb/)</string>
+    <string name="filters_installed">Cài đặt</string>
+    <string name="radio_notlaunchable">Ứng dụng không thể khởi chạy</string>
+    <string name="prefs_theme_black">Chủ đề đen</string>
+    <string name="prefs_theme_black_summary">Bắt buộc dùng nền đen khi ở chủ đề tối</string>
+    <string name="prefs_tools_terminal">Terminal</string>
+    <string name="prefs_newandupdatednotification">Hiện thông báo mới và đã cập nhật</string>
+    <string name="prefs_newandupdatednotification_summary">Hiện ứng dụng người dùng mới cạnh ứng dụng đã cập nhật ở thanh thông báo trong trang chủ.</string>
+    <string name="prefs_singularbackuprestore">Sao lưu khôi phục riêng lẻ</string>
+    <string name="prefs_singularbackuprestore_summary">Sử dụng bố cục mục khôi phục khác cho phép chọn các bản sao lưu cụ thể để khôi phục.</string>
+    <string name="prefs_altnavbaritem">Sử dụng mục thanh điều hướng khác</string>
+    <string name="prefs_altnavbaritem_summary">Sử dụng bố cục mục thanh điều hướng cũ có hiện nhãn của các mục chưa chọn.</string>
+    <string name="context_menu">Menu ngữ cảnh</string>
+    <string name="backup_revisions_limit">Giới hạn sao lưu: %d</string>
+    <string name="filters_launchable">Có thể khởi chạy</string>
+    <string name="filters_enabled">Đã bật</string>
+    <string name="filters_latest">Bản sao lưu mới nhất</string>
+    <string name="filters_app">Loại ứng dụng</string>
+    <string name="filters_backup">Loại sao lưu</string>
+    <string name="sorting_order">Thứ tự sắp xếp</string>
+    <string name="show_updated_apps">Ứng dụng đã cập nhật</string>
+    <string name="show_old_apps">Ứng dụng cũ</string>
+    <string name="show_enabled_apps">Ứng dụng đã bật</string>
+    <string name="show_installed_apps">Ứng dụng đã cài đặt</string>
+    <string name="show_new_backups">Bản sao lưu mới</string>
+    <string name="prefs_password_summary">Cũng được sử dụng để giải mã khi khôi phục</string>
+    <string name="prefs_laserbackground_summary">Sử dụng hoạt ảnh ánh sáng có màu sắc làm nền khi đang tải/đang bận.</string>
+    <string name="prefs_laserbackground">Hiện hoạt ảnh la-ze trong nền</string>
+    <string name="post_notifications_permission_title">Gửi thông báo</string>
+    <string name="post_notifications_permission_message">Bắt đầu từ Android 13, các ứng dụng yêu cầu quyền này để có thể gửi thông báo.</string>
+    <string name="clear_text">Xóa chữ</string>
+    <string name="filters_updated">Đã cập nhật</string>
+    <string name="show_new_apps">Ứng dụng mới</string>
+    <string name="prefs_theme_dynamic_black">Đen với màu sắc năng động</string>
+    <string name="prefs_theme_dynamic">Chủ đề động</string>
+    <string name="prefs_theme_dynamic_light">Sáng với màu sắc năng động</string>
+    <string name="prefs_theme_system_black">Chủ đề của hệ thống (Đen)</string>
+    <string name="prefs_theme_dynamic_dark">Tối với màu sắc năng động</string>
 </resources>

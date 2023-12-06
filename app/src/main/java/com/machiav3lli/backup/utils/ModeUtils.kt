@@ -18,69 +18,66 @@
 package com.machiav3lli.backup.utils
 
 import android.content.Context
-import com.machiav3lli.backup.*
+import com.machiav3lli.backup.ALT_MODE_APK
+import com.machiav3lli.backup.ALT_MODE_BOTH
+import com.machiav3lli.backup.ALT_MODE_DATA
+import com.machiav3lli.backup.MODE_APK
+import com.machiav3lli.backup.MODE_DATA
+import com.machiav3lli.backup.MODE_DATA_DE
+import com.machiav3lli.backup.MODE_DATA_EXT
+import com.machiav3lli.backup.MODE_DATA_MEDIA
+import com.machiav3lli.backup.MODE_DATA_OBB
+import com.machiav3lli.backup.MODE_UNSET
+import com.machiav3lli.backup.R
+import com.machiav3lli.backup.possibleSchedModes
 
-fun altModeToMode(context: Context, mode: Int) = when (mode) {
+fun altModeToMode(mode: Int, backupBoolean: Boolean) = when (mode) {
     ALT_MODE_APK -> MODE_APK
-    else -> {
+    else         -> {
         var dataMode = if (mode == ALT_MODE_BOTH) 0b11000 else MODE_DATA
-        if (context.isBackupDeviceProtectedData) dataMode = dataMode or MODE_DATA_DE
-        if (context.isBackupExternalData) dataMode = dataMode or MODE_DATA_EXT
-        if (context.isBackupObbData) dataMode = dataMode or MODE_DATA_OBB
-        if (context.isBackupMediaData) dataMode = dataMode or MODE_DATA_MEDIA
+        if (backupBoolean) {
+            if (isBackupDeviceProtectedData) dataMode = dataMode or MODE_DATA_DE
+            if (isBackupExternalData) dataMode = dataMode or MODE_DATA_EXT
+            if (isBackupObbData) dataMode = dataMode or MODE_DATA_OBB
+            if (isBackupMediaData) dataMode = dataMode or MODE_DATA_MEDIA
+        } else {
+            if (isRestoreDeviceProtectedData) dataMode = dataMode or MODE_DATA_DE
+            if (isRestoreExternalData) dataMode = dataMode or MODE_DATA_EXT
+            if (isRestoreObbData) dataMode = dataMode or MODE_DATA_OBB
+            if (isRestoreMediaData) dataMode = dataMode or MODE_DATA_MEDIA
+        }
         dataMode
     }
 }
 
-fun modeIfActive(context: Context, mode: Int) = when {
-    mode == MODE_APK -> MODE_APK
-    mode == MODE_DATA -> MODE_DATA
-    mode == MODE_DATA_DE && context.isBackupDeviceProtectedData -> MODE_DATA_DE
-    mode == MODE_DATA_EXT && context.isBackupExternalData -> MODE_DATA_EXT
-    mode == MODE_DATA_OBB && context.isBackupObbData -> MODE_DATA_OBB
-    mode == MODE_DATA_MEDIA && context.isBackupMediaData -> MODE_DATA_MEDIA
-    else -> MODE_UNSET
+fun backupModeIfActive(mode: Int) = when {
+    mode == MODE_APK                                    -> MODE_APK
+    mode == MODE_DATA                                   -> MODE_DATA
+    mode == MODE_DATA_DE && isBackupDeviceProtectedData -> MODE_DATA_DE
+    mode == MODE_DATA_EXT && isBackupExternalData       -> MODE_DATA_EXT
+    mode == MODE_DATA_OBB && isBackupObbData            -> MODE_DATA_OBB
+    mode == MODE_DATA_MEDIA && isBackupMediaData        -> MODE_DATA_MEDIA
+    else                                                -> MODE_UNSET
 }
 
 fun modeToModes(mode: Int): List<Int> = possibleSchedModes
     .filter { mode and it == it }
 
-fun modeToId(mode: Int) = when (mode) {
-    MODE_APK -> R.id.backupApk
-    MODE_DATA -> R.id.backupData
-    MODE_DATA_DE -> R.id.backupDataDe
-    MODE_DATA_EXT -> R.id.backupDataExt
-    MODE_DATA_OBB -> R.id.backupDataObb
-    MODE_DATA_MEDIA -> R.id.backupDataMedia
-    else -> R.id.backupNone
-}
-
-fun idToMode(id: Int) = when (id) {
-    R.id.backupNone -> MODE_NONE
-    R.id.backupApk -> MODE_APK
-    R.id.backupData -> MODE_DATA
-    R.id.backupDataDe -> MODE_DATA_DE
-    R.id.backupDataExt -> MODE_DATA_EXT
-    R.id.backupDataObb -> MODE_DATA_OBB
-    R.id.backupDataMedia -> MODE_DATA_MEDIA
-    else -> MODE_UNSET
-}
-
 fun modeToString(context: Context, mode: Int): String = when (mode) {
-    MODE_APK -> context.getString(R.string.radio_apk)
-    MODE_DATA -> context.getString(R.string.radio_data)
-    MODE_DATA_DE -> context.getString(R.string.radio_deviceprotecteddata)
-    MODE_DATA_EXT -> context.getString(R.string.radio_externaldata)
-    MODE_DATA_OBB -> context.getString(R.string.radio_obbdata)
+    MODE_APK        -> context.getString(R.string.radio_apk)
+    MODE_DATA       -> context.getString(R.string.radio_data)
+    MODE_DATA_DE    -> context.getString(R.string.radio_deviceprotecteddata)
+    MODE_DATA_EXT   -> context.getString(R.string.radio_externaldata)
+    MODE_DATA_OBB   -> context.getString(R.string.radio_obbdata)
     MODE_DATA_MEDIA -> context.getString(R.string.radio_mediadata)
-    else -> ""
+    else            -> ""
 }
 
 fun modeToStringAlt(context: Context, mode: Int): String = when (mode) {
-    ALT_MODE_APK -> context.getString(R.string.handleApk)
+    ALT_MODE_APK  -> context.getString(R.string.handleApk)
     ALT_MODE_DATA -> context.getString(R.string.handleData)
     ALT_MODE_BOTH -> context.getString(R.string.handleBoth)
-    else -> ""
+    else          -> ""
 }
 
 fun modesToString(context: Context, modes: List<Int>): String =

@@ -2,8 +2,8 @@
 <resources>
     <string name="backup">Lag sikkerhetskopi</string>
     <string name="restore">Gjenopprett</string>
-    <string name="backupConfirmation">Lag sikkerhetskopi?</string>
-    <string name="restoreConfirmation">Gjenopprett?</string>
+    <string name="backupConfirmation">Lag sikkerhetskopi\?</string>
+    <string name="restoreConfirmation">Gjenopprett\?</string>
     <string name="handleApk">APK</string>
     <string name="handleData">Data</string>
     <string name="handleBoth">Begge</string>
@@ -32,8 +32,8 @@
     <string name="sortByLabel">Sorter etter navn</string>
     <string name="sortByPackageName">Sorter etter pakkenavn</string>
     <string name="sort">Sorter og filtrer</string>
-    <string name="uninstallDialogMessage">Avinstaller appen?</string>
-    <string name="deleteBackupDialogMessage">Slett sikkerhetskopien?</string>
+    <string name="uninstallDialogMessage">Avinstaller appen\?</string>
+    <string name="deleteBackupDialogMessage">Slett sikkerhetskopien\?</string>
     <string name="dialogOK">OK</string>
     <string name="dialogCancel">Avbrut</string>
     <string name="dialogYes">Ja</string>
@@ -63,11 +63,11 @@
     <string name="notInstalledModeDataWarning">Appen kan ikke gjenopprettes fra en sikkerhetskopi som mangler APKen</string>
     <string name="shareTitle">Del med</string>
     <string name="prefs_tools">Verktøyer</string>
-    <string name="prefs_batchdelete">Slett sikkerhetskopier?</string>
+    <string name="prefs_batchdelete">Slett sikkerhetskopier\?</string>
     <string name="batchDeleteMessage">Sletter sikkerhetskopier…</string>
     <string name="batchDeleteNotificationTitle">Slett sikkerhetskopier</string>
     <!--tools_backupsDeleted: shown in a notification followed by the number of backups deleted-->
-    <string name="batchDeleteBackupsDeleted">Sikkerhetskopier ble slettet: </string>
+    <string name="batchDeleteBackupsDeleted">Sikkerhetskopier ble slettet:</string>
     <string name="batchDeleteNothingToDelete">Ingen sikkerhetskopier å slette</string>
     <string name="enablePackage">Aktiver program</string>
     <!--enablePackageTitle: title for a list of checkable users-->
@@ -152,13 +152,10 @@
     <string name="sched_add">Legg til kjøreplan</string>
     <string name="prefs_logviewer">Vis loggen</string>
     <string name="prefs_batchdelete_summary">Sletter sikkerhetskopier av alle programmer som ikke er installert</string>
-    <string name="prefs_deviceprotecteddata_summary">Sikkerhetskopierer og gjenoppretter data plassert i data/user_de</string>
     <string name="prefs_deviceprotecteddata">Sikkerhetskopier enhetsbeskyttet data</string>
-    <string name="prefs_externaldata_summary">Sikkerhetskopierer og gjenoppretter data på eksternt lagringsmedium (f.eks. /storage/emulated/0/Android/data/)</string>
     <string name="prefs_externaldata">Sikkerhetskopier ekstern data</string>
     <string name="prefs_excludecache_summary">Utelat programmets hurtiglager fra datasikkerhetskopi</string>
     <string name="prefs_excludecache">Utelat programmets hurtiglager</string>
-    <string name="prefs_password_summary">Sett til tom for å skru av kryptering</string>
     <string name="prefs_password">Krypteringspassord</string>
     <string name="prefs_encryption_summary">Skru på for å kryptere datasikkerhetskopier</string>
     <string name="prefs_encryption">Kryptering</string>
@@ -197,8 +194,6 @@
     <string name="prefs_stopcont_summary">Kun for eksperter: Dette kan hjelpe, hvis programmet endrer filer under sikkerhetskopier og sikkerhetskopien feiler.</string>
     <string name="prefs_stopcont">Drep prosesser med tvang før sikkerhetskopiering/gjenoppretting</string>
     <string name="prefs_advanced">Avanserte innstillinger</string>
-    <string name="prefs_housekeepingmoment_after">Etter sikkerhetskopiering</string>
-    <string name="prefs_housekeepingmoment_before">Før sikkerhetskopiering</string>
     <string name="delete_all_backups">Slett alle sikkerhetskopier</string>
     <string name="fetching_action_list">Henter programliste for %1$s…</string>
     <string name="logs_text_empty">Ingenting å vise.</string>
@@ -211,14 +206,12 @@
     <string name="help_appTypeHint">* Programmets typeikon ville vært grått hvis programmet er avinstallert og mørkegrått hvis avskrudd.</string>
     <string name="prefs_unset">Usatt</string>
     <string name="prefs_disableverification_summary">Skrur av utviklervalget under gjenoppretting av APK-er, og skrur dem på igjen etterpå. Fikser problemet: INSTALL_FAILED_VERIFICATION_FAILURE.</string>
-    <string name="prefs_housekeepingmoment_summary">Setter opp hvorvidt eldste revisjon slettes før eller etter opprettelse av ny sikkerhetskopi for å frigjøre plass brukt av sikkerhetskopien.</string>
     <string name="prefs_disableverification">Skru av «Bekreft programmer over USB»</string>
-    <string name="prefs_housekeepingmoment">Revisjonstømmingstid</string>
     <string name="prefs_numBackupRevisions_summary">Den eldste revisjonen vil bli slettet når en ny opprettes, sett at nummeret overstiges. Sett det til null for å beholde alle.</string>
     <string name="prefs_numBackupRevisions">Antall sikkeretskopi-revisjoner</string>
     <plurals name="days_left">
-        <item quantity="one">%d dag,</item>
-        <item quantity="other">%d dager,</item>
+        <item quantity="one">%d dag</item>
+        <item quantity="other">%d dager</item>
     </plurals>
     <string name="help_issues">Kjente feil</string>
     <string name="prefs_restoreallpermissions">Gjenopprett med alle tilganger</string>
@@ -230,7 +223,6 @@
     <string name="help_faq">Ofte stilte spørsmål</string>
     <string name="prefs_allowdowngrade_summary">Tillat gjenoppretting av en eldre versjon av det installerte programmet.</string>
     <string name="prefs_restoreallpermissions_summary">Gi det gjenopprettede programmet alle tilgangene det etterspør.</string>
-    <string name="prefs_obbdata_summary">Sikkerhetskopierer og gjenoppretter programmets OBB-filer som er plassert på eksternt lagringsmedium (f.eks. /storage/emulated/0/Android/obb/)</string>
     <string name="prefs_obbdata">Sikkerhetskopier OBB-filer</string>
     <string name="usage_notes_title">Bruksmerknader</string>
     <string name="main">Hovedside</string>

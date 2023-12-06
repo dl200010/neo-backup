@@ -3,7 +3,7 @@
     <string name="radio_special">نسخ احتياطية مميزة</string>
     <string name="radio_data">البيانات</string>
     <string name="radio_apk">APK</string>
-    <string name="radio_both">APK والبيانات</string>
+    <string name="radio_both">التطبيقات والبيانات</string>
     <string name="radio_system">تطبيقات النظام</string>
     <string name="radio_user">تطبيقات المستخدم</string>
     <string name="radio_all">جميع التطبيقات</string>
@@ -49,14 +49,10 @@
     <string name="batchrestore">استعادة متعددة</string>
     <string name="batchbackup">نسخ احتياطي متعدد</string>
     <string name="refresh">تحديث</string>
-    <string name="prefs_housekeepingmoment">وقت تنظيف النسخ</string>
     <string name="prefs_numBackupRevisions_summary">سيتم حذف النسخة الأقدم عند إنشاء نسخة احتياطية جديدة إذا تم تجاوز الرقم. اضبطه على صفر للاحتفاظ بجميع المراجعات.</string>
     <string name="prefs_numBackupRevisions">عدد النسخ الاحتياطية</string>
-    <string name="prefs_deviceprotecteddata_summary">النسخ الاحتياطي واستعادة البيانات التي يتم وضعها في data / user_de</string>
     <string name="prefs_deviceprotecteddata">نسخ احتياطي للبيانات المحمية بالجهاز</string>
-    <string name="prefs_obbdata_summary">النسخ الاحتياطي واستعادة ملفات obb للتطبيق المحفوظة في وحدة التخزين الخارجية (على سبيل المثال / storage / emulated / 0 / Android / obb )</string>
     <string name="prefs_obbdata">نسخ احتياطي لملفات obb</string>
-    <string name="prefs_externaldata_summary">النسخ الاحتياطي واستعادة البيانات الموضوعة على وحدة التخزين الخارجية (على سبيل المثال / storage / emulated / 0 / Android / data /)</string>
     <string name="prefs_externaldata">نسخ احتياطي للبيانات الخارجية</string>
     <string name="prefs_excludecache_summary">استبعاد ذاكرة التخزين المؤقت للتطبيق من النسخ الاحتياطي للبيانات</string>
     <string name="prefs_excludecache">استبعاد ذاكرة التخزين المؤقت للتطبيق</string>
@@ -64,7 +60,6 @@
     <string name="prefs_password_match_false">كلمة السر ليست متطابقة</string>
     <string name="prefs_password_match_true">كلمات المرور متطابقة</string>
     <string name="prefs_passwordconfirmation">التأكيد لكلمة سر التشفير</string>
-    <string name="prefs_password_summary">اتركها فارغة لتعطل التشفير</string>
     <string name="prefs_password">كلمة سر التشفير</string>
     <string name="prefs_encryption_summary">تمكين تشفير النسخ الاحتياطية للبيانات</string>
     <string name="prefs_encryption">التشفير</string>
@@ -78,8 +73,6 @@
     <string name="prefs_language_system">افتراضي النظام</string>
     <string name="prefs_languages">اللغة</string>
     <string name="prefs_theme_system">ثيم النظام</string>
-    <string name="prefs_housekeepingmoment_before">قبل النسخ الاحتياطي</string>
-    <string name="prefs_housekeepingmoment_after">بعد النسخ الاحتياطي</string>
     <string name="prefs_theme_dark">داكن</string>
     <string name="prefs_theme_light">فاتح</string>
     <string name="prefs_theme">الثيم</string>
@@ -168,20 +161,19 @@
     <string name="prefs_logviewer">عرض السجل</string>
     <string name="prefs_saveappslist_summary">كتابة قائمة التطبيقات إلى ملف txt في مجلد النسخ الاحتياطية الخاص بالمستخدم</string>
     <string name="prefs_saveappslist">حفظ قائمة التطبيقات</string>
-    <string name="prefs_copyselfapk_summary">وضع نسخة من OAndBackupX في المستوى الأعلى من مجلد النسخ الاحتياطي</string>
+    <string name="prefs_copyselfapk_summary">ضع نسخة من Neo Backup في المستوى العلوي من مجلد النسخ الاحتياطي</string>
     <string name="prefs_copyselfapk">انسخ ملف APK الخاص بالتطبيق</string>
     <string name="prefs_batchdelete_summary">حذف النسخ الاحتياطية لجميع التطبيقات غير المثبتة حاليا.</string>
     <string name="prefs_batchdelete">هل تريد حذف النسخ الاحتياطية؟</string>
     <string name="prefs_stopcont_summary">الخبراء فقط: هذا يمكن أن يساعد ، إذا كان التطبيق يقوم بتغيير الملفات أثناء النسخ الاحتياطي وفشل النسخ الاحتياطي.</string>
     <string name="prefs_stopcont">STOP-CONT قبل وما بعد معالجة التطبيقات على النسخ الاحتياطي / استعادة</string>
     <string name="prefs_allowdowngrade">السماح بخفض النسخة</string>
-    <string name="prefs_allowdowngrade_summary">السماح باستعادة إصدار أقدم من التطبيق المثبت.</string>
+    <string name="prefs_allowdowngrade_summary">السماح باستعادة إصدار قديم من التطبيق المثبت (ينطبق فقط على الإصدارات القابلة للتصحيح).</string>
     <string name="prefs_restoreallpermissions">الاستعادة مع كافة الأذونات</string>
     <string name="prefs_restoreallpermissions_summary">امنح التطبيق المستعاد جميع الأذونات التي يطلبها.</string>
     <string name="prefs_disableverification_summary">تعطيل خيار المطور هذا أثناء استعادة ملفات APK وإعادة تمكينه بعد ذلك. حل للخطأ: INSTALL_FAILED_VERIFICATION_FAILURE.</string>
     <string name="prefs_disableverification">تعطيل التحقق من التطبيقات عبر USB</string>
     <string name="prefs_acquirewakelock">منع النوم</string>
-    <string name="prefs_housekeepingmoment_summary">تحديد إن وجب حذف أقدم نسخة احتياطية قبل أو بعد إنشاء نسخة احتياطية جديدة لتحرير مساحة القرص التي تستخدمها النسخة الاحتياطية.</string>
     <string name="prefs_enablespecial_summary">لا تزال بحاجة إلى اختبار مكثف، حاول مع أخذ الأعتبار بالخطورة بانه قد يتسبب في حدوث اعادة اقلاع متكرر(بوتلوب). الردود دائمًا موضع ترحيب.</string>
     <string name="prefs_devicelock_summary">تأمين التطبيق باستخدام القفل الخاص بالجهاز</string>
     <string name="prefs_devicelock">قفل الجهاز</string>
@@ -195,7 +187,7 @@
         <item quantity="other">%d التطبيقات المحدثة</item>
     </plurals>
     <plurals name="days_left">
-        <item quantity="zero">%d يوم,</item>
+        <item quantity="zero">%d يوم</item>
         <item quantity="one">%d يوم</item>
         <item quantity="two">%d يومين</item>
         <item quantity="few">%d بعض الايام</item>
@@ -227,19 +219,18 @@
     <string name="intro_permission_usageaccess">يحتاج التطبيق إلى هذا الإذن ليتمكن من التحقق من الإحصائيات وأحجام البيانات وذاكرة التخزين المؤقت لتطبيقاتك.</string>
     <string name="intro_permission_storage_location">يحتاج التطبيق إلى مجلد نسخ احتياطي لتخزين النسخ الاحتياطية. قد يحتاج التطبيق إلى بضع غيغابايت من التخزين للحصول على نسخة احتياطية كاملة والاستعلام عن نظام الملفات كثيرًا. يرجى مراعاة ذلك عند اختيار مواقع التخزين المبنية على الشبكة.</string>
     <string name="intro_permission_storage">يستخدم التطبيق إذن القراءة / الكتابة للتخزين ليكون قادرا على الوصول إلى التخزين الخارجي وتوفير إمكانية النسخ الاحتياطي للبيانات الخارجية / obb من التطبيقات الأخرى.</string>
-    <string name="intro_welcome_message">OAndBackupX هو تفرع من OAndBackup العتيق بهدف تقديمه وتطويره إلى عام 2020 وما بعده. في الوقت الحالي ، تتم إعادة كتابة معظم وظائف التطبيق وواجهة المستخدم وإضافة بعضها.
-\n لا يزال التطبيق في مراحل تجريبية ويتم إجراء الكثير من عمليات إعادة التأسيس كثيرًا. لذا يرجى قراءة سجل التغيير بعناية مع كل إصدار جديد.
-\n نرحب بجميع أنواع المساهمات سواء كانت الترجمة أو الأفكار أو الإبلاغ عن الأخطاء أو عمل التعليمات البرمجية.
+    <string name="intro_welcome_message">Neo Backup (سابقا OAndBackupX) هي تفرع من OAndBackup الشهير بهدف جلب OAndBackup إلى 202X وجزء من مجموعة تطبيقات Neo. في الوقت الحالي ، تمت إعادة كتابة التطبيق بالكامل بالفعل ، ومن شأن ظهوره أن يجعله قويا ويضيف بعض الميزات المخطط لها لفترة طويلة والتي يمكن أن تسهل سير عمل النسخ الاحتياطي / الاستعادة مع أي جهاز.
+\n لذلك نرحب دائما بجميع أنواع المساهمات.
 \n
-\n الآن في وظائف التطبيق لدينا:
-\n • يتطلب صلاحية الروت ويسمح لك بعمل نسخة احتياطية من التطبيقات الفردية وبياناتها.
-\n • يتم دعم كل من النسخ الاحتياطي واستعادة البرامج الفردية في وقت واحد والنسخ الاحتياطي دفعة واستعادة برامج متعددة.
-\n • يجب أن تكون استعادة تطبيقات النظام ممكنة دون الحاجة إلى إعادة التشغيل بعد ذلك ، ولكننا ما زلنا لا ننصح بالقيام بذلك.
-\n • يمكن جدولة النسخ الاحتياطية بدون حد لعدد الجداول الفردية وهناك إمكانية لإنشاء قوائم مخصصة فريدة.</string>
-    <string name="welcome_to_oabx">مرحبا بك في OABX!</string>
+\nالآن على وظائف التطبيق لدينا:
+\n • يتطلب الجذر ويسمح لك بعمل نسخة احتياطية من التطبيقات الفردية وبياناتها.
+\n • يتم دعم كل من النسخ الاحتياطي واستعادة البرامج الفردية واحدة تلو الأخرى والنسخ الاحتياطي الدفعي واستعادة برامج متعددة.
+\n • يجب أن تكون استعادة تطبيقات النظام ممكنة دون الحاجة إلى إعادة التشغيل بعد ذلك.
+\n • يمكن جدولة النسخ الاحتياطية دون حد لعدد الجداول الفردية وهناك إمكانية لإنشاء قوائم مخصصة من قائمة التطبيقات المثبتة.</string>
+    <string name="welcome_to_oabx">مرحبا بك في Neo Backup!</string>
     <string name="storage_access">الوصول إلى التخزين</string>
     <string name="sort_and_filter">فرز &amp; وتصفية</string>
-    <string name="enable_encryption_message">ليس من الآمن إبقاء بياناتك على جهازك غير مشفرة. لسلامة البيانات الخاصة بك تمكين التشفير وتعيين كلمة مرور.</string>
+    <string name="enable_encryption_message">ليس من الآمن عدم تشفير بياناتك على جهازك. من أجل سلامة بياناتك، قم بتمكين التشفير وتعيين كلمة مرور.</string>
     <string name="enable_encryption_title">تشفير البيانات</string>
     <string name="help_legend">اسطوره:</string>
     <string name="help_faq">الأسئلة المتداولة</string>
@@ -250,7 +241,7 @@
     <string name="grant_usage_access_message">هذا أمر ضروري للحصول على معلومات حول أحجام ملفات التطبيق</string>
     <string name="grant_usage_access_title">منح الوصول إلى الاستخدام</string>
     <string name="backup_filters">مرشحات النسخ الاحتياطي:</string>
-    <string name="split_apks">التطبيقات المقسمة APKs:</string>
+    <string name="split_apks">التطبيقات المقسمة APKs</string>
     <string name="ignore_battery_optimization_message">النسخ الاحتياطي قد تتوقف أحياناً لمنع ذلك، يجب إيقاف تشغيل تحسين البطارية</string>
     <string name="ignore_battery_optimization_title">تحسين البطارية</string>
     <string name="spec_appwidgets">التطبيقات المصغرة</string>
@@ -306,7 +297,6 @@
     <string name="title_tags">العلامات:</string>
     <string name="title_note">ملحوظة:</string>
     <string name="sortBackupDate">تاريخ النسخ الاحتياطي</string>
-    <string name="prefs_mediadata_summary">نسخ ملفات الوسائط الخاصة بالتطبيق التي يتم وضعها في التخزين الخارجي واستعادتها (على سبيل المثال /storage/emulated/0/Android/media / )</string>
     <string name="prefs_mediadata">نسخ ملفات الوسائط احتياطيًا</string>
     <string name="radio_mediadata">بيانات الوسائط</string>
     <string name="help_changelog">سجل التغييرات</string>
@@ -319,4 +309,106 @@
     <string name="error_pmDataIncompleteException_dataRestoreFailed">لم تتم استعادة بيانات التطبيق.</string>
     <string name="prefs_compression_level_summary">يتم ضغط القيمة الأقل بشكل أسرع ولكن ينتج عنها ملفات أكبر. تضغط القيمة الأعلى بشكل أفضل ولكنها تستغرق وقتًا أطول.</string>
     <string name="showDisabled">التطبيقات المعطلة</string>
+    <string name="grant_smsmms_message">هذا ضروري لتكون قادرًا على عمل نسخة احتياطية / استعادة رسائل SMS / MMS الخاصة بك.</string>
+    <string name="grant_calllogs_message">هذا ضروري لتكون قادرًا على الاحتفاظ بنسخة احتياطية / استعادة سجلات المكالمات الخاصة بك.</string>
+    <string name="grant_contacts_message">هذا ضروري لتكون قادرًا على مطابقة جهة اتصال برسالة SMS / MMS.</string>
+    <string name="intro_permission_calllogs">يحتاج التطبيق إلى هذا الإذن ليتمكن من إجراء نسخ احتياطي / استعادة سجلات المكالمات الخاصة بك.</string>
+    <string name="finished">منتهي</string>
+    <string name="contacts_permission_title">أذونات جهات الاتصال</string>
+    <string name="batch">حزمة</string>
+    <string name="smsmms_permission_title">أذونات SMS/MMS</string>
+    <string name="schedule">جدولة</string>
+    <string name="spec_smsmmsjson">SMS/ MMS JSON</string>
+    <string name="spec_calllogsjson">سجلات المكالمات JSON</string>
+    <string name="calllogs_permission_title">أذونات سجلات المكالمات</string>
+    <string name="intro_permission_smsmms">يحتاج التطبيق إلى هذا الإذن ليتمكن من نسخ / استعادة رسائل SMS / MMS الخاصة بك.</string>
+    <string name="intro_permission_contacts">يحتاج التطبيق إلى هذا الإذن ليتمكن من مطابقة جهة اتصال مع رسالة SMS/MMS.</string>
+    <string name="spec_fingerprint">البصمات</string>
+    <string name="loading_list">تحميل القائمة …</string>
+    <string name="delete">حذف</string>
+    <string name="dialogCancelAll">إلغاء الكل</string>
+    <string name="sortDesc">تنازلي</string>
+    <string name="dismiss">رفض</string>
+    <string name="enabled">تمكين</string>
+    <string name="sortAsc">تصاعدي</string>
+    <string name="prefs_loadingtoasts">تنبيه التحميل</string>
+    <string name="prefs_loadingtoasts_summary">إظهار تنبيه منبثق أثناء تحميل القائمة</string>
+    <string name="prefs_restorepermissions">استعادة الأذونات</string>
+    <string name="prefs_restorepermissions_summary">استعادة الأذونات التي تم منحها للتطبيق اثناء النسخ الاحتياطي. لاحظ أنه لا يمكن منح بعض الأذونات برمجيا ، وبالتالي تتسبب في فشل استعادة الحزمة ككل ، والتي يقوم Neo Backup بعد ذلك بتغطية استعادة الحزمة بدون أذونات.</string>
+    <string name="supended_apps_cleanup">تنظيف أي تطبيقات معلقة متبقية</string>
+    <string name="root_missing">صلاحية الجذر مفقودة!</string>
+    <string name="root_is_mandatory">نظرًا لأن التطبيقات معزولة عن بعضها البعض ، فإن وصول المستخدم المتميز إلزامي حتى يتمكن من النسخ الاحتياطي واستعادة بياناته.</string>
+    <string name="see_faq">اطلع على الأسئلة الشائعة!</string>
+    <string name="prefs_sessionIinstaller">استخدم مثبت الجلسة</string>
+    <string name="prefs_installerpackagename">اسم حزمة المثبت:</string>
+    <string name="prefs_sessionIinstaller_summary">استخدم مثبت الجلسة بدلا من المثبت الأساسي. أبطأ ولكن يتجنب المشكلات المتعلقة بنظام Android 13+</string>
+    <string name="sortAppSize">حجم التطبيق</string>
+    <string name="sortAppDataSize">حجم بيانات التطبيق</string>
+    <string name="sortBackupSize">حجم النسخ الاحتياطي</string>
+    <string name="add_tag">إضافة علامة جديدة</string>
+    <string name="edit_note">تحرير الملاحظة</string>
+    <string name="prefs_dev_settings">إعدادات المطور</string>
+    <string name="prefs_dev_settings_summary">لا تقم بتغيرها ما لم يخبرك المطور بذلك!</string>
+    <string name="dialog_export_schedules">تصدير جداولي</string>
+    <string name="prefs_user_short">شخصي</string>
+    <string name="prefs_advanced_short">متقدم</string>
+    <string name="prefs_tools_short">الأدوات</string>
+    <string name="prefs_service_short">خدمة</string>
+    <string name="prefs_squeezenavtext">الضغط على نص عنصر التنقل</string>
+    <string name="prefs_multilineinfochips_summary">اسمح لمقتطفات المعلومات في ورقة التطبيق بالامتداد عبر أسطر متعددة.</string>
+    <string name="prefs_squeezenavtext_summary">السماح بتغيير حجم النص ضمن عناصر شريط التنقل ليتناسب مع العرض المتوفر.</string>
+    <string name="prefs_multilineinfochips">مقتطفات موسعة متعددة الاسطر</string>
+    <string name="prefs_nobackupdata">النسخ الاحتياطي no_backup الملفات</string>
+    <string name="prefs_nobackupdata_summary">النسخ الاحتياطي للملفات في البيانات التي تم تصنيفها على أنها لايمكن نسخها</string>
+    <string name="prefs_tools_terminal">الطرفية</string>
+    <string name="prefs_deviceprotecteddata_rst">استعادة البيانات المحمية بواسطة الجهاز</string>
+    <string name="prefs_externaldata_rst">استعادة البيانات الخارجية</string>
+    <string name="prefs_externaldata_rst_summary">يستعيد البيانات الموضوعة على وحدة التخزين الخارجية (على سبيل المثال / التخزين / المحاكاة / 0 / Android / data /)</string>
+    <string name="prefs_obbdata_rst">استعادة ملفات obb</string>
+    <string name="prefs_mediadata_rst">استعادة ملفات الوسائط</string>
+    <string name="prefs_nobackupdata_rst">استعادة الملفات no_backup</string>
+    <string name="prefs_nobackupdata_rst_summary">استعادة الملفات الموجودة في البيانات التي تم تصنيفها على أنها غير احتياطية</string>
+    <string name="prefs_deviceprotecteddata_summary">النسخ الاحتياطي للبيانات التي يتم وضعها في data / user_de</string>
+    <string name="prefs_mediadata_summary">نسخ ملفات وسائط التطبيق التي يتم وضعها على وحدة التخزين الخارجية احتياطيا (على سبيل المثال /storage/emulated/0/Android/media/)</string>
+    <string name="prefs_externaldata_summary">نسخ البيانات التي يتم وضعها على وحدة التخزين الخارجية احتياطيا (على سبيل المثال /storage/emlyed/0/Android/data/)</string>
+    <string name="prefs_deviceprotecteddata_rst_summary">استعادة البيانات التي يتم وضعها في البيانات / user_de</string>
+    <string name="prefs_obbdata_rst_summary">يستعيد ملفات obb الخاصة بالتطبيق والتي يتم وضعها على وحدة التخزين الخارجية (على سبيل المثال /storage/emulated/0/Android/obb/)</string>
+    <string name="prefs_mediadata_rst_summary">يستعيد ملفات وسائط التطبيق التي يتم وضعها على وحدة التخزين الخارجية (على سبيل المثال /storage/emulated/0/Android/media/)</string>
+    <string name="prefs_obbdata_summary">نسخ ملفات الوسائط الخاصة بالتطبيق التي يتم وضعها في التخزين الخارجي واستعادتها (على سبيل المثال /storage/emulated/0/Android/media / )</string>
+    <string name="context_menu">قائمة السياق</string>
+    <string name="prefs_theme_black">نسق أسود</string>
+    <string name="prefs_theme_black_summary">يفرض خلفية سوداء عندما تكون على النسق الداكن</string>
+    <string name="prefs_singularbackuprestore">استعادة النسخ الاحتياطي المفرد</string>
+    <string name="prefs_singularbackuprestore_summary">استخدم تخطيط عنصر استعادة بديل يسمح باختيار نسخ احتياطية محددة للاستعادة.</string>
+    <string name="post_notifications_permission_title">نشر الإشعارات</string>
+    <string name="post_notifications_permission_message">يتطلب بدء تشغيل تطبيقات Android 13 هذا الإذن لتتمكن من نشر الإشعارات.</string>
+    <string name="prefs_password_summary">تستخدم أيضا لفك التشفير عند الاستعادة</string>
+    <string name="backup_revisions_limit">حد النسخ الاحتياطية: %d</string>
+    <string name="clear_text">مسح النص</string>
+    <string name="prefs_laserbackground">إظهار الليزر المتحرك في الخلفية</string>
+    <string name="prefs_laserbackground_summary">استخدم أضواء ملونة متحركة كخلفية عند التحميل / العمل.</string>
+    <string name="filters_installed">تثبيت</string>
+    <string name="filters_enabled">ممكن</string>
+    <string name="filters_updated">محدث</string>
+    <string name="filters_latest">أحدث نسخة احتياطية</string>
+    <string name="filters_app">نوع التطبيق</string>
+    <string name="sorting_order">ترتيب الفرز</string>
+    <string name="show_updated_apps">تطبيقات محدثة</string>
+    <string name="show_new_apps">تطبيقات جديدة</string>
+    <string name="show_old_apps">تطبيقات قديمة</string>
+    <string name="show_enabled_apps">التطبيقات الممكنة</string>
+    <string name="show_installed_apps">التطبيقات المثبتة</string>
+    <string name="show_new_backups">نسخ احتياطية جديدة</string>
+    <string name="filters_launchable">قابل لتشغيل</string>
+    <string name="filters_backup">أنواع النسخ الاحتياطي</string>
+    <string name="radio_notlaunchable">تطبيقات غير قابلة للتشغيل</string>
+    <string name="prefs_newandupdatednotification">إظهار الإشعارات الجديدة والمحدثة</string>
+    <string name="prefs_newandupdatednotification_summary">إظهار تطبيقات المستخدم الجديدة بجانب التطبيقات المحدثة في شريط الإعلام في الصفحة الرئيسية.</string>
+    <string name="prefs_altnavbaritem">استخدم عنصر شريط التنقل البديل</string>
+    <string name="prefs_altnavbaritem_summary">استخدم تخطيط عنصر شريط التنقل البديل/القديم، الذي يعرض تسمية العناصر غير المحددة.</string>
+    <string name="prefs_theme_dynamic_black">اسود بالألوان المتكيفة</string>
+    <string name="prefs_theme_dynamic">الموضوع المتكيف</string>
+    <string name="prefs_theme_dynamic_light">مضيء بالألوان المتكيفة</string>
+    <string name="prefs_theme_system_black">موضوع النظام(اسود)</string>
+    <string name="prefs_theme_dynamic_dark">داكن بالألوان المتكيفة</string>
 </resources>

@@ -2,8 +2,8 @@
 <resources>
     <string name="backup">Kopia zapasowa</string>
     <string name="restore">Przywróć</string>
-    <string name="backupConfirmation">Utworzyć kopię zapasową?</string>
-    <string name="restoreConfirmation">Przywrócić?</string>
+    <string name="backupConfirmation">Utworzyć kopię zapasową\?</string>
+    <string name="restoreConfirmation">Przywrócić\?</string>
     <string name="handleApk">APK</string>
     <string name="handleData">Dane</string>
     <string name="handleBoth">Obie</string>
@@ -35,8 +35,8 @@
     <string name="sortByLabel">Sortuj według etykiety</string>
     <string name="sortByPackageName">Sortuj według nazwy pakietu</string>
     <string name="sort">Sortuj i filtruj</string>
-    <string name="uninstallDialogMessage">Odinstalować tę aplikację?</string>
-    <string name="deleteBackupDialogMessage">Usunąć pliki kopii zapasowych?</string>
+    <string name="uninstallDialogMessage">Odinstalować tę aplikację\?</string>
+    <string name="deleteBackupDialogMessage">Usunąć pliki kopii zapasowych\?</string>
     <string name="dialogOK">Ok</string>
     <string name="dialogCancel">Anuluj</string>
     <string name="dialogYes">Tak</string>
@@ -80,7 +80,7 @@
     <string name="prefs_user">Ustawienia użytkownika</string>
     <string name="prefs_theme">Motyw</string>
     <string name="prefs_acquirewakelock">Zapobiegaj przejściu w stan spoczynku</string>
-    <string name="prefs_batchdelete">Usunąć kopie zapasowe?</string>
+    <string name="prefs_batchdelete">Usunąć kopie zapasowe\?</string>
     <string name="prefs_pathbackupfolder">Katalog kopii zapasowej</string>
     <string name="prefs_oldbackups">Filtruj kopie po czasie</string>
     <string name="prefs_copyselfapk">Skopiuj własne APK</string>
@@ -93,14 +93,11 @@
     <string name="prefs_password">Hasło szyfrowania</string>
     <string name="prefs_externaldata">Kopiuj dane z pamięci zewnętrznej</string>
     <string name="prefs_deviceprotecteddata">Kopiuj chronione dane wewnętrzne</string>
-    <string name="prefs_deviceprotecteddata_summary">Kopiuje i przywraca dane z data/user_de</string>
-    <string name="prefs_externaldata_summary">Kopiuje i przywraca dane z pamięci zewnętrznej (np. /storage/emulated/0/Android/data/)</string>
-    <string name="prefs_password_summary">Ustaw na puste aby wyłączyć szyfrowanie</string>
     <string name="prefs_encryption_summary">Włącz aby szyfrować kopię zapasową</string>
     <string name="prefs_excludecache_summary">Usuń pamięć podręczną aplikacji przed wykonaniem kopii</string>
     <string name="prefs_acquirewakelock_summary">Pozyskuj wakelock\'i podczas wykonywania grupowych operacji w celu uniknięcia przejścia w stan spoczynku. Przyspiesza to tworzenie kopii zapasowych i ich przywracanie, ale zużywa więcej energii.</string>
     <string name="prefs_oldbackups_summary">Filtrowanie kopii zapasowych starszych niż wartość w dniach, używany z filtrem „pokaż stare kopie zapasowe”.</string>
-    <string name="prefs_copyselfapk_summary">Umieść kopię zapasową OAndBackupX w najwyższym poziomie katalogu kopii zapasowej</string>
+    <string name="prefs_copyselfapk_summary">Umieść kopię zapasową Neo Backup w najwyższym poziomie katalogu kopii zapasowej</string>
     <string name="prefs_rememberfiltering_summary">Zapisuje wybraną metodę sortowania i filtrowania. Rozpatrywane są tylko te zaznaczone zaznaczeniem w menu.</string>
     <string name="prefs_batchdelete_summary">Usuń kopie zapasowe aplikacji, które nie są obecnie zainstalowane.</string>
     <string name="sched_title">Harmonogram</string>
@@ -155,7 +152,7 @@
     <string name="ignore_battery_optimization_message">Tworzenie kopii może się czasami zatrzymać, aby tego uniknąć wyłącz optymalizację baterii</string>
     <string name="ignore_battery_optimization_not_supported">To urządzenie niestety nie wspiera ignorowania optymalizacji baterii!</string>
     <string name="failed_unzipping">Błąd rozpakowywania archiwum, sprawdź poprawność hasła!</string>
-    <string name="split_apks">Dzielone APK:</string>
+    <string name="split_apks">Dzielone APK</string>
     <string name="backup_filters">Filtry kopii zapasowej:</string>
     <string name="help_license">Licencja</string>
     <string name="apptype_special">Specjalna kopia zapasowe</string>
@@ -168,19 +165,18 @@
     <string name="prefs_passwordconfirmation">Potwierdź hasło do szyfrowania</string>
     <string name="prefs_biometriclock_summary">Zabezpiecz aplikację z użyciem blokady biometrycznej (np. z użyciem odcisku palca, twarzy)</string>
     <string name="prefs_biometriclock">Blokada biometryczna</string>
-    <string name="intro_welcome_message">OAndBackupX to fork niesławnego OAndBackup, którego celem jest doprowadzenie go do roku 2020 i dalej. Na razie większość funkcji i interfejsu użytkownika aplikacji zostało przepisanych, a niektóre zostały dodane.
-\n Aplikacja jest nadal w fazie beta i często przeprowadza się wiele zmian bazy. Dlatego prosimy o uważne czytanie dziennika zmian przy każdym nowym wydaniu.
-\n Mile widziane są wszelkiego rodzaju wkłady, czy to tłumaczenia, pomysły, zgłaszanie błędów czy praca nad kodem.
+    <string name="intro_welcome_message">Neo Backup (dawniej OAndBackupX) to fork słynnego OAndBackup z zamiarem przeniesienia OAndBackup na 202X i część pakietu Neo Applications. W tej chwili aplikacja jest już w pełni przepisana, nadchodzą prace nad jej usprawnieniem i dodaniem kilku długo planowanych funkcji, które mogą ułatwić tworzenie kopii zapasowych/przywracanie danych na dowolnym urządzeniu.
+\n Dlatego wszelkie rodzaje wkładu są zawsze mile widziane.
 \n
-\n Teraz funkcjonalność naszej aplikacji:
-\n • Wymaga roota i umożliwia tworzenie kopii zapasowych poszczególnych aplikacji i ich danych.
-\n • Obsługiwane jest zarówno tworzenie kopii zapasowych, jak i przywracanie poszczególnych programów pojedynczo, a także tworzenie wielu kopii na raz i przywracanie ich.
-\n • Przywracanie aplikacji systemowych powinno być możliwe bez konieczności późniejszego ponownego uruchamiania, ale nadal nie zalecamy tego robić.
-\n • Kopie zapasowe można planować bez ograniczenia liczby indywidualnych harmonogramów — istnieje także możliwość tworzenia list niestandardowych.</string>
+\n Teraz o funkcjonalności naszej aplikacji:
+\n - Wymaga ona roota i pozwala na backup poszczególnych aplikacji i ich danych.
+\n - Obsługiwane są zarówno kopie zapasowe, przywracanie pojedynczych programów, jak i wsadowe kopie zapasowe i przywracanie wielu programów.
+\n - Przywracanie aplikacji systemowych powinno być możliwe bez konieczności ponownego uruchomienia.
+\n - Kopie zapasowe mogą być zaplanowane bez ograniczenia liczby poszczególnych harmonogramów i istnieje możliwość tworzenia niestandardowych list z listy zainstalowanych aplikacji.</string>
     <string name="intro_permission_batteryoptimization">Aplikacja może mieć problemy z wykonywaniem zaplanowanych kopii zapasowych na niektórych ROM-ach, które używają agresywnej optymalizacji baterii np. MIUI, ale nawet na AOSP taki problem może się zdarzyć.</string>
     <string name="intro_permission_usageaccess">Aplikacja potrzebuje tego uprawnienia, aby móc sprawdzić statystyki i rozmiary danych i pamięci podręcznej aplikacji.</string>
     <string name="intro_permission_storage">Aplikacja korzysta z uprawnień do odczytu/zapisu pamięci masowej, aby uzyskać dostęp do zewnętrznej pamięci masowej i zapewnić możliwość tworzenia kopii zapasowych danych zewnętrznych/obb innych aplikacji.</string>
-    <string name="welcome_to_oabx">Witamy w OABX!</string>
+    <string name="welcome_to_oabx">Witamy w Neo Backup!</string>
     <string name="storage_access">Dostęp do pamięci</string>
     <string name="sort_and_filter">Sortowanie i filtrowanie</string>
     <string name="enable_encryption_message">Przechowywanie danych na urządzeniu nie jest bezpieczne. Dla bezpieczeństwa włącz szyfrowanie i ustaw hasło.</string>
@@ -197,21 +193,17 @@
     <string name="msg_appkill_warning">Wybrane aplikacje zostaną zatrzymane oraz kontynuowane po tym jak zadania zostaną zakończone. Postaraj się nie uruchamiać aplikacji podczas trwania tego procesu.</string>
     <string name="intro_permission_storage_location">Aplikacja potrzebuje miejsca do przechowywania kopii zapasowej. Może potrzebować kilku gigabajtów pamięci na wykonanie pełnej kopii zapasowej i często wykonuje odczyt, i zapis. Należy o tym pamiętać przy wyborze do tego lokalizacji sieciowej.</string>
     <string name="prefs_unset">Wymaż</string>
-    <string name="prefs_housekeepingmoment_summary">Konfiguruje, czy najstarsza wersja zostanie usunięta przed czy po utworzeniu nowej kopii zapasowej, aby zwolnić miejsce na dysku używane przez kopię zapasową.</string>
-    <string name="prefs_housekeepingmoment">Czas czyszczenia wersji</string>
     <string name="prefs_numBackupRevisions_summary">Najstarsza wersja zostanie usunięta po utworzeniu nowej kopii zapasowej, jeśli liczba zostanie przekroczona. Ustaw na zero, aby zachować wszystkie wersje.</string>
     <string name="prefs_numBackupRevisions">Liczba wersji kopii zapasowych</string>
     <string name="prefs_stopcont">Wymuś zatrzymanie aplikacji przed tworzeniem/przywracaniem kopii zapasowych</string>
-    <string name="prefs_housekeepingmoment_before">Przed wykonaniem kopii zapasowej</string>
-    <string name="prefs_housekeepingmoment_after">Po wykonaniu kopii zapasowej</string>
     <string name="prefs_advanced">Ustawienia zaawansowane</string>
     <string name="radio_obbdata">Dane OBB</string>
     <string name="radio_externaldata">Dane zewnętrzne</string>
     <plurals name="days_left">
-        <item quantity="one">%d dzień,</item>
-        <item quantity="few">%d dni,</item>
-        <item quantity="many">%d dni,</item>
-        <item quantity="other">%d dni,</item>
+        <item quantity="one">%d dzień</item>
+        <item quantity="few">%d dni</item>
+        <item quantity="many">%d dni</item>
+        <item quantity="other">%d dni</item>
     </plurals>
     <string name="help_issues">Znane problemy</string>
     <string name="fetching_action_list">Pobieranie listy aplikacji dla %1$s…</string>
@@ -220,14 +212,13 @@
     <string name="prefs_stopcont_summary">Zaawansowane: Może to pomóc, jeśli aplikacja zmienia pliki podczas tworzenia kopii zapasowej i kopia zapasowa się nie powiedzie.</string>
     <string name="prefs_disableverification_summary">Wyłącza tę opcję podczas przywracania plików APK, a następnie włącza ją ponownie. Rozwiązuje błąd: INSTALL_FAILED_VERIFICATION_FAILURE.</string>
     <string name="prefs_disableverification">Wyłącz weryfikację aplikacji przez USB</string>
-    <string name="prefs_obbdata_summary">Kopiuje i przywraca dane OBB z pamięci zewnętrznej (np. /storage/emulated/0/Android/obb/)</string>
     <string name="prefs_obbdata">Utwórz kopię zapasową plików obb</string>
     <string name="stats_apps">Aplikacje</string>
     <string name="stats_backups">Kopie Zapasowe</string>
     <string name="stats_updated">Zaktualizowane</string>
     <string name="help_faq">Często Zadawane Pytania</string>
     <string name="prefs_allowdowngrade">Pozwól na dezaktualizację</string>
-    <string name="prefs_allowdowngrade_summary">Pozwól na przywrócenie starszej wersji zainstalowanej aplikacji.</string>
+    <string name="prefs_allowdowngrade_summary">Pozwól na przywrócenie starszej wersji zainstalowanej aplikacji (dotyczy tylko wersji debugowalnych).</string>
     <string name="prefs_restoreallpermissions">Przywróć ze wszystkimi uprawnieniami</string>
     <string name="prefs_restoreallpermissions_summary">Daj przywróconej aplikacji wszystkie uprawnienia jakich zażąda.</string>
     <string name="help">Pomoc</string>
@@ -280,5 +271,128 @@
     <string name="wait_noappslist">Lista aplikacji jeszcze nie jest pobierana. Czekaj…</string>
     <string name="help_group_matrix">Nasza grupa na Matrix</string>
     <string name="help_group_telegram">Nasza grupa na Telegramie</string>
-    <string name="radio_deviceprotecteddata">Chronione dane urządzenia</string>
+    <string name="radio_deviceprotecteddata">Dane chronione przez urządzenie</string>
+    <string name="calllogs_permission_title">Uprawnienia do dzienników połączeń</string>
+    <string name="shell_initproblem">Nie można zainicjować obsługi powłoki. Brakuje toybox/busybox lub wyłączono uprawnienia roota dla aplikacji.</string>
+    <string name="prefs_secondary_6">Łupkowy</string>
+    <string name="backup_all_updated">Kopia zapasowa wszystkich zaktualizowanych aplikacji</string>
+    <string name="prefs_secondary_8">Mięta</string>
+    <string name="title_tags">Tagi:</string>
+    <string name="error_pmDataIncompleteException_dataRestoreFailed">Dane aplikacji nie zostały przywrócone.</string>
+    <string name="prefs_compression_level">Poziom kompresji</string>
+    <string name="prefs_compression_level_summary">Niższa wartość kompresuje szybciej, ale powoduje, że pliki są większe. Wyższa wartość kompresuje lepiej, ale zajmuje więcej czasu.</string>
+    <string name="spec_fingerprint">Odciski palców</string>
+    <string name="smsmms_permission_title">Uprawnienia do wiadomości SMS/MMS</string>
+    <string name="grant_smsmms_message">Jest to niezbędne, aby móc wykonać kopię zapasową/przywrócić wiadomości SMS/MMS.</string>
+    <string name="grant_calllogs_message">Jest to niezbędne, aby móc wykonać kopię zapasową/przywrócić dzienniki połączeń.</string>
+    <string name="contacts_permission_title">Uprawnienia do kontaktów</string>
+    <string name="grant_contacts_message">Jest to niezbędne, aby móc dopasować kontakt do wiadomości SMS/MMS.</string>
+    <string name="intro_permission_smsmms">Aplikacja potrzebuje tego uprawnienia, aby móc tworzyć kopie zapasowe/przywracać wiadomości SMS/MMS.</string>
+    <string name="intro_permission_calllogs">Aplikacja potrzebuje tego uprawnienia, aby móc tworzyć kopie zapasowe/przywracać dzienniki połączeń.</string>
+    <string name="intro_permission_contacts">Aplikacja potrzebuje tego uprawnienia, aby móc dopasować kontakt do wiadomości SMS/MMS.</string>
+    <string name="prefs_accent_3">Turkus</string>
+    <string name="prefs_secondary_7">Lazurowy błękit</string>
+    <string name="prefs_accent_color">Kolor akcentu</string>
+    <string name="prefs_secondary_color">Kolor dodatkowy</string>
+    <string name="error_encryptionpassword">Hasło szyfrowania nie zostało ustawione lub jest nieprawidłowe!</string>
+    <string name="title_note">Uwaga:</string>
+    <string name="sortBackupDate">Data wykonania kopii zapasowej</string>
+    <string name="help_changelog">Dziennik zmian</string>
+    <string name="home">Strona główna</string>
+    <string name="all_data">Sprawdź wszystkie dane</string>
+    <string name="all_apk">Sprawdź wszystkie pliki APK</string>
+    <string name="showDisabled">Wyłączone aplikacje</string>
+    <string name="schedule">Harmonogram</string>
+    <string name="finished">zakończono</string>
+    <string name="loading_list">Ładowanie listy…</string>
+    <string name="delete">Usuń</string>
+    <string name="root_missing">Brakuje ROOT!</string>
+    <string name="add_tag">Dodaj nowy tag</string>
+    <string name="edit_note">Edytuj notatkę</string>
+    <string name="prefs_accent_2">Spokojne Indygo</string>
+    <string name="prefs_installerpackagename">Nazwa pakietu instalacyjnego:</string>
+    <string name="prefs_accent_1">Delikatny fiolet</string>
+    <string name="sortAppSize">Rozmiar aplikacji</string>
+    <string name="sortBackupSize">Rozmiar kopii zapasowej</string>
+    <string name="dialog_export_schedules">Eksportowanie harmonogramów</string>
+    <string name="sortDesc">Malejąco</string>
+    <string name="prefs_accent_8">Dyniowe Perano</string>
+    <string name="supended_apps_cleanup">wyczyść wszystkie pozostałe zawieszone aplikacje</string>
+    <string name="prefs_advanced_short">Zaawansowane</string>
+    <string name="prefs_mediadata">Tworzenie kopii zapasowych plików multimedialnych</string>
+    <string name="prefs_mediadata_summary">Tworzy kopię zapasową plików multimedialnych aplikacji umieszczonych w pamięci zewnętrznej (np. /storage/emulated/0/Android/media/)</string>
+    <string name="prefs_secondary_4">Lawowa Pomarańcz</string>
+    <string name="prefs_nobackupdata">Tworzenie kopii zapasowych plików no_backup</string>
+    <string name="prefs_nobackupdata_summary">Tworzenie kopii zapasowych plików w danych, które są oznaczone jako nie objęte kopią zapasową</string>
+    <string name="radio_mediadata">Dane mediów</string>
+    <string name="prefs_user_short">Personalne</string>
+    <string name="prefs_squeezenavtext">Ściśnij tekst elementu nawigacyjnego</string>
+    <string name="prefs_squeezenavtext_summary">Zezwalaj na zmianę rozmiaru tekstu pod elementami paska nawigacyjnego, aby dopasować go do dostępnej szerokości.</string>
+    <string name="prefs_dev_settings_summary">Nie zmieniaj, chyba że programista ci każe!</string>
+    <string name="prefs_tools_short">Narzędzia</string>
+    <string name="prefs_service_short">Usługa</string>
+    <string name="prefs_externaldata_summary">Tworzy kopię zapasową danych, które są umieszczone na zewnętrznej pamięci (np. /storage/emulated/0/Android/data/)</string>
+    <string name="prefs_obbdata_summary">Kopiuje i przywraca dane obb z pamięci zewnętrznej (np. /storage/emulated/0/Android/obb/)</string>
+    <string name="prefs_deviceprotecteddata_rst">Przywracanie danych chronionych przez urządzenie</string>
+    <string name="prefs_deviceprotecteddata_rst_summary">Przywraca dane umieszczone w data/user_de</string>
+    <string name="prefs_externaldata_rst">Przywróć dane zewnętrzne</string>
+    <string name="prefs_externaldata_rst_summary">Przywraca dane, które są umieszczone na zewnętrznej pamięci (np. /storage/emulated/0/Android/data/)</string>
+    <string name="prefs_obbdata_rst">Przywracanie plików obb</string>
+    <string name="prefs_obbdata_rst_summary">Przywraca pliki aplikacji obb, które są umieszczone na zewnętrznej pamięci (np. /storage/emulated/0/Android/obb/)</string>
+    <string name="prefs_nobackupdata_rst">Przywróć pliki no_backup</string>
+    <string name="prefs_nobackupdata_rst_summary">Przywraca pliki w danych, które są oznaczone jako nie objęte kopią zapasową</string>
+    <string name="prefs_restorepermissions">Przywróć uprawnienia</string>
+    <string name="prefs_deviceprotecteddata_summary">Tworzenie kopii zapasowych danych umieszczonych w data/user_de</string>
+    <string name="prefs_dev_settings">Ustawienia programisty</string>
+    <string name="spec_calllogsjson">Logi połączeń JSON</string>
+    <string name="sortAppDataSize">Rozmiar danych aplikacji</string>
+    <string name="prefs_secondary_0">Arktyczny Cyjan</string>
+    <string name="prefs_secondary_2">Limonka</string>
+    <string name="prefs_secondary_3">Tygrysi Bursztyn</string>
+    <string name="prefs_secondary_5">Flamingowy Różowy</string>
+    <string name="prefs_secondary_1">Oceaniczny Turkus</string>
+    <string name="dismiss">Odrzuć</string>
+    <string name="enabled">Włączone</string>
+    <string name="sortAsc">Rosnąco</string>
+    <string name="prefs_tools_terminal">Terminal</string>
+    <string name="prefs_sessionIinstaller_summary">Użyj instalatora sesji zamiast instalatora podstawowego. Jest on wolniejszy, ale pozwala uniknąć problemów z Androidem 13+</string>
+    <string name="prefs_restorepermissions_summary">Przywróć uprawnienia przyznane aplikacji w momencie tworzenia kopii zapasowej. Należy zauważyć, że niektórych uprawnień nie można przyznać programowo, co powoduje, że przywracanie pakietu nie powiedzie się jako całości, co Neo Backup następnie obejmuje przywracaniem pakietu bez uprawnień.</string>
+    <string name="prefs_sessionIinstaller">Użyj instalatora sesji</string>
+    <string name="dialogCancelAll">Anuluj wszystko</string>
+    <string name="prefs_accent_4">Odważny Zielony</string>
+    <string name="prefs_accent_0">Czerwona Kometa</string>
+    <string name="prefs_accent_6">Grzmiący Żółty</string>
+    <string name="prefs_accent_7">Morelowy Pomarańcz</string>
+    <string name="spec_smsmmsjson">SMS/MMS JSON</string>
+    <string name="see_faq">Zobacz często zadawane pytania!</string>
+    <string name="root_is_mandatory">Ponieważ aplikacje są od siebie odizolowane, dostęp superużytkownika jest obowiązkowy, aby móc tworzyć kopie zapasowe i przywracać ich dane.</string>
+    <string name="prefs_accent_5">Charakterna Limonka</string>
+    <string name="prefs_theme_black">Czarny motyw</string>
+    <string name="prefs_theme_black_summary">Wymuszenie czarnego tła przy ciemnym motywie</string>
+    <string name="prefs_singularbackuprestore">Jednorazowe przywrócenie kopii zapasowej</string>
+    <string name="prefs_mediadata_rst_summary">Przywraca kopię zapasową plików multimedialnych aplikacji umieszczonych w pamięci zewnętrznej (np. /storage/emulated/0/Android/media/)</string>
+    <string name="prefs_mediadata_rst">Przywracanie plików multimedialnych</string>
+    <string name="prefs_password_summary">Używany również do odszyfrowania przy przywracaniu</string>
+    <string name="context_menu">Menu kontekstowe</string>
+    <string name="batch">Seria</string>
+    <string name="prefs_singularbackuprestore_summary">Użyj alternatywnego układu elementów przywracania, który pozwala wybrać określone kopie zapasowe do przywrócenia.</string>
+    <string name="post_notifications_permission_message">Począwszy od Androida 13 aplikacja wymaga tego uprawnienia, aby móc wysyłać powiadomienia.</string>
+    <string name="filters_enabled">Włączone</string>
+    <string name="filters_updated">Zaktualizowane</string>
+    <string name="clear_text">Czysty tekst</string>
+    <string name="filters_latest">Ostatnia kopia zapasowa</string>
+    <string name="filters_app">Rodzaj aplikacji</string>
+    <string name="filters_backup">Rodzaje kopii zapasowej</string>
+    <string name="sorting_order">Kolejność sortowania</string>
+    <string name="show_updated_apps">Zaktualizowane aplikacje</string>
+    <string name="show_new_apps">Nowe aplikacje</string>
+    <string name="show_installed_apps">Zainstalowane aplikacje</string>
+    <string name="show_new_backups">Nowe kopie zapasowe</string>
+    <string name="radio_notlaunchable">Niewykonywalne aplikacje</string>
+    <string name="prefs_laserbackground">Pokaż animowany laser w tle</string>
+    <string name="filters_launchable">Wykonywalne</string>
+    <string name="show_old_apps">Stare aplikacje</string>
+    <string name="show_enabled_apps">Włączone aplikacje</string>
+    <string name="backup_revisions_limit">Limit liczby kopii zapasowych: %d</string>
+    <string name="filters_installed">Instalacja</string>
 </resources>

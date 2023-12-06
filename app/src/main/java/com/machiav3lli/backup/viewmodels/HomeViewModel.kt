@@ -19,17 +19,10 @@ package com.machiav3lli.backup.viewmodels
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 
 class HomeViewModel(appContext: Application) : AndroidViewModel(appContext) {
-    val nUpdatedApps: MutableLiveData<Int> = MutableLiveData()
-    val refreshNow = MutableLiveData<Boolean>()
-
-    init {
-        nUpdatedApps.value = 0
-    }
 
     class Factory(private val application: Application) :
         ViewModelProvider.Factory {

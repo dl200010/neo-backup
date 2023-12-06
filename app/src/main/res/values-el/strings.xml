@@ -90,9 +90,6 @@
     <string name="prefs_password">Κωδικός κρυπτογράφησης</string>
     <string name="prefs_externaldata">Δημιουργία αντιγράφου εξωτερικών δεδομένων</string>
     <string name="prefs_deviceprotecteddata">Δημιουργία αντιγράφου προστατευμένων από τη συσκευή δεδομένων</string>
-    <string name="prefs_deviceprotecteddata_summary">Δημιουργεί αντίγραφο και επαναφέρει δεδομένα που βρίσκονται στο data/user_de</string>
-    <string name="prefs_externaldata_summary">Δημιουργεί αντίγραφο και επαναφέρει δεδομένα που βρίσκονται στον εξωτερικό χώρο αποθήκευσης (e.g. /storage/emulated/0/Android/data/)</string>
-    <string name="prefs_password_summary">Αφήστε κενό για απενεργοποίηση κρυπτογράφησης</string>
     <string name="prefs_encryption_summary">Ενεργοποίηση για κρυπτογράφηση δεδομένων των αντιγράφων</string>
     <string name="prefs_excludecache_summary">Αποκλεισμός της μνήμης cache της εφαρμογής από το αντίγραφο δεδομένων</string>
     <string name="prefs_acquirewakelock_summary">Απόκτηση wakelock κατά τη διάρκεια διεργασιών μαζικών αντιγράφων ώστε να αποτραπεί ο ύπνος. Επιταχύνει τα αντίγραφα και τις επαναφορές σημαντικά, αλλά καταναλώνει περισσότερη ενέργεια.</string>
@@ -201,18 +198,14 @@
     <string name="prefs_stopcont_summary">Για εξειδικευμένους μόνο: Αυτό μπορεί να βοηθήσει, εάν η εφαρμογή μεταβάλλει αρχεία κατά τη δημιουργία αντιγράφου και η δημιουργία αντιγράφου αποτυγχάνει.</string>
     <string name="prefs_stopcont">Αναγκαστικός-τερματισμός διεργασίας εφαρμογής πριν από δημιουργία αντιγράφου/επαναφορά</string>
     <string name="prefs_advanced">Προηγμένες προτιμήσεις</string>
-    <string name="prefs_housekeepingmoment_summary">Ρυθμίζει εάν η παλαιότερη εκδοχή διαγράφεται πριν ή μετά τη δημιουργία ενός νέου αντιγράφου ώστε να ελευθερώσει το χώρο του δίσκου που χρησιμοποιείται από το αντίγραφο.</string>
-    <string name="prefs_housekeepingmoment">Χρόνος Καθαρισμού Εκδοχών</string>
-    <string name="prefs_housekeepingmoment_before">Πριν τη δημιουργία Αντιγράφου ασφαλείας</string>
-    <string name="prefs_housekeepingmoment_after">Μετά τη δημιουργία Αντιγράφου ασφαλείας</string>
     <string name="radio_obbdata">Δεδομένα OBB</string>
     <string name="radio_deviceprotecteddata">Προστατευμένα από τη Συσκευή Δεδομένα</string>
     <string name="radio_externaldata">Εξωτερικά Δεδομένα</string>
     <string name="logs_text_empty">Δεν υπάρχει τίποτα για προβολή!</string>
     <string name="delete_all_backups">Διαγραφή όλων των αντιγράφων</string>
     <plurals name="days_left">
-        <item quantity="one">%d ημέρα,</item>
-        <item quantity="other">%d ημέρες,</item>
+        <item quantity="one">%d ημέρα</item>
+        <item quantity="other">%d ημέρες</item>
     </plurals>
     <string name="prefs_disableverification_summary">Απενεργοποιεί αυτήν την επιλογή προγραμματιστών κατά την επαναφορά εφαρμογών και την επανενεργοποιεί έπειτα. Λύνει το σφάλμα: INSTALL_FAILED_VERIFICATION_FAILURE.</string>
     <string name="prefs_disableverification">Απενεργοποίηση Επαλήθευσης εφαρμογών μέσω USB</string>
@@ -222,7 +215,6 @@
     <string name="radio_launchable">Εκκινήσιμες Εφαρμογές</string>
     <string name="help_issues">Γνωστά προβλήματα</string>
     <string name="fetching_action_list">Απόκτηση λίστας εφαρμογών για %1$s…</string>
-    <string name="prefs_obbdata_summary">Δημιουργεί αντίγραφο κι επαναφέρει τα αρχεία obb της εφαρμογής τα οποία είναι τοποθετημένα στον εξωτερικό αποθηκευτικό χώρο (π.χ. /storage/emulated/0/Android/obb)</string>
     <string name="prefs_obbdata">Δημιουργία αντιγράφου αρχείων obb</string>
     <string name="prefs_allowdowngrade">Να επιτρέπεται η υποβάθμιση</string>
     <string name="prefs_allowdowngrade_summary">Να επιτρέπεται η επαναφορά παλαιότερης έκδοσης της εγκατεστημένης εφαρμογής.</string>
@@ -280,7 +272,6 @@
     <string name="all_data">Σημείωση όλων των δεδομένων</string>
     <string name="prefs_accent_8">Κολοκυθένιο Γαλάζιο</string>
     <string name="prefs_secondary_2">Λάιμ</string>
-    <string name="prefs_mediadata_summary">Δημιουργεί αντίγραφο κι επαναφέρει τα δεδομένα μέσων της εφαρμογής που βρίσκονται στον εξωτερικό αποθηκευτικό χώρο (π.χ. /storage/emulated/0/Android/media/)</string>
     <string name="prefs_mediadata">Δημιουργία αντιγράφου των δεδομένων μέσων</string>
     <string name="radio_mediadata">Δεδομένα Μέσων</string>
     <string name="home">Αρχική σελίδα</string>

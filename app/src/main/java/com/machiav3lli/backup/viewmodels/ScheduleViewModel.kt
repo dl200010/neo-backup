@@ -18,20 +18,60 @@
 package com.machiav3lli.backup.viewmodels
 
 import android.app.Application
-import androidx.lifecycle.*
-import com.machiav3lli.backup.dbs.Schedule
-import com.machiav3lli.backup.dbs.ScheduleDao
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.machiav3lli.backup.OABX
+import com.machiav3lli.backup.dbs.dao.ScheduleDao
+import com.machiav3lli.backup.dbs.entity.Schedule
+import com.machiav3lli.backup.traceSchedule
+import com.machiav3lli.backup.utils.cancelAlarm
+import com.machiav3lli.backup.utils.scheduleAlarm
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class ScheduleViewModel(val id: Long, private val scheduleDB: ScheduleDao, appContext: Application)
-    : AndroidViewModel(appContext) {
+class ScheduleViewModel(
+    val id: Long,
+    private val scheduleDB: ScheduleDao,
+) : AndroidViewModel(OABX.NB) {
 
-    var schedule = MediatorLiveData<Schedule>()
+    val schedule: StateFlow<Schedule?> = scheduleDB.getScheduleFlow(id)
+        //TODO hg42 .trace { "*** schedule <<- ${it}" }     // what can here be null? (something is null that is not declared as nullable)
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            Schedule(0)
+        )
+    val customList = scheduleDB.getCustomListFlow(id)
+    val blockList = scheduleDB.getBlockListFlow(id)
 
-    init {
-        schedule.addSource(scheduleDB.getLiveSchedule(id), schedule::setValue)
+
+    fun updateSchedule(schedule: Schedule?, rescheduleBoolean: Boolean) {
+        viewModelScope.launch {
+            schedule?.let { updateS(it, rescheduleBoolean) }
+        }
+    }
+
+    private suspend fun updateS(schedule: Schedule, rescheduleBoolean: Boolean) {
+        withContext(Dispatchers.IO) {
+            scheduleDB.update(schedule)
+            if (schedule.enabled) {
+                traceSchedule { "[$schedule.id] ScheduleViewModel.updateS -> ${if (rescheduleBoolean) "re-" else ""}schedule" }
+                scheduleAlarm(
+                    getApplication<Application>().baseContext,
+                    schedule.id,
+                    rescheduleBoolean
+                )
+            } else {
+                traceSchedule { "[$schedule.id] ScheduleViewModel.updateS -> cancelAlarm" }
+                cancelAlarm(getApplication<Application>().baseContext, schedule.id)
+            }
+        }
     }
 
     fun deleteSchedule() {
@@ -42,17 +82,17 @@ class ScheduleViewModel(val id: Long, private val scheduleDB: ScheduleDao, appCo
 
     private suspend fun deleteS() {
         withContext(Dispatchers.IO) {
-            scheduleDB.delete(schedule.value!!)
+            scheduleDB.deleteById(id)
         }
     }
 
-    class Factory(private val id: Long, private val scheduleDB: ScheduleDao,
-                                   private val application: Application)
-        : ViewModelProvider.Factory {
+    class Factory(
+        private val id: Long, private val scheduleDB: ScheduleDao,
+    ) : ViewModelProvider.Factory {
         @Suppress("unchecked_cast")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(ScheduleViewModel::class.java)) {
-                return ScheduleViewModel(id, scheduleDB, application) as T
+                return ScheduleViewModel(id, scheduleDB) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }

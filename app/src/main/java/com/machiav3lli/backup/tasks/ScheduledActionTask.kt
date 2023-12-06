@@ -18,104 +18,75 @@
 package com.machiav3lli.backup.tasks
 
 import android.content.Context
-import android.content.Intent
-import com.machiav3lli.backup.*
-import com.machiav3lli.backup.dbs.BlocklistDatabase
-import com.machiav3lli.backup.dbs.ScheduleDatabase
+import com.machiav3lli.backup.MODE_UNSET
+import com.machiav3lli.backup.OABX
+import com.machiav3lli.backup.PACKAGES_LIST_GLOBAL_ID
 import com.machiav3lli.backup.handler.LogsHandler
-import com.machiav3lli.backup.handler.getApplicationList
-import com.machiav3lli.backup.items.AppInfo
+import com.machiav3lli.backup.handler.getInstalledPackageList
+import com.machiav3lli.backup.items.Package
 import com.machiav3lli.backup.utils.FileUtils
+import com.machiav3lli.backup.utils.FileUtils.ensureBackups
 import com.machiav3lli.backup.utils.StorageLocationNotConfiguredException
-import com.machiav3lli.backup.utils.getDefaultSharedPreferences
+import com.machiav3lli.backup.utils.filterPackages
 import timber.log.Timber
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
 
 open class ScheduledActionTask(val context: Context, private val scheduleId: Long) :
-    CoroutinesAsyncTask<Void?, String, Pair<List<String>, Int>>() {
+    CoroutinesAsyncTask<Void?, String, Triple<String, List<String>, Int>>() {
 
-    override fun doInBackground(vararg params: Void?): Pair<List<String>, Int>? {
-        val scheduleDao = ScheduleDatabase.getInstance(context).scheduleDao
-        val blacklistDao = BlocklistDatabase.getInstance(context).blocklistDao
+    override fun doInBackground(vararg params: Void?): Triple<String, List<String>, Int>? {
+
+        val database = OABX.db
+        val scheduleDao = database.getScheduleDao()
+        val blacklistDao = database.getBlocklistDao()
 
         val schedule = scheduleDao.getSchedule(scheduleId)
-        val filter = schedule?.filter
-            ?: MAIN_FILTER_DEFAULT
-        val specialFilter = schedule?.specialFilter
-            ?: SPECIAL_FILTER_ALL
-        val customList = schedule?.customList
-            ?: setOf()
-        val customBlocklist = schedule?.blockList
-            ?: listOf()
+            ?: return Triple("DbFailed", listOf(), MODE_UNSET)
+
+        val name = schedule.name
+        val filter = schedule.filter
+        val specialFilter = schedule.specialFilter
+        val customList = schedule.customList.toList()
+        val customBlocklist = schedule.blockList
         val globalBlocklist = blacklistDao.getBlocklistedPackages(PACKAGES_LIST_GLOBAL_ID)
         val blockList = globalBlocklist.plus(customBlocklist)
 
-        val unfilteredList: List<AppInfo> = try {
-            context.getApplicationList(blockList, false)
+        //TODO hg42 the whole filter mechanics should be the same for app and service
+
+        val unfilteredPackages: List<Package> = try {
+
+            // findBackups *is* necessary, because it's *not* done in OABX.onCreate any more
+            ensureBackups()
+
+            context.getInstalledPackageList()   // <========================== get the package list
+
         } catch (e: FileUtils.BackupLocationInAccessibleException) {
             Timber.e("Scheduled backup failed due to ${e.javaClass.simpleName}: $e")
             LogsHandler.logErrors(
-                context,
                 "Scheduled backup failed due to ${e.javaClass.simpleName}: $e"
             )
-            return Pair(listOf(), MODE_UNSET)
+            return Triple(name, listOf(), MODE_UNSET)
         } catch (e: StorageLocationNotConfiguredException) {
             Timber.e("Scheduled backup failed due to ${e.javaClass.simpleName}: $e")
             LogsHandler.logErrors(
-                context,
                 "Scheduled backup failed due to ${e.javaClass.simpleName}: $e"
             )
-            return Pair(listOf(), MODE_UNSET)
+            return Triple(name, listOf(), MODE_UNSET)
         }
 
-        var launchableAppsList = listOf<String>()
-        if (specialFilter == SPECIAL_FILTER_LAUNCHABLE) {
-            val mainIntent = Intent(Intent.ACTION_MAIN, null).addCategory(Intent.CATEGORY_LAUNCHER)
-            launchableAppsList = context.packageManager.queryIntentActivities(mainIntent, 0)
-                .map { it.activityInfo.packageName }
-        }
-        val inListed = { packageName: String ->
-            customList.isEmpty() or customList.contains(packageName)
-        }
-        val predicate: (AppInfo) -> Boolean = {
-            (if (filter and MAIN_FILTER_SYSTEM == MAIN_FILTER_SYSTEM) it.isSystem and !it.isSpecial else false)
-                    || (if (filter and MAIN_FILTER_USER == MAIN_FILTER_USER) !it.isSystem else false)
-                    || (if (filter and MAIN_FILTER_SPECIAL == MAIN_FILTER_SPECIAL) it.isSpecial else false)
-        }
-        val days = context.getDefaultSharedPreferences().getInt(PREFS_OLDBACKUPS, 7)
-        val specialPredicate: (AppInfo) -> Boolean = when (specialFilter) {
-            SPECIAL_FILTER_LAUNCHABLE -> { appInfo: AppInfo ->
-                launchableAppsList.contains(appInfo.packageName) and
-                        inListed(appInfo.packageName)
-            }
-            SPECIAL_FILTER_NEW_UPDATED -> { appInfo: AppInfo ->
-                appInfo.isInstalled and
-                        (!appInfo.hasBackups or appInfo.isUpdated) and
-                        inListed(appInfo.packageName)
-            }
-            SPECIAL_FILTER_OLD -> {
-                { appInfo: AppInfo ->
-                    if (appInfo.hasBackups) {
-                        val lastBackup = appInfo.latestBackup?.backupProperties?.backupDate
-                        val diff = ChronoUnit.DAYS.between(lastBackup, LocalDateTime.now())
-                        (diff >= days) and inListed(appInfo.packageName)
-                    } else
-                        false
-                }
-            }
-            SPECIAL_FILTER_DISABLED -> { appInfo: AppInfo ->
-                appInfo.isDisabled and inListed(appInfo.packageName)
-            }
-            else -> { appInfo: AppInfo -> inListed(appInfo.packageName) }
-        }
-        val selectedItems = unfilteredList
-            .filter(predicate)
-            .filter(specialPredicate)
-            .sortedWith { m1: AppInfo, m2: AppInfo ->
-                m1.packageLabel.compareTo(m2.packageLabel, ignoreCase = true)
-            }
-            .map(AppInfo::packageName)
-        return Pair(selectedItems, schedule?.mode ?: MODE_UNSET)
+        val selectedItems =
+            filterPackages(
+                packages = unfilteredPackages,
+                filter = filter,
+                specialFilter = specialFilter,
+                whiteList = customList,
+                blackList = blockList
+            ).map(Package::packageName)
+
+        return Triple(
+            name,
+            selectedItems,
+            schedule.mode
+        )
     }
 }
+

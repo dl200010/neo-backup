@@ -20,53 +20,49 @@ package com.machiav3lli.backup.actions
 import android.content.Context
 import com.machiav3lli.backup.MODE_APK
 import com.machiav3lli.backup.MODE_DATA
+import com.machiav3lli.backup.dbs.entity.SpecialInfo
 import com.machiav3lli.backup.handler.LogsHandler
 import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.handler.ShellHandler.ShellCommandFailedException
 import com.machiav3lli.backup.items.ActionResult
-import com.machiav3lli.backup.items.AppInfo
-import com.machiav3lli.backup.items.SpecialAppMetaInfo
+import com.machiav3lli.backup.items.Package
 import com.machiav3lli.backup.items.StorageFile
 import com.machiav3lli.backup.tasks.AppActionWork
 import com.machiav3lli.backup.utils.CryptoSetupException
 import timber.log.Timber
 import java.io.File
-import java.nio.file.Files
-import java.nio.file.LinkOption
-import java.util.*
 
-class BackupSpecialAction(context: Context, work: AppActionWork?, shell: ShellHandler)
-    : BackupAppAction(context, work, shell)
-{
-    override fun run(app: AppInfo, backupMode: Int): ActionResult {
+class BackupSpecialAction(context: Context, work: AppActionWork?, shell: ShellHandler) :
+    BackupAppAction(context, work, shell) {
+    override fun run(app: Package, backupMode: Int): ActionResult {
         if (backupMode and MODE_APK == MODE_APK) {
             Timber.e("Special contents don't have APKs to backup. Ignoring")
         }
-        return  if (backupMode and MODE_DATA == MODE_DATA)
-                    super.run(app, MODE_DATA)
-                else ActionResult(
-                    app, null,
-                    "Special backup only backups data, but data was not selected for backup",
-                    false
-                )
+        return if (backupMode and MODE_DATA == MODE_DATA)
+            super.run(app, MODE_DATA)
+        else ActionResult(
+            app, null,
+            "Special backup only backups data, but data was not selected for backup",
+            false
+        )
     }
 
     @Throws(BackupFailedException::class, CryptoSetupException::class)
     override fun backupData(
-        app: AppInfo,
+        app: Package,
         backupInstanceDir: StorageFile,
         iv: ByteArray?
     ): Boolean {
         Timber.i("$app: Backup special data")
-        require(app.appMetaInfo is SpecialAppMetaInfo) { "Provided app is not an instance of SpecialAppMetaInfo" }
-        val appInfo = app.appMetaInfo as SpecialAppMetaInfo
+        require(app.packageInfo is SpecialInfo) { "Provided app is not an instance of SpecialAppMetaInfo" }
+        val appInfo = app.packageInfo as SpecialInfo
         // Get file list
         // This can be optimized, because it's known, that special backups won't meet any symlinks
         // since the list of files is fixed
         // It would make sense to implement something like TarUtils.addFilepath with SuFileInputStream and
         val filesToBackup = mutableListOf<ShellHandler.FileInfo>()
         try {
-            for (filePath in appInfo.fileList) {
+            for (filePath in appInfo.specialFiles) {
                 if (app.packageName == "special.smsmms.json") {
                     BackupSMSMMSJSONAction.backupData(context, filePath)
                 }
@@ -75,46 +71,34 @@ class BackupSpecialAction(context: Context, work: AppActionWork?, shell: ShellHa
                 }
                 val file = File(filePath)
                 val isDirSource = filePath.endsWith("/")
-                val parent = if (isDirSource) file.name else null
-                var fileInfos = mutableListOf<ShellHandler.FileInfo>()
-                try {
-                    fileInfos.addAll(
-                        shell.suGetDetailedDirectoryContents(
-                            filePath.removeSuffix("/"),
-                            isDirSource,
-                            parent
-                        )
-                    )
-                } catch (e: ShellCommandFailedException) {
-                    continue  //TODO hg42: avoid checking the error message text for now
-                    //TODO hg42: alternative implementation, better replaced this by API, when root permissions available, e.g. via Shizuku
-                    //    if(e.shellResult.err.toString().contains("No such file or directory", ignoreCase = true))
-                    //        continue
-                    //    throw(e)
-                }
+                val fileInfos = mutableListOf<ShellHandler.FileInfo>()
                 if (isDirSource) {
-                    // also add directory
-                    filesToBackup.add(
-                        ShellHandler.FileInfo(
-                            parent!!, ShellHandler.FileInfo.FileType.DIRECTORY,
-                            file.parent!!,
-                            Files.getAttribute(
-                                file.toPath(),
-                                "unix:owner",
-                                LinkOption.NOFOLLOW_LINKS
-                            ).toString(),
-                            Files.getAttribute(
-                                file.toPath(),
-                                "unix:group",
-                                LinkOption.NOFOLLOW_LINKS
-                            ).toString(),
-                            Files.getAttribute(
-                                file.toPath(),
-                                "unix:mode",
-                                LinkOption.NOFOLLOW_LINKS
-                            ) as Int,
-                            0, Date(file.lastModified())
+                    // directory
+                    try {
+                        // add contents
+                        fileInfos.addAll(
+                            shell.suGetDetailedDirectoryContents(
+                                filePath.removeSuffix("/"),
+                                isDirSource,
+                                file.name
+                            )
                         )
+                    } catch (e: ShellCommandFailedException) {
+                        LogsHandler.unexpectedException(e)
+                        continue  //TODO hg42: avoid checking the error message text for now
+                        //TODO hg42: alternative implementation, better replaced this by API, when root permissions available, e.g. via Shizuku
+                        //    if(e.shellResult.err.toString().contains("No such file or directory", ignoreCase = true))
+                        //        continue
+                        //    throw(e)
+                    }
+                    // add directory itself
+                    filesToBackup.add(
+                        shell.suGetFileInfo(file.absolutePath)
+                    )
+                } else {
+                    // regular file
+                    filesToBackup.add(
+                        shell.suGetFileInfo(file.absolutePath)
                     )
                 }
                 filesToBackup.addAll(fileInfos)
@@ -127,14 +111,11 @@ class BackupSpecialAction(context: Context, work: AppActionWork?, shell: ShellHa
             Timber.e("$app: Backup Special Data failed: $error")
             throw BackupFailedException(error, e)
         } catch (e: Throwable) {
-            LogsHandler.unhandledException(e, app)
+            LogsHandler.unexpectedException(e, app)
             throw BackupFailedException("unhandled exception", e)
         }
-        if (
-                app.packageName == "special.smsmms.json" ||
-                app.packageName == "special.calllogs.json"
-            ) {
-            for (filePath in appInfo.fileList) {
+        if (app.packageName == "special.smsmms.json" || app.packageName == "special.calllogs.json") {
+            for (filePath in appInfo.specialFiles) {
                 File(filePath).delete()
             }
         }
@@ -142,36 +123,36 @@ class BackupSpecialAction(context: Context, work: AppActionWork?, shell: ShellHa
     }
 
     // Stubbing some functions, to avoid executing them with potentially dangerous results
-    override fun backupPackage(app: AppInfo, backupInstanceDir: StorageFile) {
+    override fun backupPackage(app: Package, backupInstanceDir: StorageFile) {
         // stub
     }
 
     override fun backupDeviceProtectedData(
-        app: AppInfo,
+        app: Package,
         backupInstanceDir: StorageFile,
         iv: ByteArray?
     ): Boolean = // stub
         false
 
     override fun backupExternalData(
-        app: AppInfo,
+        app: Package,
         backupInstanceDir: StorageFile,
         iv: ByteArray?
     ): Boolean = // stub
         false
 
     override fun backupObbData(
-        app: AppInfo,
+        app: Package,
         backupInstanceDir: StorageFile,
         iv: ByteArray?
     ): Boolean = // stub
         false
 
-    override fun preprocessPackage(packageName: String) {
+    override fun preprocessPackage(type: String, packageName: String) {
         // stub
     }
 
-    override fun postprocessPackage(packageName: String) {
+    override fun postprocessPackage(type: String, packageName: String) {
         // stub
     }
 }

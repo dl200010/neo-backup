@@ -18,14 +18,12 @@
 package com.machiav3lli.backup.utils
 
 import com.machiav3lli.backup.OABX
-import com.machiav3lli.backup.PREFS_STRICTHARDLINKS
-import com.machiav3lli.backup.actions.BaseAppAction.Companion.DATA_EXCLUDED_BASENAMES
-import com.machiav3lli.backup.actions.BaseAppAction.Companion.DATA_EXCLUDED_CACHE_DIRS
 import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.handler.ShellHandler.Companion.quote
 import com.machiav3lli.backup.handler.ShellHandler.Companion.runAsRoot
-import com.machiav3lli.backup.handler.ShellHandler.FileInfo.FileType
+import com.machiav3lli.backup.handler.ShellHandler.FileType
 import com.machiav3lli.backup.items.RootFile
+import com.machiav3lli.backup.preferences.pref_strictHardLinks
 import com.topjohnwu.superuser.io.SuFileOutputStream
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
@@ -61,9 +59,9 @@ const val BUFFER_SIZE = 8 * 1024 * 1024
 // #define	__S_IEXEC	0100	// Execute by owner
 
 // NOTE: underscores separate octal digits not hex digits!
-private const val DIR_MODE_OR_MASK     = 0b0_000_100_000_000_000_000
-private const val FILE_MODE_OR_MASK    = 0b0_001_000_000_000_000_000
-private const val FIFO_MODE_OR_MASK    = 0b0_000_001_000_000_000_000
+private const val DIR_MODE_OR_MASK = 0b0_000_100_000_000_000_000
+private const val FILE_MODE_OR_MASK = 0b0_001_000_000_000_000_000
+private const val FIFO_MODE_OR_MASK = 0b0_000_001_000_000_000_000
 private const val SYMLINK_MODE_OR_MASK = 0b0_001_010_000_000_000_000
 
 /**
@@ -83,19 +81,23 @@ fun TarArchiveOutputStream.addFilepath(inputFilepath: File, parent: String) {
         archiveEntry.linkName = inputFilepath.canonicalPath
     }
     putArchiveEntry(archiveEntry)
-    if (inputFilepath.isFile && !FileUtils.isSymlink(inputFilepath)) {
-        val bis = BufferedInputStream(FileInputStream(inputFilepath))
-        IOUtils.copy(bis, this)
-    } else if (inputFilepath.isDirectory) {
-        closeArchiveEntry()
-        Objects
-            .requireNonNull(inputFilepath.listFiles(), "Directory listing returned null!")
-            .forEach {
-                addFilepath(it, entryName + File.separator)
-            }
-    } else {
-        // in case of a symlink
-        closeArchiveEntry()
+    when {
+        inputFilepath.isFile &&
+                !FileUtils.isSymlink(inputFilepath) -> {
+            val bis = BufferedInputStream(FileInputStream(inputFilepath))
+            IOUtils.copy(bis, this)
+        }
+        inputFilepath.isDirectory                   -> {
+            closeArchiveEntry()
+            Objects
+                .requireNonNull(inputFilepath.listFiles(), "Directory listing returned null!")
+                .forEach {
+                    addFilepath(it, entryName + File.separator)
+                }
+        }
+        else /* symlink etc. */                     -> {
+            closeArchiveEntry()
+        }
     }
 }
 
@@ -105,7 +107,7 @@ fun TarArchiveOutputStream.suAddFiles(allFiles: List<ShellHandler.FileInfo>) {
         Timber.d("Adding ${file.filePath} to archive (filesize: ${file.fileSize})")
         var entry: TarArchiveEntry
         when (file.fileType) {
-            FileType.REGULAR_FILE -> {
+            FileType.REGULAR_FILE  -> {
                 entry = TarArchiveEntry(file.filePath)
                 entry.size = file.fileSize
                 entry.setNames(file.owner, file.group)
@@ -118,7 +120,7 @@ fun TarArchiveOutputStream.suAddFiles(allFiles: List<ShellHandler.FileInfo>) {
                     closeArchiveEntry()
                 }
             }
-            FileType.DIRECTORY -> {
+            FileType.DIRECTORY     -> {
                 entry = TarArchiveEntry(file.filePath, TarConstants.LF_DIR)
                 entry.setNames(file.owner, file.group)
                 entry.mode = DIR_MODE_OR_MASK or file.fileMode
@@ -133,16 +135,16 @@ fun TarArchiveOutputStream.suAddFiles(allFiles: List<ShellHandler.FileInfo>) {
                 putArchiveEntry(entry)
                 closeArchiveEntry()
             }
-            FileType.NAMED_PIPE -> {
+            FileType.NAMED_PIPE    -> {
                 entry = TarArchiveEntry(file.filePath, TarConstants.LF_FIFO)
                 entry.setNames(file.owner, file.group)
                 entry.mode = FIFO_MODE_OR_MASK or file.fileMode
                 putArchiveEntry(entry)
                 closeArchiveEntry()
             }
-            FileType.BLOCK_DEVICE -> Timber.w("Block devices should not occur: {$file.filePath}") //TODO hg42: add to errors? can we backup these?
-            FileType.CHAR_DEVICE -> Timber.w("Char devices should not occur: {$file.filePath}") //TODO hg42: add to errors? can we backup these?
-            FileType.SOCKET -> Timber.w("It does not make sense to backup sockets: {$file.filePath}") // not necessary //TODO hg42: add to errors?
+            FileType.BLOCK_DEVICE  -> Timber.w("Block devices should not occur: {$file.filePath}") //TODO hg42: add to errors? can we backup these?
+            FileType.CHAR_DEVICE   -> Timber.w("Char devices should not occur: {$file.filePath}") //TODO hg42: add to errors? can we backup these?
+            FileType.SOCKET        -> Timber.w("It does not make sense to backup sockets: {$file.filePath}") // not necessary //TODO hg42: add to errors?
         }
     }
 }
@@ -170,13 +172,14 @@ fun setAttributes(targetFile: RootFile, tarEntry: TarArchiveEntry) {
         throw IOException("Unable to chown $path to $user:$group: $e")
     }
     val timeStr =
-            SimpleDateFormat(
-                "yyyy-MM-dd'T'HH:mm:SS",
-                Locale.getDefault(Locale.Category.FORMAT)
-            ).format(tarEntry.modTime.time)
+        SimpleDateFormat(
+            "yyyy-MM-dd'T'HH:mm:SS",
+            Locale.getDefault(Locale.Category.FORMAT)
+        ).format(tarEntry.modTime.time)
     try {
         //targetPath.setLastModified(tarEntry.modTime.time)   YYYY-MM-DDThh:mm:SS[.frac][tz]
-        runAsRoot("$qUtilBox touch -m -d $timeStr ${quote(path)}"
+        runAsRoot(
+            "$qUtilBox touch -m -d $timeStr ${quote(path)}"
         )
     } catch (e: Throwable) {
         throw IOException("Unable to set modification time on $path to $timeStr: $e")
@@ -184,89 +187,87 @@ fun setAttributes(targetFile: RootFile, tarEntry: TarArchiveEntry) {
 }
 
 @Throws(IOException::class)
-fun TarArchiveInputStream.suUnpackTo(targetDir: RootFile) {
+fun TarArchiveInputStream.suUnpackTo(targetDir: RootFile, forceOldVersion: Boolean = false) {
     val qUtilBox = ShellHandler.utilBoxQ
-    val strictHardLinks = OABX.prefFlag(PREFS_STRICTHARDLINKS, false)
-    targetDir?.let {
-        val postponeInfo = mutableMapOf<String, TarArchiveEntry>()
-        generateSequence { nextTarEntry }.forEach { tarEntry ->
-            val targetFile = RootFile(it, tarEntry.name)
-            Timber.d("Extracting ${tarEntry.name} (filesize: ${tarEntry.realSize})")
-            targetFile.parentFile?.let {
-                if (!it.exists() and !it.mkdirs()) {
-                    throw IOException("Unable to create parent folder ${it.absolutePath}")
+    val strictHardLinks = pref_strictHardLinks.value && !forceOldVersion
+    val postponeInfo = mutableMapOf<String, TarArchiveEntry>()
+    generateSequence { nextTarEntry }.forEach { tarEntry ->
+        val targetFile = RootFile(targetDir, tarEntry.name)
+        Timber.d("Extracting ${tarEntry.name} (filesize: ${tarEntry.realSize})")
+        targetFile.parentFile?.let {
+            if (!it.exists() and !it.mkdirs()) {
+                throw IOException("Unable to create parent folder ${it.absolutePath}")
+            }
+        } ?: throw IOException("No parent folder for ${targetFile.absolutePath}")
+        var doAttribs = true
+        var postponeAttribs = false
+        val relPath = targetFile.relativeTo(targetDir).toString()
+        when {
+            relPath.isEmpty() ||
+                    relPath in OABX.shellHandler!!.assets.DATA_RESTORE_EXCLUDED_BASENAMES ||
+                    relPath in OABX.shellHandler!!.assets.DATA_EXCLUDED_CACHE_DIRS -> {
+                return@forEach
+            }
+            tarEntry.isDirectory                        -> {
+                if (!targetFile.mkdirs()) {
+                    throw IOException("Unable to create folder ${targetFile.absolutePath}")
                 }
-            } ?: throw IOException("No parent folder for ${targetFile.absolutePath}")
-            var doAttribs = true
-            var postponeAttribs = false
-            val relPath = targetFile.relativeTo(it).toString()
-            when {
-                relPath.isEmpty() ||
-                relPath in DATA_EXCLUDED_BASENAMES ||
-                relPath in DATA_EXCLUDED_CACHE_DIRS -> {
-                    return@forEach
-                }
-                tarEntry.isDirectory -> {
-                    if (!targetFile.mkdirs()) {
-                        throw IOException("Unable to create folder ${targetFile.absolutePath}")
-                    }
-                    // write protection would prevent creating files inside, so chmod at end
-                    postponeAttribs = true
-                }
-                tarEntry.isLink -> {
-                    // OABX v7 tarapi implementation stores all links as hard links (bug)
-                    // and extracts all links as symlinks (repair)
-                    if(strictHardLinks)
-                        try {
-                            runAsRoot(
-                                "$qUtilBox ln ${quote(tarEntry.linkName)} ${quote(targetFile)}"
-                            )
-                        } catch (e: Throwable) {
-                            throw IOException("Unable to create hardlink: ${tarEntry.linkName} -> ${targetFile.absolutePath} : $e")
-                        }
-                    else
-                        try {
-                            runAsRoot(
-                                // OABX v7 implementation stroes hard links and extracts all links as symlinks
-                                "$qUtilBox ln -s ${quote(tarEntry.linkName)} ${quote(targetFile)}"
-                            )
-                        } catch (e: Throwable) {
-                            throw IOException("Unable to create symlink: ${tarEntry.linkName} -> ${targetFile.absolutePath} : $e")
-                        }
-                    doAttribs = false
-                }
-                tarEntry.isSymbolicLink -> {
+                // write protection would prevent creating files inside, so chmod at end
+                postponeAttribs = true
+            }
+            tarEntry.isLink                             -> {
+                // OABX v7 tarapi implementation stores all links as hard links (bug)
+                // and extracts all links as symlinks (repair)
+                if (strictHardLinks)
                     try {
                         runAsRoot(
+                            "$qUtilBox ln ${quote(tarEntry.linkName)} ${quote(targetFile)}"
+                        )
+                    } catch (e: Throwable) {
+                        throw IOException("Unable to create hardlink: ${tarEntry.linkName} -> ${targetFile.absolutePath} : $e")
+                    }
+                else
+                    try {
+                        runAsRoot(
+                            // OABX v7 implementation stroes hard links and extracts all links as symlinks
                             "$qUtilBox ln -s ${quote(tarEntry.linkName)} ${quote(targetFile)}"
                         )
                     } catch (e: Throwable) {
                         throw IOException("Unable to create symlink: ${tarEntry.linkName} -> ${targetFile.absolutePath} : $e")
                     }
-                    doAttribs = false
+                doAttribs = false
+            }
+            tarEntry.isSymbolicLink                     -> {
+                try {
+                    runAsRoot(
+                        "$qUtilBox ln -s ${quote(tarEntry.linkName)} ${quote(targetFile)}"
+                    )
+                } catch (e: Throwable) {
+                    throw IOException("Unable to create symlink: ${tarEntry.linkName} -> ${targetFile.absolutePath} : $e")
                 }
-                tarEntry.isFIFO -> {
-                    try {
-                        runAsRoot("$qUtilBox mkfifo ${quote(targetFile)}")
-                    } catch (e: Throwable) {
-                        throw IOException("Unable to create fifo ${targetFile.absolutePath}: $e")
-                    }
-                }
-                else -> {
-                    try {
-                        SuFileOutputStream.open(RootFile.open(it, tarEntry.name))
-                            .use { fos -> IOUtils.copy(this, fos, BUFFER_SIZE) }
-                    } catch (e: Throwable) {
-                        throw IOException("Unable to create file ${targetFile.absolutePath}: $e")
-                    }
+                doAttribs = false
+            }
+            tarEntry.isFIFO                             -> {
+                try {
+                    runAsRoot("$qUtilBox mkfifo ${quote(targetFile)}")
+                } catch (e: Throwable) {
+                    throw IOException("Unable to create fifo ${targetFile.absolutePath}: $e")
                 }
             }
-            if (doAttribs) {
-                if (postponeAttribs) {
-                    postponeInfo[targetFile.absolutePath] = tarEntry
-                } else {
-                    setAttributes(targetFile, tarEntry)
+            else                                        -> {
+                try {
+                    SuFileOutputStream.open(RootFile.open(targetDir, tarEntry.name))
+                        .use { fos -> IOUtils.copy(this, fos, BUFFER_SIZE) }
+                } catch (e: Throwable) {
+                    throw IOException("Unable to create file ${targetFile.absolutePath}: $e")
                 }
+            }
+        }
+        if (doAttribs) {
+            if (postponeAttribs) {
+                postponeInfo[targetFile.absolutePath] = tarEntry
+            } else {
+                setAttributes(targetFile, tarEntry)
             }
         }
 
@@ -299,8 +300,8 @@ fun TarArchiveInputStream.unpackTo(targetDir: File?, strictHardLinks: Boolean = 
             val mode = tarEntry.mode and 0b111_111_111_111
             when {
                 relPath.isEmpty() -> return@forEach
-                relPath in DATA_EXCLUDED_BASENAMES -> return@forEach
-                relPath in DATA_EXCLUDED_CACHE_DIRS -> return@forEach
+                relPath in OABX.shellHandler!!.assets.DATA_EXCLUDED_BASENAMES -> return@forEach
+                relPath in OABX.shellHandler!!.assets.DATA_EXCLUDED_CACHE_DIRS -> return@forEach
                 tarEntry.isDirectory -> {
                     if (!targetFile.mkdirs()) {
                         throw IOException("Unable to create folder ${targetFile.absolutePath}")

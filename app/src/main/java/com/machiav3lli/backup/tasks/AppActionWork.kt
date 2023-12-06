@@ -17,135 +17,175 @@
  */
 package com.machiav3lli.backup.tasks
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.job.JobService
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
-import androidx.work.*
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.work.CoroutineWorker
+import androidx.work.Data
+import androidx.work.ForegroundInfo
+import androidx.work.OneTimeWorkRequest
+import androidx.work.OutOfQuotaPolicy
+import androidx.work.WorkInfo
+import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.machiav3lli.backup.MODE_UNSET
 import com.machiav3lli.backup.OABX
-import com.machiav3lli.backup.PREFS_MAXRETRIES
+import com.machiav3lli.backup.R
 import com.machiav3lli.backup.activities.MainActivityX
-import com.machiav3lli.backup.handler.*
+import com.machiav3lli.backup.handler.BackupRestoreHelper
+import com.machiav3lli.backup.handler.LogsHandler
+import com.machiav3lli.backup.handler.WorkHandler.Companion.getVar
+import com.machiav3lli.backup.handler.WorkHandler.Companion.setVar
+import com.machiav3lli.backup.handler.getSpecial
+import com.machiav3lli.backup.handler.showNotification
 import com.machiav3lli.backup.items.ActionResult
-import com.machiav3lli.backup.items.AppInfo
+import com.machiav3lli.backup.items.Package
+import com.machiav3lli.backup.preferences.pref_maxJobs
+import com.machiav3lli.backup.preferences.pref_maxRetriesPerPackage
+import com.machiav3lli.backup.preferences.pref_useExpedited
+import com.machiav3lli.backup.preferences.pref_useForegroundInJob
+import com.machiav3lli.backup.services.CommandReceiver
+import com.machiav3lli.backup.utils.SystemUtils.numCores
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.withContext
 import timber.log.Timber
+
 
 class AppActionWork(val context: Context, workerParams: WorkerParameters) :
     CoroutineWorker(context, workerParams) {
 
     private var packageName = inputData.getString("packageName")!!
     private var packageLabel = ""
-    private var operation = ""
     private var backupBoolean = inputData.getBoolean("backupBoolean", true)
     private var batchName = inputData.getString("batchName") ?: ""
+    private var backupIndex: Int = inputData.getInt("backupIndex", 0)
     private var notificationId: Int = inputData.getInt("notificationId", 123454321)
-    private var failures = 0
+    private var failures = getVar(batchName, packageName, "failures")?.toInt() ?: 0
 
     init {
         setOperation("...")
     }
 
     override suspend fun doWork(): Result {
-        //packageName = inputData.getString("packageName") ?: ""
-        //backupBoolean = inputData.getBoolean("backupBoolean", true)
-        //notificationId = inputData.getInt("notificationId", 123454321)
-        //batchName = inputData.getString("batchName") ?: "?AppActionWork.input?"
-        val selectedMode = inputData.getInt("selectedMode", MODE_UNSET)
 
-        setOperation("-->")
+        val work = this
 
-        //setForeground(createForegroundInfo())
-        var result: ActionResult? = null
-        var appInfo: AppInfo? = null
+        return withContext(jobPool) {
 
-        try {
-            val specialAppInfo = context.getSpecial(packageName)
-            appInfo = if (specialAppInfo != null) {
-                specialAppInfo
-            } else {
-                val foundItem =
-                    context.packageManager.getPackageInfo(packageName, PackageManager.GET_META_DATA)
-                AppInfo(context, foundItem)
+            OABX.wakelock(true)
+
+            if (pref_useForegroundInJob.value)               //TODO hg42 the service already does this?
+            //if (inputData.getBoolean("immediate", false))
+                setForeground(getForegroundInfo())
+            //setForegroundAsync(getForegroundInfo())  //TODO hg42 what's the difference?
+
+            var actionResult: ActionResult? = null
+
+            setOperation("...")
+
+            var logMessage =
+                "------------------------------------------------------------ Work: $batchName $packageName"
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                logMessage += " ui=${context.isUiContext}"
             }
-        } catch (e: PackageManager.NameNotFoundException) {
-            if (packageLabel.isEmpty())
-                packageLabel = appInfo?.packageLabel ?: "NONAME"
-            val backupDir = context.getDirectoriesInBackupRoot()
-                .find { it.name == packageName }
-            backupDir?.let {
-                try {
-                    appInfo = AppInfo(context, it.name, it)
-                } catch (e: AssertionError) {
-                    Timber.e("Could not process backup folder for uninstalled application in ${it.name}: $e")
-                    result = ActionResult(
-                        null,
-                        null,
-                        "Could not process backup folder for uninstalled application in ${it.name}: $e",
-                        false
-                    )
-                }
+            Timber.i(logMessage)
+
+            val selectedMode = inputData.getInt("selectedMode", MODE_UNSET)
+
+            var packageItem: Package? = null
+
+            try {
+                packageItem =
+                    context.getSpecial(packageName)
+                        ?: run {
+                            val foundItem =
+                                context.packageManager.getPackageInfo(
+                                    packageName,
+                                    PackageManager.GET_PERMISSIONS
+                                )
+                            Package(context, foundItem)
+                        }
+            } catch (e: PackageManager.NameNotFoundException) {
+                if (packageLabel.isEmpty())
+                    packageLabel = packageItem?.packageLabel ?: "NOLABEL"
+                packageItem = Package(context, packageName)
             }
-        }
 
-        try {
-            if (!isStopped) {
+            try {
+                if (!isStopped) {
 
-                appInfo?.let { ai ->
-                    try {
-                        OABX.shellHandlerInstance?.let { shellHandler ->
-                            result = when {
-                                backupBoolean -> {
-                                    BackupRestoreHelper.backup(
-                                        context, this, shellHandler, ai, selectedMode
-                                    )
-                                }
-                                else -> {
-                                    // Latest backup for now
-                                    ai.latestBackup?.let {
-                                        BackupRestoreHelper.restore(
-                                            context, this, shellHandler, ai, selectedMode,
-                                            it.backupProperties, it.backupInstanceDir
+                    packageItem?.let { pi ->
+                        try {
+                            OABX.shellHandler?.let { shellHandler ->
+                                actionResult = when {
+                                    backupBoolean -> {
+                                        BackupRestoreHelper.backup(
+                                            context, work, shellHandler, pi, selectedMode
                                         )
+                                    }
+
+                                    else          -> {
+                                        pi.backupsNewestFirst[backupIndex].let {
+                                            BackupRestoreHelper.restore(
+                                                context, work,
+                                                shellHandler, pi,
+                                                selectedMode, it
+                                            )
+                                        }
                                     }
                                 }
                             }
-                        }
-                    } catch (e: Throwable) {
-                        result = ActionResult(
-                            ai, null,
-                            "not processed: $packageLabel: $e\n${e.stackTrace}", false
-                        )
-                        Timber.w("package: ${ai.packageLabel} result: $e")
-                    } finally {
-                        result?.let {
-                            if (!it.succeeded) {
-                                val message = "${ai.packageName}\n${it.message}"
-                                showNotification(
-                                    context, MainActivityX::class.java,
-                                    result.hashCode(), ai.packageLabel, it.message, message, false
-                                )
-                            }
+                        } catch (e: Throwable) {
+                            val message = "package not processed: $packageName $packageLabel: $e\n${
+                                LogsHandler.message(e, true)
+                            }"
+                            actionResult = ActionResult(pi, null, message, false)
+                            Timber.w(message)
                         }
                     }
                 }
+            } catch (e: Throwable) {
+                LogsHandler.unexpectedException(e, packageLabel)
             }
-        } catch (e: Throwable) {
-            LogsHandler.unhandledException(e, packageLabel)
-        }
-        val succeeded = result?.succeeded ?: false
-        return if (succeeded) {
-            Result.success(getWorkData("OK", result))
-        } else {
-            failures++
-            if (failures <= OABX.prefInt(PREFS_MAXRETRIES, 3))
-                Result.retry()
-            else {
-                Result.failure(getWorkData("ERR", result))
+
+            val succeeded = actionResult?.succeeded ?: false
+            val result = if (succeeded) {
+                setOperation("OK.")
+                Timber.w("package: $packageName OK")
+                Result.success(getWorkData("OK", actionResult))
+            } else {
+                failures++
+                setVar(batchName, packageName, "failures", failures.toString())
+                if (failures <= pref_maxRetriesPerPackage.value) {
+                    setOperation("err")
+                    Timber.w("package: $packageName failures: $failures -> retry")
+                    Result.retry()
+                } else {
+                    val message = "$packageName\n${actionResult?.message}"
+                    showNotification(
+                        context, MainActivityX::class.java,
+                        actionResult.hashCode(), packageLabel, actionResult?.message, message, false
+                    )
+                    setOperation("ERR")
+                    Timber.w("package: $packageName FAILED")
+                    Result.failure(getWorkData("ERR", actionResult))
+                }
             }
+
+            OABX.wakelock(false)
+
+            result
         }
     }
 
     fun setOperation(operation: String = "") {
-        this.operation = operation
         setProgressAsync(getWorkData(operation))
     }
 
@@ -173,33 +213,46 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
             )
     }
 
-    /*
-    private fun createForegroundInfo(): ForegroundInfo {
+
+    override suspend fun getForegroundInfo(): ForegroundInfo {
         val contentPendingIntent = PendingIntent.getActivity(
             context, 0,
             Intent(context, MainActivityX::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val cancelIntent = WorkManager.getInstance(applicationContext)
-            .createCancelPendingIntent(id) // TODO causing crash on targetSDK 31 on A12, go back to targetSDK 30 for now and wait update on WorkManager's side
+        val cancelAllIntent =
+            Intent(OABX.context, CommandReceiver::class.java).apply {
+                action = "cancel"
+                //putExtra("name", "")
+            }
+        val cancelAllPendingIntent = PendingIntent.getBroadcast(
+            OABX.context,
+            "<ALL>".hashCode(),
+            cancelAllIntent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
 
         createNotificationChannel()
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle(
                 when {
-                    backupBoolean -> context.getString(com.machiav3lli.backup.R.string.batchbackup)
-                    else -> context.getString(com.machiav3lli.backup.R.string.batchrestore)
+                    backupBoolean -> context.getString(R.string.batchbackup)
+                    else          -> context.getString(R.string.batchrestore)
                 }
             )
-            .setSmallIcon(com.machiav3lli.backup.R.drawable.ic_app)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setOngoing(true)
             .setSilent(true)
             .setContentIntent(contentPendingIntent)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .addAction(R.drawable.ic_close, context.getString(R.string.dialogCancel), cancelIntent)
+            .addAction(
+                R.drawable.ic_close,
+                context.getString(R.string.dialogCancelAll),
+                cancelAllPendingIntent
+            )
             .build()
 
         return ForegroundInfo(this.notificationId + 1, notification)
@@ -213,30 +266,57 @@ class AppActionWork(val context: Context, workerParams: WorkerParameters) :
         notificationChannel.enableVibration(true)
         notificationManager.createNotificationChannel(notificationChannel)
     }
-    */
 
     companion object {
         private val CHANNEL_ID = AppActionWork::class.java.name
+
+        //val jobPool1 = Executors.newFixedThreadPool(
+        //    if (pref_maxJobs.value > 0)
+        //        pref_maxJobs.value
+        //    else
+        //        numCores
+        //).asCoroutineDispatcher()
+
+        @OptIn(ExperimentalCoroutinesApi::class)
+        val jobPool = Dispatchers.IO.limitedParallelism(
+            if (pref_maxJobs.value > 0)
+                pref_maxJobs.value
+            else
+                numCores
+        )
 
         fun Request(
             packageName: String,
             mode: Int,
             backupBoolean: Boolean,
+            backupIndex: Int = 0,
             notificationId: Int,
-            batchName: String
-        ) = OneTimeWorkRequest.Builder(AppActionWork::class.java)
-            .addTag("name:$batchName")
-            .setInputData(
-                workDataOf(
-                    "packageName" to packageName,
-                    "selectedMode" to mode,
-                    "backupBoolean" to backupBoolean,
-                    "notificationId" to notificationId,
-                    "batchName" to batchName,
-                    "operation" to "..."
+            batchName: String,
+            immediate: Boolean,
+        ): OneTimeWorkRequest {
+            val builder = OneTimeWorkRequest.Builder(AppActionWork::class.java)
+
+            builder
+                .addTag("name:$batchName")
+                .addTag("package:$packageName")
+                .setInputData(
+                    workDataOf(
+                        "packageName" to packageName,
+                        "selectedMode" to mode,
+                        "backupBoolean" to backupBoolean,
+                        "backupIndex" to backupIndex,
+                        "notificationId" to notificationId,
+                        "batchName" to batchName,
+                        "operation" to "...",
+                        "immediate" to immediate
+                    )
                 )
-            )
-            .build()
+
+            if (immediate or pref_useExpedited.value)
+                builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+
+            return builder.build()
+        }
 
         fun getOutput(t: WorkInfo): Triple<Boolean, String, String> {
             val succeeded = t.outputData.getBoolean("succeeded", false)

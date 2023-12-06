@@ -5,6 +5,7 @@
     <string name="enablePackageTitle">Ativar app para usuários</string>
     <plurals name="updated_apps">
         <item quantity="one">%d app atualizado</item>
+        <item quantity="many">%d app atualizado</item>
         <item quantity="other">%d apps atualizados</item>
     </plurals>
     <string name="global_blocklist_add">Adicionar a lista negra global</string>
@@ -25,14 +26,13 @@
     <string name="intro_permission_usageaccess">O app precisa dessa permissão para verificar as estatísticas e os tamanhos dos dados e do cache de seus aplicativos.</string>
     <string name="intro_permission_storage_location">O app precisa de um local de backup para armazenar os backups. O app pode precisar de alguns gigabytes de armazenamento para um backup completo e está consultando muito o sistema de arquivos. Tenha isso em mente ao escolher locais de armazenamento baseados em rede.</string>
     <string name="intro_permission_storage">O app usa a permissão de leitura/gravação do armazenamento para poder acessar o armazenamento externo e fornecer a possibilidade do backup de dados externos/obb de outros aplicativos.</string>
-    <string name="intro_welcome_message">OAndBackupX é uma bifurcação do reconhecido OAndBackup com o objetivo de levá-lo à 2020 e além. Por enquanto, a maior parte da funcionalidade e da interface do app são reescritas e algumas são adicionadas.
-\nO app ainda se encontra em fase beta e muitas melhorias estão sendo feitas. Leia atentamente o registo de alterações a cada novo lançamento.
-\nTodos os tipos de contribuição são bem-vindos, seja tradução, ideias, relato de bugs ou contribuição ao código.
+    <string name="intro_welcome_message">Neo Backup (anteriormente OAndBackupX) é um fork do famoso OAndBackup com o objetivo de trazer o OAndBackup para 202X e parte do pacote de Aplicativos Neo. Por enquanto, o aplicativo já está totalmente reescrito, tornando-o robusto e adicionando alguns recursos planejados há muito tempo que podem facilitar o fluxo de trabalho de backup/restauração com qualquer dispositivo.
+\nPortanto, todos os tipos de contribuição são sempre bem-vindos.
 \n
 \nAgora sobre a funcionalidade do nosso App:
-\n• Requer Root e permite que você faça o backup de aplicações e os seus dados
-\n• Tanto o backup como a restauração dos apps um por vez ou em lote são suportados.
-\n• A restauração de apps do sistema deve ser possível sem exigir uma reinicialização posterior, mas mesmo assim não aconselhamos fazê-lo.
+\n• Requer Root e permite que você faça o backup de aplicações e os seus dados.
+\n• Há suporte ao backup e restauração de um único app por vez e também de vários apps em lote.
+\n• A restauração de apps do sistema deve ser possível sem exigir uma reinicialização posterior.
 \n• Os backups podem ser programados sem limite no número de programações individuais e há a possibilidade de criar listas personalizadas exclusivas.</string>
     <string name="sort_and_filter">Classificar &amp; Filtrar</string>
     <string name="enable_encryption_message">Não é seguro manter seus dados em seu dispositivo não criptografado. Para a segurança dos seus dados, habilite a criptografia e defina uma senha.</string>
@@ -75,22 +75,18 @@
     <string name="spec_appwidgets">Widgets do app</string>
     <string name="sched_excludeSystemCheckBox">Excluir apps do sistema</string>
     <string name="sched_startingbackup">Iniciando backup agendado…</string>
-    <string name="prefs_copyselfapk_summary">Colocar uma cópia do OAndBackupX no nível superior da pasta de backup</string>
+    <string name="prefs_copyselfapk_summary">Colocar uma cópia do Neo Backup no nível superior da pasta de backup</string>
     <string name="prefs_copyselfapk">Copiar o próprio APK</string>
     <string name="prefs_batchdelete_summary">Excluir backups de todos os apps não instalados atualmente.</string>
     <string name="prefs_batchdelete">Excluir backups\?</string>
     <string name="prefs_stopcont_summary">Usuários Avançados: Isto pode ajudar, se o app estiver alterando arquivos durante o backup e o backup falhar.</string>
     <string name="prefs_stopcont">STOP-CONT pré e pós-processamento de apps em backup/restauração</string>
-    <string name="prefs_allowdowngrade_summary">Permitir a restauração de uma versão mais antiga do app instalado.</string>
+    <string name="prefs_allowdowngrade_summary">Permitir a restauração de uma versão mais antiga do app instalado (aplicável apenas para versões debugáveis).</string>
     <string name="prefs_restoreallpermissions_summary">Conceder ao app restaurado todas as permissões solicitadas.</string>
     <string name="prefs_disableverification_summary">Desativa esta opção de desenvolvedor enquanto restaura APKs e a reativa depois. Resolve o erro: INSTALL_FAILED_VERIFICATION_FAILURE.</string>
     <string name="prefs_disableverification">Desativar Verificação de apps via USB</string>
     <string name="prefs_acquirewakelock_summary">Obter wakelock durante operações em lote para impedir a suspensão. Acelera o backup e restauração consideravelmente, mas consome mais energia.</string>
-    <string name="prefs_housekeepingmoment_summary">Configure se a revisão mais antiga é eliminada antes ou após criar um novo backup para liberar o espaço de disco usado pelo backup.</string>
-    <string name="prefs_deviceprotecteddata_summary">Faz backup e restaura os dados que são colocados em data/user_de</string>
     <string name="prefs_deviceprotecteddata">Fazer backup de dados protegidos do dispositivo</string>
-    <string name="prefs_externaldata_summary">Faz o backup e restaura os dados que são colocados no armazenamento externo (Ex.: /storage/emulated/0/Android/data/)</string>
-    <string name="prefs_obbdata_summary">Faz backup e restaura os arquivos OBB do app que são colocados no armazenamento externo (Ex.: /storage/emulated/0/Android/obb/)</string>
     <string name="prefs_obbdata">Backup de arquivos OBB</string>
     <string name="prefs_excludecache_summary">Excluir cache do app do backup de dados</string>
     <string name="prefs_excludecache">Excluir cache do app</string>
@@ -98,16 +94,13 @@
     <string name="prefs_password_match_false">As senhas não correspondem</string>
     <string name="prefs_password_match_true">As senhas correspondem</string>
     <string name="prefs_passwordconfirmation">Confirmação de senha de criptografia</string>
-    <string name="prefs_password_summary">Deixe vazio para desativar a criptografia</string>
     <string name="prefs_password">Senha de criptografia</string>
     <string name="prefs_encryption_summary">Permitir criptografar backups de dados</string>
     <string name="prefs_encryption">Criptografia</string>
     <string name="prefs_rememberfiltering_summary">Salva o método de classificação e filtragem escolhido. Somente aqueles marcados por uma caixa de seleção no menu são considerados.</string>
-    <string name="prefs_rememberfiltering">Lembrar ordem e filtros</string>
+    <string name="prefs_rememberfiltering">Lembrar da ordem e filtros</string>
     <string name="prefs_biometriclock_summary">Proteja o app com o bloqueio biométrico do dispositivo (ex.: impressão digital, desbloqueio facial)</string>
     <string name="prefs_language_system">Padrão do sistema</string>
-    <string name="prefs_housekeepingmoment_before">Antes do Backup</string>
-    <string name="prefs_housekeepingmoment_after">Após o Backup</string>
     <string name="prefs_theme_dark">Escuro</string>
     <string name="prefs_user">Preferências do Usuário</string>
     <string name="disablePackage">Desativar app</string>
@@ -174,7 +167,7 @@
     <string name="dialogYes">Sim</string>
     <string name="dialogCancel">Cancelar</string>
     <string name="dialogOK">OK</string>
-    <string name="error_updating_schedule_mode">Error ao atualizar %1$s do agendamento %2$d</string>
+    <string name="error_updating_schedule_mode">Erro ao atualizar %1$s do agendamento %2$d</string>
     <string name="spec_accounts">Contas</string>
     <string name="sched_timeLeft">Tempo restante:</string>
     <string name="sched_mode">Modo de backup:</string>
@@ -193,7 +186,6 @@
     <string name="prefs_allowdowngrade">Permitir versões anteriores</string>
     <string name="prefs_restoreallpermissions">Restaurar com todas as permissões</string>
     <string name="prefs_acquirewakelock">Impedir suspensão</string>
-    <string name="prefs_housekeepingmoment">Tempo de limpeza da revisão</string>
     <string name="prefs_numBackupRevisions_summary">A revisão mais antiga será apagada após a criação de um novo backup se o número for excedido. Defina-o como zero para manter todas as revisões.</string>
     <string name="prefs_numBackupRevisions">Número de revisões de backup</string>
     <string name="prefs_externaldata">Fazer backup de dados externos</string>
@@ -224,11 +216,13 @@
     <string name="handleBoth">Ambos</string>
     <string name="handleData">Dados</string>
     <plurals name="days_left">
-        <item quantity="one">%d dia,</item>
-        <item quantity="other">%d dias,</item>
+        <item quantity="one">%d dia</item>
+        <item quantity="many">%d dias</item>
+        <item quantity="other">%d dias</item>
     </plurals>
     <plurals name="sched_interval_formal">
         <item quantity="one">cada dia</item>
+        <item quantity="many">cada %d dias</item>
         <item quantity="other">cada %d dias</item>
     </plurals>
     <string name="backup_all_updated">Atualizar tudo</string>
@@ -259,7 +253,7 @@
     <string name="help_issues">Problemas conhecidos</string>
     <string name="fetching_action_list">Obtendo lista de apps para %1$s…</string>
     <string name="logs_text_empty">Não há nada a mostrar!</string>
-    <string name="welcome_to_oabx">Bem-vindo ao OABX!</string>
+    <string name="welcome_to_oabx">Bem-vindo ao Neo Backup!</string>
     <string name="storage_access">Acesso ao Armazenamento</string>
     <string name="help_faq">Perguntas frequentes</string>
     <string name="help_group_telegram">Nosso Grupo no Telegram</string>
@@ -268,7 +262,7 @@
     <string name="data_size">Tamanho dos Dados:</string>
     <string name="restore">Restaurar</string>
     <string name="backup">Backup</string>
-    <string name="split_apks">APKs divididos:</string>
+    <string name="split_apks">APKs divididos</string>
     <string name="ignore_battery_optimization_title">Otimização de Bateria</string>
     <string name="empty_filtered_list">A lista de filtros está vazia.</string>
     <string name="other_filters_options">Filtros especiais:</string>
@@ -294,7 +288,6 @@
     <string name="prefs_accent_1">Roxo Fino</string>
     <string name="prefs_accent_0">Cometa Vermelho</string>
     <string name="sortBackupDate">Data do Backup</string>
-    <string name="prefs_mediadata_summary">Faz um backup e restaura os arquivos de mídia do aplicativo em um armazenamento externo (e.g./storage/emulated/0/Android/media/)</string>
     <string name="prefs_mediadata">Backup de arquivos de mídia</string>
     <string name="radio_mediadata">Dados de mídia</string>
     <string name="prefs_secondary_8">Menta</string>
@@ -307,4 +300,106 @@
     <string name="prefs_compression_level">Nível de Compressão</string>
     <string name="prefs_compression_level_summary">Um valor baixo comprime mais rápido mas gera arquivos maiores. Um valor alto comprime melhor mas demora mais.</string>
     <string name="showDisabled">Apps desabilitados</string>
+    <string name="grant_calllogs_message">Isto é essencial para fazer o backup/restauração dos seus Registos de Chamadas.</string>
+    <string name="intro_permission_calllogs">O aplicativo precisa desta permissão para poder fazer o backup/restauração dos seus Registros de Chamadas.</string>
+    <string name="grant_smsmms_message">Isto é essencial para fazer backup/restauração dos seus SMS/MMS.</string>
+    <string name="calllogs_permission_title">Permissões de Registros de Chamadas</string>
+    <string name="smsmms_permission_title">Permissões de SMS/MMS</string>
+    <string name="contacts_permission_title">Permissões de Contatos</string>
+    <string name="grant_contacts_message">Isso é essencial para associar um contato a um SMS/MMS.</string>
+    <string name="intro_permission_smsmms">O aplicativo precisa desta permissão para poder fazer o backup/restauração do seu SMS/MMS.</string>
+    <string name="intro_permission_contacts">O aplicativo precisa desta permissão para associar um contato a um SMS/MMS.</string>
+    <string name="schedule">Agendar</string>
+    <string name="batch">Lote</string>
+    <string name="spec_fingerprint">Impressões digitais</string>
+    <string name="loading_list">Carregando lista…</string>
+    <string name="delete">Excluir</string>
+    <string name="finished">finalizado</string>
+    <string name="prefs_loadingtoasts_summary">Exibir notificações enquanto a lista carrega</string>
+    <string name="prefs_loadingtoasts">Carregando notificações</string>
+    <string name="prefs_tools_short">Ferramentas</string>
+    <string name="prefs_user_short">Pessoal</string>
+    <string name="prefs_service_short">Serviço</string>
+    <string name="prefs_advanced_short">Avançado</string>
+    <string name="prefs_restorepermissions">Restaurar permissões</string>
+    <string name="prefs_sessionIinstaller">Usar instalador de sessão</string>
+    <string name="prefs_sessionIinstaller_summary">Usar o instalador de sessão ao invés do instalador básico. É mais lento, mas evita problemas com o Android 13+</string>
+    <string name="prefs_installerpackagename">Nome do instalador de pacote:</string>
+    <string name="sortBackupSize">Tamanho do backup</string>
+    <string name="prefs_theme_black">Tema escuro</string>
+    <string name="prefs_theme_black_summary">Aplica fundo preto quando em tema escuro</string>
+    <string name="prefs_mediadata_rst">Restaurar arquivos de mídia</string>
+    <string name="prefs_dev_settings">Configurações de desenvolvedor</string>
+    <string name="spec_calllogsjson">Registo de chamadas em JSON</string>
+    <string name="dialogCancelAll">Cancelar tudo</string>
+    <string name="sortAppSize">Tamanho do app</string>
+    <string name="add_tag">Adicionar nova tag</string>
+    <string name="prefs_tools_terminal">Terminal</string>
+    <string name="edit_note">Editar nota</string>
+    <string name="see_faq">Consulte as FAQ!</string>
+    <string name="prefs_externaldata_rst">Restaurar dados externos</string>
+    <string name="sortDesc">Decrescente</string>
+    <string name="sortAsc">Crescente</string>
+    <string name="enabled">Ativado</string>
+    <string name="context_menu">Menu de contexto</string>
+    <string name="prefs_nobackupdata_rst">Restaurar arquivos no_backup</string>
+    <string name="dismiss">Rejeitar</string>
+    <string name="prefs_obbdata_rst">Restaurar arquivos obb</string>
+    <string name="prefs_dev_settings_summary">Não altere a não ser que um desenvolvedor diga para você usar!</string>
+    <string name="spec_smsmmsjson">SMS/MMS no formato JSON</string>
+    <string name="root_missing">ROOT em falta!</string>
+    <string name="dialog_export_schedules">Exportar meus agendamentos</string>
+    <string name="root_is_mandatory">Como as aplicações estão isoladas entre si, o acesso \'superuser\' é obrigatório para conseguir fazer os backups e o restauro dos dados.</string>
+    <string name="supended_apps_cleanup">remover todos os resíduos de aplicações suspensas</string>
+    <string name="prefs_squeezenavtext_summary">Permitir que os itens da barra de navegação sejam redimensionados para ajustar a largura disponível.</string>
+    <string name="prefs_altnavbaritem_summary">Usar o layout da barra de navegação alternativa/antiga, que mostra a etiqueta de itens não selecionados.</string>
+    <string name="prefs_externaldata_summary">Faz o backup e restaura os dados que são colocados no armazenamento externo (Ex.: /storage/emulated/0/Android/data/)</string>
+    <string name="prefs_mediadata_summary">Faz um backup e restaura os arquivos de mídia do aplicativo em um armazenamento externo (Ex: /storage/emulated/0/Android/media/)</string>
+    <string name="prefs_deviceprotecteddata_rst_summary">Restaura dados que são colocados em data/user_de</string>
+    <string name="prefs_obbdata_rst_summary">Restaura os arquivos OBB do aplicativo que são colocado no armazenamento externo (Ex: /storage/emulated/0/Android/obb/)</string>
+    <string name="filters_latest">Backup mais recente</string>
+    <string name="prefs_mediadata_rst_summary">Restaura os arquivos de mídia do aplicativo que são colocados no armazenamento externo (Ex: /storage/emulated/0/Android/media/)</string>
+    <string name="filters_installed">Instalação</string>
+    <string name="filters_enabled">Ativado</string>
+    <string name="filters_app">Tipo de aplicativo</string>
+    <string name="show_new_backups">Novos backups</string>
+    <string name="prefs_multilineinfochips">Chips de informação multi-linha</string>
+    <string name="prefs_multilineinfochips_summary">Permita que os chips de informações na lista de aplicativos se estendam por várias linhas.</string>
+    <string name="prefs_newandupdatednotification">Mostrar notificação para novos e atualizados</string>
+    <string name="prefs_newandupdatednotification_summary">Mostrar novos aplicativos do usuário ao lado dos aplicativos atualizados na barra de notificação da página inicial.</string>
+    <string name="prefs_singularbackuprestore">Restauração de backup singular</string>
+    <string name="prefs_singularbackuprestore_summary">Usar o layout de restauração alternativa que permite escolher backups específicos para restaurar.</string>
+    <string name="prefs_squeezenavtext">Espremer o texto do item de navegação</string>
+    <string name="prefs_altnavbaritem">Usar itens alternativos na de barra de navegação</string>
+    <string name="prefs_laserbackground">Mostrar laser animado no fundo</string>
+    <string name="prefs_laserbackground_summary">Usar luzes coloridas animadas como fundo ao carregar/ocupado.</string>
+    <string name="prefs_nobackupdata_summary">Fazer backup de arquivos dos dados que são marcados para não serem feitos os backups</string>
+    <string name="prefs_deviceprotecteddata_rst">Restaurar dados protegidos do dispositivo</string>
+    <string name="prefs_externaldata_rst_summary">Restaura dados que são colocados no armazenamento externo (Ex: /storage/emulated/0/Android/data/)</string>
+    <string name="prefs_nobackupdata_rst_summary">Restaura arquivos dos dados que são marcados para não ser feito o backup</string>
+    <string name="prefs_restorepermissions_summary">Restaurar permissões que foram concedidas ao aplicativo no momento do backup. Note que algumas permissões não podem ser concedidas de forma programática e assim fazer com que a restauração do pacote falhe como um todo, que o Neo Backup então cobre restaurar o pacote sem permissões.</string>
+    <string name="sortAppDataSize">"Aplicativo  tamanho dos dados"</string>
+    <string name="post_notifications_permission_message">A partir do Android 13, os aplicativos exigem essa permissão para poder postar notificações.</string>
+    <string name="post_notifications_permission_title">Postar Notificações</string>
+    <string name="filters_launchable">Inicializável</string>
+    <string name="filters_updated">Atualizado</string>
+    <string name="filters_backup">Tipos de backup</string>
+    <string name="sorting_order">Ordenação</string>
+    <string name="radio_notlaunchable">Aplicativos não inicializáveis</string>
+    <string name="show_updated_apps">Aplicativos atualizados</string>
+    <string name="show_new_apps">Novos aplicativos</string>
+    <string name="show_old_apps">Aplicativos antigos</string>
+    <string name="show_enabled_apps">Aplicativos habilitados</string>
+    <string name="show_installed_apps">Aplicativos instalados</string>
+    <string name="prefs_deviceprotecteddata_summary">Faz backup dos dados que são colocados em data/user_de</string>
+    <string name="prefs_obbdata_summary">Faz backup e restaura os arquivos OBB do app que são colocados no armazenamento externo (Ex.: /storage/emulated/0/Android/obb/)</string>
+    <string name="clear_text">Limpar o texto</string>
+    <string name="prefs_nobackupdata">Backup de arquivos no_backup</string>
+    <string name="backup_revisions_limit">Limite de backups: %d</string>
+    <string name="prefs_password_summary">Também usado para descriptografia na restauração</string>
+    <string name="prefs_theme_dynamic_black">Preto com cores dinâmicas</string>
+    <string name="prefs_theme_dynamic">Tema dinâmico</string>
+    <string name="prefs_theme_dynamic_light">Claro com cores dinâmicas</string>
+    <string name="prefs_theme_system_black">Tema do sistema (preto)</string>
+    <string name="prefs_theme_dynamic_dark">Escuro com cores dinâmicas</string>
 </resources>

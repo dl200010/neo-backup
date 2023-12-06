@@ -19,24 +19,23 @@ package com.machiav3lli.backup.tasks
 
 import android.content.Context
 import android.content.DialogInterface
+import com.machiav3lli.backup.OABX
 import com.machiav3lli.backup.R
 import com.machiav3lli.backup.activities.MainActivityX
-import com.machiav3lli.backup.fragments.AppSheet
 import com.machiav3lli.backup.handler.BackupRestoreHelper.ActionType
 import com.machiav3lli.backup.handler.LogsHandler
 import com.machiav3lli.backup.handler.LogsHandler.Companion.logErrors
 import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.handler.showNotification
 import com.machiav3lli.backup.items.ActionResult
-import com.machiav3lli.backup.items.AppInfo
+import com.machiav3lli.backup.items.Package
 import com.machiav3lli.backup.utils.showActionResult
 import java.lang.ref.WeakReference
 import java.util.concurrent.CountDownLatch
 
 abstract class BaseActionTask(
-    val app: AppInfo, oAndBackupX: MainActivityX, val shellHandler: ShellHandler,
-    val mode: Int, private val actionType: ActionType,
-    private val appSheet: AppSheet
+    val app: Package, oAndBackupX: MainActivityX, val shellHandler: ShellHandler,
+    val mode: Int, private val actionType: ActionType, val setInfoBar: (String) -> Unit,
 ) : CoroutinesAsyncTask<Void?, Void?, ActionResult>() {
     val mainActivityXReference: WeakReference<MainActivityX> = WeakReference(oAndBackupX)
     private var signal: CountDownLatch? = null
@@ -49,7 +48,7 @@ abstract class BaseActionTask(
             val message = getProgressMessage(mainActivityX, actionType)
             mainActivityX.runOnUiThread {
                 mainActivityX.showSnackBar("${app.packageLabel}: $message")
-                if (appSheet.isVisible) appSheet.showSnackBar("${app.packageLabel}: $message")
+                setInfoBar("${app.packageLabel}: $message")
             }
             showNotification(
                 mainActivityX, MainActivityX::class.java,
@@ -68,13 +67,15 @@ abstract class BaseActionTask(
             )
             mainActivityX.showActionResult(this.result!!) { _: DialogInterface?, _: Int ->
                 logErrors(
-                    mainActivityX, LogsHandler.handleErrorMessages(mainActivityX, result?.message)
+                    LogsHandler.handleErrorMessages(mainActivityX, result?.message)
                         ?: ""
                 )
             }
+            if (!(result?.succeeded ?: false))
+                OABX.lastErrorPackage = app.packageName
             mainActivityX.updatePackage(app.packageName)
             mainActivityX.dismissSnackBar()
-            if (appSheet.isVisible) appSheet.dismissSnackBar()
+            setInfoBar("")
         }
         if (signal != null) {
             signal!!.countDown()
@@ -87,7 +88,7 @@ abstract class BaseActionTask(
     private fun getPostExecuteMessage(
         context: Context,
         actionType: ActionType,
-        result: ActionResult?
+        result: ActionResult?,
     ): String? {
         return result?.let {
             if (it.succeeded) {

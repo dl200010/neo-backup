@@ -17,27 +17,23 @@
  */
 package com.machiav3lli.backup.items
 
-import java.text.SimpleDateFormat
+import com.machiav3lli.backup.ISO_DATE_TIME_FORMAT
+import com.machiav3lli.backup.dbs.entity.Backup
 import java.time.LocalDateTime
-import java.util.*
 
 /**
  * Backup item for either a newly created backup or the original item of the restored backup.
  * Can be null, if succeeded is set to false
  */
 class ActionResult(
-    val app: AppInfo?,
-    val backupProperties: BackupProperties?,
+    val app: Package?,
+    val backup: Backup?,
     val message: String,
     val succeeded: Boolean
 ) {
     private val occurrence: LocalDateTime = LocalDateTime.now()
 
     override fun toString(): String {
-        return "${timeFormat.format(occurrence)}: ${app ?: "NoApp"}${if (message.isEmpty()) "" else " $message"}"
-    }
-
-    companion object {
-        val timeFormat = SimpleDateFormat("yyyy/MM/dd - HH:mm:ss", Locale.ENGLISH)
+        return "${ISO_DATE_TIME_FORMAT.format(occurrence)}: ${app ?: "NoApp"}${if (message.isEmpty()) "" else " $message"}"
     }
 }

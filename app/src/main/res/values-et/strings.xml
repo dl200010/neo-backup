@@ -2,7 +2,7 @@
 <resources>
     <string name="backup">Varunda</string>
     <string name="restore">Taasta</string>
-    <string name="backupConfirmation">Varundad?</string>
+    <string name="backupConfirmation">Varundad\?</string>
     <string name="restoreConfirmation">Taasta\?</string>
     <string name="handleApk">APK</string>
     <string name="handleData">Andmed</string>
@@ -35,8 +35,8 @@
     <string name="sortByLabel">Sorteeri nime järgi</string>
     <string name="sortByPackageName">Sorteeri paketinime järgi</string>
     <string name="sort">Sorteeri ja filtreeri</string>
-    <string name="uninstallDialogMessage">Eemaldad selle rakenduse?</string>
-    <string name="deleteBackupDialogMessage">Kustutad varundusfailid?</string>
+    <string name="uninstallDialogMessage">Eemaldad selle rakenduse\?</string>
+    <string name="deleteBackupDialogMessage">Kustutad varundusfailid\?</string>
     <string name="dialogOK">OK</string>
     <string name="dialogCancel">Tühista</string>
     <string name="dialogYes">Jah</string>
@@ -93,9 +93,6 @@
     <string name="prefs_password">Krüpteeringu parool</string>
     <string name="prefs_externaldata">Varunda väliseid andmeid</string>
     <string name="prefs_deviceprotecteddata">Varunda seadme poolt kaitstud andmeid</string>
-    <string name="prefs_deviceprotecteddata_summary">Varundab ja taastab andmed, mis asuvad kohas data/user_de</string>
-    <string name="prefs_externaldata_summary">Varundab ja taastab andmed, mis asuvad välismälus (nt /storage/emulated/0/Android/data/)</string>
-    <string name="prefs_password_summary">Krüpteeringu keelamiseks jäta tühjaks</string>
     <string name="prefs_encryption_summary">Luba, et krüpteerida andmevarundusi</string>
     <string name="prefs_excludecache_summary">Välista andmevarundusest rakenduse vahemälu</string>
     <string name="prefs_acquirewakelock_summary">Hangi ärkamislukk massioperatsioonide tegemise ajaks, et vältida unerežiimi - kiirendab varunduste loomist ja taastamist suurema energiakasutuse arvelt.</string>
@@ -184,7 +181,6 @@
     <string name="prefs_biometriclock">Biomeetrialukk</string>
     <string name="prefs_stopcont_summary">Ainult ekspertidele: see võib aidata kui rakendus muudab faile varundamise ajal ning varundamine ebaõnnestub.</string>
     <string name="prefs_disableverification_summary">Keelab APKide taastamisel selle arendusvaliku ning lubab hiljem uuesti. Parandab vea INSTALL_FAILED_VERIFICATION_FAILURE.</string>
-    <string name="prefs_housekeepingmoment_summary">Määrab, kas vanim varundus kustutatakse enne või pärast uue varunduse loomist, et vabastada varunduseks kasutatavat kettaruumi.</string>
     <string name="fetching_action_list">Varundamiseks rakenduste nimekirja hankimine…</string>
     <string name="msg_appkill_warning">Valitud rakendus(t)el palutakse töötamine lõpetada ning peale ülesande täitmist uuesti jätkata. Palun veendu, et kontrollid rakendusi peale ülesande täitmist ning väldi nende käivitamist protsessi toimimise ajal.</string>
     <string name="intro_permission_storage_location">See rakendus vajab kohta, kus varundusi hoida. Rakendus võib vajada paar gigabaiti täisvarunduse jaoks ning teeb failisüsteemi palju päringuid. Pea seda meeles, kui valid võrgupõhise salvestuskoha.</string>
@@ -194,11 +190,8 @@
     <string name="delete_all_backups">Kustuta kõik varundused</string>
     <string name="help_legend">Legend:</string>
     <string name="prefs_unset">Määramata</string>
-    <string name="prefs_housekeepingmoment">Varunduste tühjendusaeg</string>
     <string name="prefs_numBackupRevisions_summary">Vanim varundus kustutatakse uue loomisel, kui see arv on ületatud. Sea väärtuseks null, et jätta kõik alles.</string>
     <string name="prefs_numBackupRevisions">Varunduste arv</string>
-    <string name="prefs_housekeepingmoment_before">Enne varundust</string>
-    <string name="prefs_housekeepingmoment_after">Pärast varundust</string>
     <string name="prefs_advanced">Täpsemad eelistused</string>
     <string name="radio_obbdata">OBB andmed</string>
     <string name="radio_deviceprotecteddata">Seadmes kaitstud andmed</string>

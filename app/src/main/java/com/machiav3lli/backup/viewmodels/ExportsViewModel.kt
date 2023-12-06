@@ -18,67 +18,64 @@
 package com.machiav3lli.backup.viewmodels
 
 import android.app.Application
-import androidx.lifecycle.*
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import com.machiav3lli.backup.R
-import com.machiav3lli.backup.activities.PrefsActivity
-import com.machiav3lli.backup.dbs.Schedule
-import com.machiav3lli.backup.dbs.ScheduleDao
+import com.machiav3lli.backup.activities.MainActivityX
+import com.machiav3lli.backup.dbs.dao.ScheduleDao
+import com.machiav3lli.backup.dbs.entity.Schedule
 import com.machiav3lli.backup.handler.ExportsHandler
 import com.machiav3lli.backup.handler.showNotification
 import com.machiav3lli.backup.items.StorageFile
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class ExportsViewModel(val database: ScheduleDao, private val appContext: Application) :
     AndroidViewModel(appContext) {
 
-    var exportsList = MediatorLiveData<MutableList<Pair<Schedule, StorageFile>>>()
-
-    private var _refreshActive = MutableLiveData<Boolean>()
-    val refreshActive: LiveData<Boolean>
-        get() = _refreshActive
-
-    private val _refreshNow = MutableLiveData<Boolean>()
-    val refreshNow: LiveData<Boolean>
-        get() = _refreshNow
-
-    init {
-        refreshList()
-    }
-
-    fun finishRefresh() {
-        _refreshActive.value = false
-        _refreshNow.value = false
-    }
+    private val _exportsList =
+        MutableStateFlow<MutableList<Pair<Schedule, StorageFile>>>(mutableListOf())
+    val exportsList = _exportsList.asStateFlow()
+    val handler = ExportsHandler(appContext)
 
     fun refreshList() {
         viewModelScope.launch {
-            _refreshActive.value = true
-            exportsList.value = recreateExportsList()
-            _refreshNow.value = true
+            _exportsList.emit(recreateExportsList())
         }
     }
 
-    private suspend fun recreateExportsList(): MutableList<Pair<Schedule, StorageFile>> {
-        return withContext(Dispatchers.IO) {
-            val dataList = ExportsHandler(appContext).readExports()
-            dataList
+    private suspend fun recreateExportsList(): MutableList<Pair<Schedule, StorageFile>> =
+        withContext(Dispatchers.IO) {
+            handler.readExports()
+        }
+
+    fun exportSchedules() {
+        viewModelScope.launch {
+            export()
+            refreshList()
         }
     }
+
+    private suspend fun export() =
+        withContext(Dispatchers.IO) {
+            handler.exportSchedules()
+        }
+
 
     fun deleteExport(exportFile: StorageFile) {
         viewModelScope.launch {
             delete(exportFile)
-            _refreshNow.value = true
+            refreshList()
         }
     }
 
     private suspend fun delete(exportFile: StorageFile) {
         withContext(Dispatchers.IO) {
-            exportsList.value?.removeIf {
-                it.second == exportFile
-            }
             exportFile.delete()
         }
     }
@@ -87,7 +84,7 @@ class ExportsViewModel(val database: ScheduleDao, private val appContext: Applic
         viewModelScope.launch {
             import(export)
             showNotification(
-                appContext, PrefsActivity::class.java, System.currentTimeMillis().toInt(),
+                appContext, MainActivityX::class.java, System.currentTimeMillis().toInt(),
                 appContext.getString(R.string.sched_imported), export.name, false
             )
         }

@@ -20,45 +20,22 @@ package com.machiav3lli.backup.utils
 import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
+import com.machiav3lli.backup.OABX
+import com.machiav3lli.backup.dbs.entity.Backup
+import com.machiav3lli.backup.dbs.entity.SpecialInfo
+import com.machiav3lli.backup.handler.LogsHandler
+import com.machiav3lli.backup.handler.findBackups
+import com.machiav3lli.backup.handler.updateAppTables
+import com.machiav3lli.backup.items.Package
 import java.io.File
 import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.attribute.PosixFilePermissions
 
 object FileUtils {
-    private var backupLocation: Uri? = null
 
     // TODO Change to StorageFile-based
     fun getExternalStorageDirectory(context: Context): File? {
         return context.getExternalFilesDir(null)?.parentFile?.parentFile?.parentFile?.parentFile
-    }
-
-    /**
-     * Returns the backup directory URI. Users have to select it themselves to avoid SAF headache.
-     *
-     * @return URI to OABX storage directory
-     */
-    @Throws(StorageLocationNotConfiguredException::class, BackupLocationInAccessibleException::class)
-    fun getBackupDirUri(context: Context): Uri {
-        if (backupLocation == null) {
-            val storageRoot = context.backupDirConfigured
-            if (storageRoot.isEmpty()) {
-                throw StorageLocationNotConfiguredException()
-            }
-            val storageRootDoc = DocumentFile.fromTreeUri(context, Uri.parse(storageRoot))
-            if (storageRootDoc == null || !storageRootDoc.exists()) {
-                throw BackupLocationInAccessibleException("Cannot access the root location.")
-            }
-            backupLocation = storageRootDoc.uri
-        }
-        return backupLocation as Uri
-    }
-
-    /**
-     * Invalidates the cached value for the backup location URI so that the next call to
-     * `getBackupDir` will set it again.
-     */
-    fun invalidateBackupLocation() {
-        backupLocation = null
     }
 
     fun getName(fullPath: String): String {
@@ -82,6 +59,58 @@ object FileUtils {
             mode += if (permissions.contains(it)) 1 else 0
         }
         return mode
+    }
+
+    //TODO hg42 move the following to somewhere else, maybe a class that handles (multiple) BackupLocations
+
+    private var backupLocation: Uri? = null
+
+    /**
+     * Returns the backup directory URI. Users have to select it themselves to avoid SAF headache.
+     *
+     * @return URI to OABX storage directory
+     */
+    @Throws(
+        StorageLocationNotConfiguredException::class,
+        BackupLocationInAccessibleException::class
+    )
+    fun getBackupDirUri(context: Context): Uri {
+        if (backupLocation == null) {
+            val storageRoot = backupDirConfigured
+            if (storageRoot.isEmpty()) {
+                throw StorageLocationNotConfiguredException()
+            }
+            val storageRootDoc = DocumentFile.fromTreeUri(context, Uri.parse(storageRoot))
+            if (storageRootDoc == null || !storageRootDoc.exists()) {
+                throw BackupLocationInAccessibleException("Cannot access the root location.")
+            }
+            backupLocation = storageRootDoc.uri
+        }
+        return backupLocation as Uri
+    }
+
+    fun ensureBackups(): Map<String, List<Backup>> {
+        if (backupLocation == null) {
+            OABX.context.findBackups()
+        }
+        return OABX.getBackups()
+    }
+
+    /**
+     * Invalidates the cached value for the backup location URI so that the next call to
+     * `getBackupDir` will set it again.
+     */
+    fun invalidateBackupLocation() {
+        Package.invalidateBackupCacheForPackage()
+        SpecialInfo.clearCache()
+        backupLocation = null // after clearing caches, because they probably need the location
+        try {
+            // updateAppTables does ensureBackups, but make intention clear here
+            OABX.context.findBackups()
+            OABX.context.updateAppTables()
+        } catch (e: Throwable) {
+            LogsHandler.logException(e, backTrace = true)
+        }
     }
 
     class BackupLocationInAccessibleException : Exception {

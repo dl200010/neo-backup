@@ -6,7 +6,7 @@ import com.machiav3lli.backup.handler.LogsHandler
 import com.machiav3lli.backup.handler.ShellHandler
 import com.machiav3lli.backup.handler.ShellHandler.Companion.quote
 import com.machiav3lli.backup.handler.ShellHandler.Companion.runAsRoot
-import com.machiav3lli.backup.handler.ShellHandler.FileInfo.FileType
+import com.machiav3lli.backup.handler.ShellHandler.FileType
 import com.machiav3lli.backup.handler.ShellHandler.ShellCommandFailedException
 import com.machiav3lli.backup.items.RootFile
 import com.machiav3lli.backup.items.StorageFile
@@ -18,17 +18,15 @@ import timber.log.Timber
 import java.io.File
 import java.io.IOException
 
-const val binaryMimeType = "application/octet-stream"
-
 @Throws(BackupLocationInAccessibleException::class, StorageLocationNotConfiguredException::class)
-fun Context.getBackupDir(): StorageFile =
-    StorageFile.fromUri(this, getBackupDirUri(this))
+fun Context.getBackupRoot(): StorageFile =
+    StorageFile.fromUri(getBackupDirUri(this))
 
 @Throws(IOException::class)
 fun suRecursiveCopyFilesToDocument(
     context: Context,
     filesToCopy: List<ShellHandler.FileInfo>,
-    targetUri: Uri
+    targetUri: Uri,
 ) {
     for (file in filesToCopy) {
         try {
@@ -36,15 +34,14 @@ fun suRecursiveCopyFilesToDocument(
                 .buildUpon()
                 .appendEncodedPath(File(file.filePath).parent)
                 .build()
-            val parentFile = StorageFile.fromUri(context, parentUri)
+            val parentFile = StorageFile.fromUri(parentUri)
             when (file.fileType) {
-                FileType.REGULAR_FILE ->
-                    suCopyFileToDocument(file, parentFile)
-                FileType.DIRECTORY -> parentFile.createDirectory(file.filename)
-                else -> Timber.e("SAF does not support ${file.fileType} for ${file.filePath}")
+                FileType.REGULAR_FILE -> suCopyFileToDocument(file, parentFile)
+                FileType.DIRECTORY    -> parentFile.createDirectory(file.filename)
+                else                  -> Timber.e("SAF does not support ${file.fileType} for ${file.filePath}")
             }
         } catch (e: Throwable) {
-            LogsHandler.logException(e)
+            LogsHandler.logException(e, backTrace = true)
         }
     }
 }
@@ -62,7 +59,7 @@ fun suRecursiveCopyFilesToDocument(
 fun suCopyFileToDocument(sourcePath: String, targetDir: StorageFile) {
     val sourceFile = RootFile(sourcePath)
     sourceFile.inputStream().use { inputStream ->
-        targetDir.createFile(binaryMimeType, sourceFile.name).let { newFile ->
+        targetDir.createFile(sourceFile.name).let { newFile ->
             newFile.outputStream().use { outputStream ->
                 IOUtils.copy(inputStream, outputStream)
             }
@@ -73,9 +70,9 @@ fun suCopyFileToDocument(sourcePath: String, targetDir: StorageFile) {
 @Throws(IOException::class)
 fun suCopyFileToDocument(
     sourceFileInfo: ShellHandler.FileInfo,
-    targetDir: StorageFile
+    targetDir: StorageFile,
 ) {
-    targetDir.createFile(binaryMimeType, sourceFileInfo.filename).let { newFile ->
+    targetDir.createFile(sourceFileInfo.filename).let { newFile ->
         newFile.outputStream()!!.use { outputStream ->
             ShellHandler.quirkLibsuReadFileWorkaround(sourceFileInfo, outputStream)
         }
@@ -84,12 +81,15 @@ fun suCopyFileToDocument(
 
 @Throws(IOException::class, ShellCommandFailedException::class)
 fun suRecursiveCopyFileFromDocument(sourceDir: StorageFile, targetPath: String?) {
-    for (sourceFile in sourceDir.listFiles()) {
-        sourceFile.name?.also { name ->
-            if (sourceFile.isDirectory) {
-                runAsRoot("mkdir -p ${quote(File(targetPath, name))}")
-            } else if (sourceFile.isFile) {
-                suCopyFileFromDocument(sourceFile, File(targetPath, name).absolutePath)
+    sourceDir.listFiles().forEach {
+        with(it) {
+            if (!name.isNullOrEmpty()) {
+                when {
+                    isDirectory ->
+                        runAsRoot("mkdir -p ${quote(File(targetPath, name!!))}")
+                    isFile      ->
+                        suCopyFileFromDocument(it, File(targetPath, name!!).absolutePath)
+                }
             }
         }
     }
